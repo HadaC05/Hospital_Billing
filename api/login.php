@@ -1,6 +1,9 @@
 <?php
 
+session_start();
 header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
 
@@ -31,6 +34,9 @@ class Users
             $role_stmt->bindParam(":role_id", $user['role_id']);
             $role_stmt->execute();
             $role = $role_stmt->fetch(PDO::FETCH_ASSOC);
+
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['role'] = $role['role_name'];
 
             $response = [
                 'success' => true,

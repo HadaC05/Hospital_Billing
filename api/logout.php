@@ -1,13 +1,12 @@
 <?php
-session_start();
+session_start(); // resumes to be cleared
+session_unset(); // clears all session variables
+session_destroy(); // ends entire session
 
-$_SESSION = array();
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
 
-if (isset($_COOKIE[session_name()])) {
-    setcookie(session_name(), '', time() - 3600, '/');
-}
-
-session_destroy();
-
-header('Location: ../html/index.html');
-exit();
+echo json_encode([
+    'success' => true,
+    'message' => 'Logged out successfully'
+]);
