@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!user) {
         console.error('No user data found. Redirecting to loging.');
-        window.location.href = '../html/index.html';
+        window.location.href = '../index.html';
         return;
     }
 

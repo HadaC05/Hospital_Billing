@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.removeItem('user');
 
-            window.location.href = '../html/index.html';
+            window.location.href = '../index.html';
         } catch (error) {
             console.error('Logout failed: ', error);
             alert('Logout  failed. Please try again.');

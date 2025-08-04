@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (data.success) {
                 localStorage.setItem('user', JSON.stringify(data));
-                window.location.href = '../components/dashboard.html';
+                window.location.href = './components/dashboard.html';
             }
         } catch (error) {
             console.error('Axios error: ', error);
