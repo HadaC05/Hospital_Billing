@@ -79,6 +79,45 @@ class Medicines
             'types' => $types
         ]);
     }
+
+    function getMedicine($data)
+    {
+        include 'connection-pdo.php';
+        $sql = "SELECT m.med_id, m.med_name, m.med_type_id, mt.med_type_name, m.unit_price, m.stock_quantity, m.med_unit, m.is_active
+                FROM tbl_medicine m
+                JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
+                WHERE m.med_id = :med_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':med_id', $data['med_id']);
+        $stmt->execute();
+        $medicine = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($medicine) {
+            echo json_encode(['success' => true, 'medicine' => $medicine]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Medicine not found']);
+        }
+    }
+
+    function updateMedicine($data)
+    {
+        include 'connection-pdo.php';
+        $sql = "UPDATE tbl_medicine
+                SET med_name = :med_name, med_type_id = :med_type_id, unit_price = :unit_price, stock_quantity = :stock_quantity, med_unit = :med_unit, is_active = :is_active
+                WHERE med_id = :med_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':med_id', $data['med_id']);
+        $stmt->bindParam(':med_name', $data['med_name']);
+        $stmt->bindParam(':med_type_id', $data['med_type_id']);
+        $stmt->bindParam(':unit_price', $data['unit_price']);
+        $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
+        $stmt->bindParam(':med_unit', $data['med_unit']);
+        $stmt->bindParam(':is_active', $data['is_active']);
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Medicine updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Update failed']);
+        }
+    }
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -107,5 +146,11 @@ switch ($operation) {
         break;
     case 'getTypes':
         $med->getTypes();
+        break;
+    case 'getMedicine':
+        $med->getMedicine($data);
+        break;
+    case 'updateMedicine':
+        $med->updateMedicine($data);
         break;
 }
