@@ -1,7 +1,5 @@
 <?php
 
-// require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
@@ -57,7 +55,7 @@ class Medicines
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Medicine added']);
         } else {
-            echo json_encode(['success' => true, 'message' => 'Insert failed']);
+            echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
@@ -71,7 +69,7 @@ class Medicines
             ORDER BY med_type_name ASC
         ";
 
-        $stmt = $conn->prepare($stmt);
+        $stmt = $conn->prepare($sql);
         $stmt->execute();
 
         $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
