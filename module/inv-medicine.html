@@ -36,6 +36,7 @@
         </table>
     </div>
 
+    <!-- // modal for adding medicine -->
     <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form id="addMedicineForm" class="modal-content">
@@ -63,6 +64,52 @@
         </div>
     </div>
 
+    <!-- // modal for editing medicine -->
+    <div class="modal fade" id="editMedicineModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="editMedicineForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Medicine</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_med_id">
+                        <div class="mb-3">
+                            <label for="">Name</label>
+                            <input type="text" id="edit_med_name" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="">Type</label>
+                            <select name="" id="edit_med_type_id" class="form-select" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="">Price</label>
+                            <input type="number" id="edit_unit_price" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="">Quantity</label>
+                            <input type="text" id="edit_stock_quantity" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="">Unit</label>
+                            <input type="text" id="edit_med_unit" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="">Status</label>
+                            <select id="edit_is_active" class="form-select" required>
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
