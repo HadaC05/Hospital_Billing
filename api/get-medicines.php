@@ -99,7 +99,7 @@ class Medicines
 
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':med_name', $med_name);
-        $stmt->bindParam(':med_type_id', $med_type_id, PDO::PARAM_INT);
+        $stmt->bindParam(':med_type_id', $med_type_id);
         $stmt->bindParam(':unit_price', $unit_price);
         $stmt->bindParam(':stock_quantity', $stock_quantity);
         $stmt->bindParam(':med_unit', $med_unit);
