@@ -55,38 +55,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error loading medicines: ', error);
         tableBody.innerHTML = '<tr><td colspan="7">Failed to load medicines.</td></tr>';
     }
+
 });
 
 
 // Add Medicine
-document.getElementById('addMecineForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', async () => {
 
-    const data = {
-        med_name: document.getElementById('med_name').value.trim(),
-        med_type_id: document.getElementById('med_type_id').value,
-        unit_price: document.getElementById('unit_price').value,
-        stock_quantity: document.getElementById('stock_quantity').value,
-        med_unit: document.getElementById('med_unit').value.trim(),
-        is_active: document.getElementById('is_active').value
-    };
+    await loadMedicineTypes();
+
+    const medForm = document.getElementById('addMedicineForm');
+
+    medForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const data = {
+            med_name: document.getElementById('med_name').value.trim(),
+            med_type_id: document.getElementById('med_type_id').value,
+            unit_price: document.getElementById('unit_price').value,
+            stock_quantity: document.getElementById('stock_quantity').value,
+            med_unit: document.getElementById('med_unit').value.trim(),
+            is_active: document.getElementById('is_active').value
+        };
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
+                operation: 'addMedicine',
+                json: JSON.stringify(data)
+            });
+
+            const resData = response.data;
+
+            if (resData.success) {
+                alert('Medicine added successfully');
+                window.location.reload();
+            } else {
+                alert(resData.message || 'Failed to add medicine');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error adding medicine');
+        }
+    });
+});
+
+// Load the medicine types
+async function loadMedicineTypes() {
 
     try {
-        const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
-            operation: 'addMedicine',
-            json: JSON.stringify(data)
+        const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
+            params: {
+                operation: 'getTypes'
+            }
         });
+
+        const typeSelect = document.getElementById('med_type_id');
+
+        if (!typeSelect) return;
 
         const data = response.data;
 
-        if (data.success) {
-            alert('Medicine added successfully');
-            window.location.reload();
+        if (data.success && Array.isArray(data.types)) {
+            typeSelect.innerHTML = '<option value="">Select Type</option>';
+
+            data.types.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.med_type_id;
+                option.textContent = type.med_type_name;
+                typeSelect.appendChild(option);
+            });
         } else {
-            alert(data.message || 'Failed to add medicine');
+            typeSelect.innerHTML = '<option value="">No types available</option>';
         }
     } catch (error) {
-        console.error(error);
-        alert('Error adding medicine');
+        console.error('Failed to load medicine types: ', error);
+        const typeSelect = document.getElementById('med_type_id');
+        if (typeSelect) {
+            typeSelect.innerHTML = '<option value="">Error loading types</option>';
+        }
     }
-});
+}

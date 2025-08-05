@@ -71,7 +71,7 @@ class Medicines
             ORDER BY med_type_name ASC
         ";
 
-        $stmt = $conn->prepare($stmt);
+        $stmt = $conn->prepare($sql);
         $stmt->execute();
 
         $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
