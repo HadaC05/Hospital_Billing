@@ -129,12 +129,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Edit Button
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const medId = e.target.dataset.id;
             const med = medicines.find(m => m.med_id == medId);
 
             if (med) {
+
+                await loadMedicineTypes();
+
                 document.getElementById('edit_med_id').value = med.med_id;
                 document.getElementById('edit_med_name').value = med.med_name;
                 document.getElementById('edit_med_type_id').value = med.med_type_id;
