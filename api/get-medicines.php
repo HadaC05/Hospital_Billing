@@ -71,7 +71,7 @@ class Medicines
             ORDER BY med_type_name ASC
         ";
 
-        $stmt = $conn->prepare($stmt);
+        $stmt = $conn->prepare($sql);
         $stmt->execute();
 
         $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -79,6 +79,38 @@ class Medicines
         echo json_encode([
             'success' => true,
             'types' => $types
+        ]);
+    }
+
+    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
+    {
+        include 'connection-pdo.php';
+
+        $sql = "
+            UPDATE tbl_medicine
+            SET med_name = :med_name,
+                med_type_id = :med_type_id,
+                unit_price = :unit_price,
+                stock_quantity = :stock_quantity,
+                med_unit = :med_unit,
+                is_active = :is_active
+            WHERE med_id = :med_id
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':med_name', $med_name);
+        $stmt->bindParam(':med_type_id', $med_type_id);
+        $stmt->bindParam(':unit_price', $unit_price);
+        $stmt->bindParam(':stock_quantity', $stock_quantity);
+        $stmt->bindParam(':med_unit', $med_unit);
+        $stmt->bindParam(':is_active', $is_active);
+        $stmt->bindParam(':med_id', $med_id);
+
+        $success = $stmt->execute();
+
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
         ]);
     }
 }
@@ -109,5 +141,15 @@ switch ($operation) {
         break;
     case 'getTypes':
         $med->getTypes();
+        break;
+    case 'updateMedicine':
+        $med_id = $data['med_id'];
+        $med_name = $data['med_name'];
+        $med_type_id = $data['med_type_id'];
+        $unit_price = $data['unit_price'];
+        $stock_quantity = $data['stock_quantity'];
+        $med_unit = $data['med_unit'];
+        $is_active = $data['is_active'];
+        $med->updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active);
         break;
 }
