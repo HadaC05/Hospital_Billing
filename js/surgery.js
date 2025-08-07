@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const resData = response.data;
 
-                if (ReadableStreamDefaultReader.success) {
+                if (resData.success) {
                     alert('Surgery updated successfully');
                     window.location.reload();
                 } else {

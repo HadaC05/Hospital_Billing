@@ -11,6 +11,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Load Sidebar
+
+    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+
+    try {
+        const sidebarResponse = await axios.get('../components/sidebar.html');
+        sidebarPlaceholder.innerHTML = sidebarResponse.data;
+
+        const sidebarElement = document.getElementById('sidebar');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Restore sidebar collapsed state
+
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebarElement.classList.add('collapsed');
+        }
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebarElement.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
+        });
+
+        // Log out Logic
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await axios.post(`${baseApiUrl}/logout.php`);
+                    localStorage.removeItem('user');
+                    window.location.href = '../index.html';
+                } catch (error) {
+                    console.error('Logout failed: ', error);
+                    alert('Logout failed. Please try again.');
+                }
+            });
+        }
+
+    } catch (err) {
+        console.error('Failed to load sidebar: ', err);
+    }
+
     const welcomeMessage = document.getElementById('welcome-msg')
     const sidebar = document.getElementById('sidebar-links');
     const content = document.getElementById('dashboard-content');
@@ -37,33 +78,60 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderModules(permissions) {
         const moduleMap = {
-            'manage_users': 'User Management Module',
-            'manage_roles': 'Role Settings',
-            'manage_rooms': 'Room Management',
-            'view_admissions': 'Admission Records',
-            'edit_admissions': 'Admission Editor',
-            'access_billing': 'Billing Overview',
-            'generate_invoice': 'Invoice Generator',
-            'manage_medicine': 'Pharmacy Module',
-            'manage_labtests': 'Laboratory Management',
-            'manage_surgeries': 'Surgical Scheduling',
-            'manage_treatments': 'Treatment Configurator',
-            'view_patient_records': 'Patient Records Viewer',
-            'approve_insurance': 'Insurance Approval Panel'
+            'manage_users': { label: 'Manage Users', link: '#' },
+            'manage_roles': { label: 'Role Settings', link: '#' },
+            'manage_rooms': { label: 'Room Management', link: '#' },
+            'view_admissions': { label: 'Admission Records', link: '#' },
+            'edit_admissions': { label: 'Admission Editor', link: '#' },
+            'access_billing': { label: 'Billing Overview', link: '#' },
+            'generate_invoice': { label: 'Invoice Generator', link: '#' },
+            'view_patient_records': { label: 'Patient Records Viewer', link: '#' },
+            'approve_insurance': { label: 'Insurance Approval Panel', link: '#' }
         };
 
+        const inventoryMap = {
+            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
+            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
+            'manage_labtests': { label: 'Laboratory Module', link: '#' },
+            'manage_treatments': { label: 'Treatment Module', link: '#' },
+        };
+
+        const sidebarLinks = document.getElementById('sidebar-links');
+        const accordionBody = document.querySelector('#invCollapse .accordion-body');
+
+        // Standalone
         permissions.forEach(permission => {
-            const label = moduleMap[permission] || permission;
-
-            const link = document.createElement('a');
-            link.href = "#";
-            link.classList.add('d-block', 'mb-2');
-            link.textContent = label;
-            sidebar.appendChild(link);
-
-            const moduleSection = document.createElement('div');
-            moduleSection.innerHTML = `<h3>${label}</h3><p>Module coming soon...</p>`;
-            content.appendChild(moduleSection);
+            if (moduleMap[permission]) {
+                const { label, link } = moduleMap[permission];
+                const a = document.createElement('a');
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                sidebar.appendChild(a);
+            }
         });
+
+        // inventory modules
+        let inventoryShown = false;
+
+        permissions.forEach(permission => {
+            if (inventoryMap[permission]) {
+                inventoryShown = true;
+
+                const { label, link } = inventoryMap[permission];
+                const a = document.createElement('a');
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                accordionBody.appendChild(a);
+            }
+        });
+
+        if (!inventoryShown) {
+            const inventoryAccordionItem = document.querySelector('.accordion-item');
+            if (inventoryAccordionItem) {
+                inventoryAccordionItem.style.display = 'none';
+            }
+        }
     }
 });

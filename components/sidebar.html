@@ -1,0 +1,32 @@
+<!-- sidebar.html -->
+<nav class="sidebar d-flex flex-column vh-100 bg-dark text-white" id="sidebar">
+
+    <!-- accordion -->
+    <div class="accordion accordion-flush" id="sidebarAccordion">
+        <div class="accordion-item bg-dark">
+            <h2 class="accordion-header" id="invHeading">
+                <button type="button" class="accordion-button collapsed bg-dark text-white" data-bs-toggle="collapse"
+                    data-bs-target="#invCollapse" aria-expanded="false" aria-controls="invCollapse">Inventory
+                    Modules</button>
+            </h2>
+            <div id="invCollapse" class="accordion-collapse collapse" aria-labelledby="invHeading"
+                data-bs-parent="#sidebarAccordion">
+                <div class="accordion-body p-0">
+                    <!-- will be populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Non grouped -->
+    <div class="flex-grow-1 overflow-auto" id="sidebar-links">
+        <div id="sidebar-links" class="mb-3">
+            <!-- Dynamic links will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Log out button -->
+    <div class="mt-auto px-3 py-2">
+        <button id="logout-btn" class="btn btn-danger w-100">Logout</button>
+    </div>
+</nav>

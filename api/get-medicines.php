@@ -1,6 +1,6 @@
 <?php
 
-// require_once __DIR__ . '/require_auth.php';
+require_once __DIR__ . '/require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
