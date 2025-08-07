@@ -44,26 +44,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             'edit_admissions': 'Admission Editor',
             'access_billing': 'Billing Overview',
             'generate_invoice': 'Invoice Generator',
-            'manage_medicine': 'Pharmacy Module',
-            'manage_labtests': 'Laboratory Management',
-            'manage_surgeries': 'Surgical Scheduling',
-            'manage_treatments': 'Treatment Configurator',
+            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
+            'manage_labtests': { label: 'Laboratory Module', link: 'inv-surgery.html' },
+            'manage_surgeries': 'Surgical Module',
+            'manage_treatments': 'Treatment Module',
             'view_patient_records': 'Patient Records Viewer',
             'approve_insurance': 'Insurance Approval Panel'
         };
 
         permissions.forEach(permission => {
-            const label = moduleMap[permission] || permission;
+            const module = moduleMap[permission];
+            if (!module) return;
 
             const link = document.createElement('a');
-            link.href = "#";
+            link.href = `../module/${module.link}`;
             link.classList.add('d-block', 'mb-2');
-            link.textContent = label;
+            link.textContent = module.label;
             sidebar.appendChild(link);
-
-            const moduleSection = document.createElement('div');
-            moduleSection.innerHTML = `<h3>${label}</h3><p>Module coming soon...</p>`;
-            content.appendChild(moduleSection);
         });
     }
 });
