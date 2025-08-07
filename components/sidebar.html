@@ -1,9 +1,11 @@
 <!-- sidebar.html -->
-<nav class="sidebar d-flex flex-column vh-100 bg-dark text-white p-2" id="sidebar">
-    <div id="sidebar-links" class="mb-3">
-        <!-- Dynamic links will be inserted here -->
+<nav class="sidebar d-flex flex-column vh-100 bg-dark text-white" id="sidebar">
+    <div class="flex-grow-1 overflow-auto" id="sidebar-links">
+        <div id="sidebar-links" class="mb-3">
+            <!-- Dynamic links will be inserted here -->
+        </div>
     </div>
-    <div class="mt-auto">
+    <div class="mt-auto px-3 py-2">
         <button id="logout-btn" class="btn btn-danger w-100">Logout</button>
     </div>
 </nav>

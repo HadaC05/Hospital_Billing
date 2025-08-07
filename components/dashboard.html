@@ -18,11 +18,13 @@
 
 <body class="d-flex flex-column vh-100">
     <!-- Topbar with hamburger -->
-    <header class="d-flex align-items-center p-2 border-bottom">
-        <button id="hamburger-btn" class="btn btn-light me-3">
-            <span class="navbar-toggler-icon"></span>
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-dark me-3">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
         </button>
-        <h4 class="m-0">Dashboard</h4>
+        <h4 class="m-0 text-dark">Dashboard</h4>
     </header>
 
     <!-- Sidebar -->
@@ -31,7 +33,7 @@
 
         <!-- Main Content -->
         <main class="content p-3 flex-grow-1">
-            <h2 id="welcome-msg">Welcome</h2>
+            <h2 id="welcome-msg"></h2>
             <div id="dashboard-content"></div>
         </main>
     </div>
