@@ -52,7 +52,7 @@ header {
 
 /* Collapse behavior */
 .sidebar.collapsed {
-    width: 80px; /* Enough to show hamburger + logout button */
+    width: 60px; /* Enough to show hamburger + logout button */
 }
 
 .sidebar.collapsed #sidebar-links a {
@@ -131,3 +131,17 @@ header {
 #hamburger-btn:hover .hamburger-line {
     background-color: #039890; /* Change color on hover if desired */
 }
+/* 
+.accordion-button {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #495057;
+    color: #fff;
+}
+
+.accordion-body a:hover {
+    background-color: #6c757d;
+} */
