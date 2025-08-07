@@ -57,7 +57,7 @@ class Medicines
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Medicine added']);
         } else {
-            echo json_encode(['success' => true, 'message' => 'Insert failed']);
+            echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
@@ -71,6 +71,7 @@ class Medicines
             ORDER BY med_type_name ASC
         ";
 
+        $stmt = $conn->prepare($sql);
         $stmt = $conn->prepare($sql);
         $stmt->execute();
 
