@@ -31,6 +31,55 @@ class Surgeries
 
         echo json_encode($response);
     }
+
+    function addSurgery($data)
+    {
+        include 'connection-pdo.php';
+
+        $sql = "
+            INSERT INTO tbl_surgery (surgery_name, surgery_type_id, surgery_price, is_available)
+            VALUES (:surgery_name, :surgery_type_id, :surgery_price, :is_available)
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':surgery_name', $data['surgery_name']);
+        $stmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
+        $stmt->bindParam(':surgery_price', $data['surgery_price']);
+        $stmt->bindParam(':is_available', $data['is_available']);
+
+        if ($stmt->execute()) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Medicine added'
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false, //recheck
+                'message' => 'Insert failed'
+            ]);
+        }
+    }
+
+    function getTypes()
+    {
+        include 'connection-pdo.php';
+
+        $sql = "
+            SELECT surgery_type_id, surgery_type_name
+            FROM tbl_surgery_type
+            ORDER BY surgery_type_name ASC
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+
+        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'types' => $types
+        ]);
+    }
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -54,5 +103,11 @@ $surg = new Surgeries();
 switch ($operation) {
     case 'getSurgeries':
         $surg->getSurgeries();
+        break;
+    case 'addSurgery':
+        $surg->addSurgery($data);
+        break;
+    case 'getTypes':
+        $surg->getTypes();
         break;
 }

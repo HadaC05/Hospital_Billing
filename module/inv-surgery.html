@@ -13,11 +13,15 @@
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="../js/surgery.js"></script>
+
 </head>
 
 <body>
     <h2>Inventory - Surgery</h2>
     <div id="surgery-container">
+        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">Add
+            Surgery</button>
+
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -30,6 +34,48 @@
             <tbody id="surgery-list"></tbody>
         </table>
     </div>
+
+    <!-- Add New Surgery modal -->
+    <div class="modal fade" id="addSurgeryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="addSurgeryForm" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Surgery</h5>
+                    <button class="btn btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" id="surgery_name" placeholder="Surgery Name" required>
+                    <select id="surgery_type_id" class="form-select mb-2"></select>
+                    <input type="number" class="form-control mb-2" id="surgery_price" placeholder="Unit Price" required>
+                    <select id="is_available" class="form-select" required>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- edit surgery modal -->
+    <div class="modal fade" id="editSurgeryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="editSurgeryForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Surgery</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>
