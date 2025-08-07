@@ -34,16 +34,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
         });
 
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await axios.post(`${baseApiUrl}/logout.php`);
-                localStorage.removeItem('user');
-                window.location.href = '../index.html';
-            } catch (error) {
-                console.error('Logout failed: ', error);
-                alert('Logout failed. Please try again.');
-            }
-        });
+        // Log out Logic
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await axios.post(`${baseApiUrl}/logout.php`);
+                    localStorage.removeItem('user');
+                    window.location.href = '../index.html';
+                } catch (error) {
+                    console.error('Logout failed: ', error);
+                    alert('Logout failed. Please try again.');
+                }
+            });
+        }
+
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
