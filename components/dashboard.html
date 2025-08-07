@@ -14,22 +14,27 @@
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="../css/dashboard.css">
-
-
 </head>
 
-<body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div id="sidebar-links"></div>
-        <div class="mt-auto px-3 py-2"><button id="logout-btn" class="btn btn-danger w-300">Logout</button></div>
-    </nav>
+<body class="d-flex flex-column vh-100">
+    <!-- Topbar with hamburger -->
+    <header class="d-flex align-items-center p-2 border-bottom">
+        <button id="hamburger-btn" class="btn btn-light me-3">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <h4 class="m-0">Dashboard</h4>
+    </header>
 
-    <!-- Main Content -->
-    <main class="content">
-        <h2 id="welcome-msg">Welcome</h2>
-        <div id="dashboard-content"></div>
-    </main>
+    <!-- Sidebar -->
+    <div id="page-container" class="d-flex flex-grow-1">
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <h2 id="welcome-msg">Welcome</h2>
+            <div id="dashboard-content"></div>
+        </main>
+    </div>
 </body>
 
 </html>

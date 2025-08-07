@@ -11,6 +11,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Load Sidebar
+
+    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+
+    try {
+        const sidebarResponse = await axios.get('../components/sidebar.html');
+        sidebarPlaceholder.innerHTML = sidebarResponse.data;
+
+        const sidebarElement = document.getElementById('sidebar');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Restore sidebar collapsed state
+
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebarElement.classList.add('collapsed');
+        }
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebarElement.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await axios.post(`${baseApiUrl}/logout.php`);
+                localStorage.removeItem('user');
+                window.location.href = '../index.html';
+            } catch (error) {
+                console.error('Logout failed: ', error);
+                alert('Logout failed. Please try again.');
+            }
+        });
+    } catch (err) {
+        console.error('Failed to load sidebar: ', err);
+    }
+
     const welcomeMessage = document.getElementById('welcome-msg')
     const sidebar = document.getElementById('sidebar-links');
     const content = document.getElementById('dashboard-content');
@@ -37,19 +74,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderModules(permissions) {
         const moduleMap = {
-            'manage_users': 'User Management Module',
-            'manage_roles': 'Role Settings',
-            'manage_rooms': 'Room Management',
-            'view_admissions': 'Admission Records',
-            'edit_admissions': 'Admission Editor',
-            'access_billing': 'Billing Overview',
-            'generate_invoice': 'Invoice Generator',
+            'manage_users': { label: 'Manage Users', link: '#' },
+            'manage_roles': { label: 'Role Settings', link: '#' },
+            'manage_rooms': { label: 'Room Management', link: '#' },
+            'view_admissions': { label: 'Admission Records', link: '#' },
+            'edit_admissions': { label: 'Admission Editor', link: '#' },
+            'access_billing': { label: 'Billing Overview', link: '#' },
+            'generate_invoice': { label: 'Invoice Generator', link: '#' },
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_labtests': { label: 'Laboratory Module', link: 'inv-surgery.html' },
-            'manage_surgeries': 'Surgical Module',
-            'manage_treatments': 'Treatment Module',
-            'view_patient_records': 'Patient Records Viewer',
-            'approve_insurance': 'Insurance Approval Panel'
+            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
+            'manage_treatments': { label: 'Treatment Module', link: '#' },
+            'view_patient_records': { label: 'Patient Records Viewer', link: '#' },
+            'approve_insurance': { label: 'Insurance Approval Panel', link: '#' }
         };
 
         permissions.forEach(permission => {
@@ -58,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const link = document.createElement('a');
             link.href = `../module/${module.link}`;
-            link.classList.add('d-block', 'mb-2');
+            link.classList.add('d-block');
             link.textContent = module.label;
             sidebar.appendChild(link);
         });
