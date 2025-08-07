@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (med) {
 
-                await loadMedicineTypes();
+                // await loadMedicineTypes();
 
                 document.getElementById('edit_med_id').value = med.med_id;
                 document.getElementById('edit_med_name').value = med.med_name;

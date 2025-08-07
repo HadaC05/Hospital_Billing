@@ -80,6 +80,34 @@ class Surgeries
             'types' => $types
         ]);
     }
+
+    function updateSurgery($surgery_id, $surgery_name, $surgery_type_id, $surgery_price, $is_available)
+    {
+        include 'connection-pdo.php';
+
+        $sql = "
+            UPDATE tbl_surgery
+            SET surgery_name = :surgery_name,
+                surgery_type_id = :surgery_type_id,
+                surgery_price = :surgery_price,
+                is_available = :is_available
+            WHERE surgery_id = :surgery_id
+        ";
+
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':surgery_name', $surgery_name);
+        $stmt->bindParam(':surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':surgery_price', $surgery_price);
+        $stmt->bindParam(':is_available', $is_available);
+        $stmt->bindParam(':surgery_id', $surgery_id);
+
+        $success = $stmt->execute();
+
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
+        ]);
+    }
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -109,5 +137,13 @@ switch ($operation) {
         break;
     case 'getTypes':
         $surg->getTypes();
+        break;
+    case 'updateSurgery':
+        $surgery_id = $data['surgery_id'];
+        $surgery_name = $data['surgery_name'];
+        $surgery_type_id = $data['surgery_type_id'];
+        $surgery_price = $data['surgery_price'];
+        $is_available = $data['is_available'];
+        $surg->updateSurgery($surgery_id, $surgery_name, $surgery_type_id, $surgery_price, $is_available);
         break;
 }

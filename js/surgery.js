@@ -1,4 +1,4 @@
-// console.log('surgery.js is working');
+console.log('surgery.js is working');
 
 const baseApiUrl = 'http://localhost/hospital_billing/api';
 
@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableBody = document.getElementById('surgery-list');
     const typeSelect = document.getElementById('surgery_type_id');
     const surgForm = document.getElementById('addSurgeryForm');
+    const editForm = document.getElementById('editSurgeryForm');
+    const editTypeSelect = document.getElementById('edit_surgery_type_id');
 
     let surgeries = [];
 
@@ -24,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).join('');
 
                 if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                // include when editing later || important
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value = "">Select Type</option>` + options;
             } else {
                 typeSelect.innerHTML = '<option value="">No types available</option>';
             }
@@ -117,6 +119,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (error) {
                 console.error(error);
                 alert('Error adding medicine');
+            }
+        });
+    }
+
+    // Edit Button
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('edit-btn')) {
+            const surgId = e.target.dataset.id;
+            const surg = surgeries.find(s => s.surgery_id == surgId);
+
+            if (surg) {
+                // await loadSurgeryTypes();
+
+                document.getElementById('edit_surgery_id').value = surg.surgery_id;
+                document.getElementById('edit_surgery_name').value = surg.surgery_name;
+                document.getElementById('edit_surgery_type_id').value = surg.surgery_type_id;
+                document.getElementById('edit_surgery_price').value = surg.surgery_price;
+                document.getElementById('edit_is_available').value = surg.is_available;
+
+                const modal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
+                modal.show();
+            }
+        }
+
+    });
+
+    // Update Form Submit
+
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                surgery_id: document.getElementById('edit_surgery_id').value,
+                surgery_name: document.getElementById('edit_surgery_name').value,
+                surgery_type_id: document.getElementById('edit_surgery_type_id').value,
+                surgery_price: document.getElementById('edit_surgery_price').value,
+                is_available: document.getElementById('edit_is_available').value
+            };
+
+            try {
+                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                    operation: 'updateSurgery',
+                    json: JSON.stringify(data)
+                });
+
+                const resData = response.data;
+
+                if (ReadableStreamDefaultReader.success) {
+                    alert('Surgery updated successfully');
+                    window.location.reload();
+                } else {
+                    alert(resData.message || 'Failed to update surgery');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error updating surgery');
             }
         });
     }
