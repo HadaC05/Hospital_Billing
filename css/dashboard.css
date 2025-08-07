@@ -131,17 +131,30 @@ header {
 #hamburger-btn:hover .hamburger-line {
     background-color: #039890; /* Change color on hover if desired */
 }
-/* 
-.accordion-button {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+
+/* Hide all sidebar text and content when sidebar is collapsed */
+#sidebar.collapsed,
+#sidebar.collapsed * {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
 }
 
-.accordion-button:not(.collapsed) {
-    background-color: #495057;
-    color: #fff;
+/* Hide the entire accordion body when sidebar is collapsed */
+#sidebar.collapsed .accordion-collapse,
+#sidebar.collapsed .accordion-body {
+    display: none !important;
 }
 
-.accordion-body a:hover {
-    background-color: #6c757d;
-} */
+/* Accordion smooth transition */
+.accordion-collapse {
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+    max-height: 0;
+}
+
+/* When expanded */
+.accordion-collapse.show {
+    max-height: 500px; /* Adjust based on expected content height */
+}
+

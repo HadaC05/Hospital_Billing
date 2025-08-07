@@ -85,23 +85,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             'edit_admissions': { label: 'Admission Editor', link: '#' },
             'access_billing': { label: 'Billing Overview', link: '#' },
             'generate_invoice': { label: 'Invoice Generator', link: '#' },
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-surgery.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_treatments': { label: 'Treatment Module', link: '#' },
             'view_patient_records': { label: 'Patient Records Viewer', link: '#' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: '#' }
         };
 
-        permissions.forEach(permission => {
-            const module = moduleMap[permission];
-            if (!module) return;
+        const inventoryMap = {
+            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
+            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
+            'manage_labtests': { label: 'Laboratory Module', link: '#' },
+            'manage_treatments': { label: 'Treatment Module', link: '#' },
+        };
 
-            const link = document.createElement('a');
-            link.href = `../module/${module.link}`;
-            link.classList.add('d-block');
-            link.textContent = module.label;
-            sidebar.appendChild(link);
+        const sidebarLinks = document.getElementById('sidebar-links');
+        const accordionBody = document.querySelector('#invCollapse .accordion-body');
+
+        // Standalone
+        permissions.forEach(permission => {
+            if (moduleMap[permission]) {
+                const { label, link } = moduleMap[permission];
+                const a = document.createElement('a');
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                sidebar.appendChild(a);
+            }
         });
+
+        // inventory modules
+        let inventoryShown = false;
+
+        permissions.forEach(permission => {
+            if (inventoryMap[permission]) {
+                inventoryShown = true;
+
+                const { label, link } = inventoryMap[permission];
+                const a = document.createElement('a');
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                accordionBody.appendChild(a);
+            }
+        });
+
+        if (!inventoryShown) {
+            const inventoryAccordionItem = document.querySelector('.accordion-item');
+            if (inventoryAccordionItem) {
+                inventoryAccordionItem.style.display = 'none';
+            }
+        }
     }
 });
