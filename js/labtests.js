@@ -5,8 +5,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     const baseApiUrl = 'http://localhost/hospital_billing/api';
 
     const tableBody = document.getElementById('labtest-list');
+    const typeSelect = document.getElementById('labtest_category_id');
+
 
     let labtests = [];
+
+    // load labtest types
+
+    async function loadLabtestTypes() {
+
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-labtests.php`, {
+                params: {
+                    operation: 'getTypes'
+                }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.types)) {
+                const options = data.types.map(type => {
+                    return `<option value="${type.labtest_category_id}">${type.labtest_category_name}</option>`;
+                }).join('');
+
+                if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                // for editing here
+            } else {
+                typeSelect.innerHTML = `<option value="">No types available</option>`;
+            }
+        } catch (error) {
+            console.error('Failed to load labtest types', error);
+        }
+    }
 
     // load labtest list
     async function loadLabtest() {
@@ -45,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td>${test.test_name}</td>
                             <td>${test.labtest_category_name}</td>
                             <td>${test.unit_price}</td>
-                            <td>${test.is_active}</td>
+                            <td>${isActive}</td>
                         </tr>
                     `;
                     tableBody.innerHTML += row;
@@ -60,5 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-
+    await loadLabtestTypes();
+    await loadLabtest();
 });
