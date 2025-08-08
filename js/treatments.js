@@ -1,5 +1,5 @@
 console.log('treatments.js is working');
-const baseApiUrl = 'http://localhost/hospital_billing-master/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api';
 // Load treatment list and populate category select
 document.addEventListener('DOMContentLoaded', async () => {
     // Load treatment list

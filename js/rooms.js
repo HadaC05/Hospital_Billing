@@ -1,5 +1,5 @@
 console.log('rooms.js is working');
-const baseApiUrl = 'http://localhost/hospital_billing-master/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api';
 // Load room list and populate room types in a single DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', async () => {
     // Load room list

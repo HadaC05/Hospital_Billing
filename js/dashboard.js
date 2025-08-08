@@ -80,7 +80,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const moduleMap = {
             'manage_users': { label: 'Manage Users', link: '#' },
             'manage_roles': { label: 'Role Settings', link: '#' },
-            'manage_rooms': { label: 'Room Management', link: '#' },
             'view_admissions': { label: 'Admission Records', link: '#' },
             'edit_admissions': { label: 'Admission Editor', link: '#' },
             'access_billing': { label: 'Billing Overview', link: '#' },
@@ -92,8 +91,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-rooms.html' },
+            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
+            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
 
         const sidebarLinks = document.getElementById('sidebar-links');
