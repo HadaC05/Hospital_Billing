@@ -92,8 +92,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: '#' },
-            'manage_treatments': { label: 'Treatment Module', link: '#' },
+            'manage_labtests': { label: 'Laboratory Module', link: 'inv-rooms.html' },
+            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
         };
 
         const sidebarLinks = document.getElementById('sidebar-links');

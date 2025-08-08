@@ -1,4 +1,7 @@
 <?php
+
+require_once __DIR__ . '/require_auth.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 class Rooms
@@ -27,7 +30,7 @@ class Rooms
         ];
         echo json_encode($response);
     }
-    
+
     function addRoom($data)
     {
         include 'connection-pdo.php';
@@ -47,7 +50,7 @@ class Rooms
             echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
-    
+
     function getRoomTypes()
     {
         include 'connection-pdo.php';
@@ -64,7 +67,7 @@ class Rooms
             'types' => $types
         ]);
     }
-    
+
     function getRoom($data)
     {
         include 'connection-pdo.php';
@@ -89,7 +92,7 @@ class Rooms
             echo json_encode(['success' => false, 'message' => 'Room not found']);
         }
     }
-    
+
     function updateRoom($data)
     {
         include 'connection-pdo.php';

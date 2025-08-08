@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 treatment_category_id: document.getElementById('treatment_category_id').value
             };
             try {
-                const response = await axios.post('http://localhost/hospital_billing-master/api/get-treatments.php', {
+                const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
                     operation: 'addTreatment',
                     json: JSON.stringify(data)
                 });
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     select.innerHTML += `<option value="${cat.treatment_category_id}" ${cat.treatment_category_id == selectedId ? 'selected' : ''}>${cat.category_name}</option>`;
                 });
             }
-        } catch {}
+        } catch { }
     }
     // Update button logic
     tableBody.addEventListener('click', async (e) => {

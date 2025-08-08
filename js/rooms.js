@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     tableBody.innerHTML = '<tr><td colspan="6">Loading rooms...</td></tr>';
-    
+
     try {
         const response = await axios.get(`${baseApiUrl}/get-rooms.php`, {
             params: {
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 is_available: document.getElementById('is_available').value
             };
             try {
-                const response = await axios.post('http://localhost/hospital_billing-master/api/get-rooms.php', {
+                const response = await axios.post(`${baseApiUrl}/get-rooms.php`, {
                     operation: 'addRoom',
                     json: JSON.stringify(data)
                 });
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     select.innerHTML += `<option value="${type.room_type_id}" ${type.room_type_id == selectedId ? 'selected' : ''}>${type.room_type_name}</option>`;
                 });
             }
-        } catch {}
+        } catch { }
     }
     // Update button logic
     tableBody.addEventListener('click', async (e) => {

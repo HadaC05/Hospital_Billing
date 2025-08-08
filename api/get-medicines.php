@@ -72,7 +72,6 @@ class Medicines
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt = $conn->prepare($sql);
         $stmt->execute();
 
         $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
