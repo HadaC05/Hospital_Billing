@@ -1,4 +1,7 @@
 <?php
+
+require_once __DIR__ . '/require_auth.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 class Treatments
@@ -25,7 +28,7 @@ class Treatments
         ];
         echo json_encode($response);
     }
-    
+
     function addTreatment($data)
     {
         include 'connection-pdo.php';
@@ -43,7 +46,7 @@ class Treatments
             echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
-    
+
     function getTreatmentCategories()
     {
         include 'connection-pdo.php';
@@ -60,7 +63,7 @@ class Treatments
             'categories' => $categories
         ]);
     }
-    
+
     function getTreatment($data)
     {
         include 'connection-pdo.php';
@@ -83,7 +86,7 @@ class Treatments
             echo json_encode(['success' => false, 'message' => 'Treatment not found']);
         }
     }
-    
+
     function updateTreatment($data)
     {
         include 'connection-pdo.php';

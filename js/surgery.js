@@ -1,4 +1,4 @@
-console.log('medicine.js is working');
+console.log('surgery.js is working');
 
 const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
 
@@ -124,121 +124,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Medicine management functionality
-    const tableBody = document.getElementById('medicine-list');
-    const medForm = document.getElementById('addMedicineForm');
-    const editForm = document.getElementById('editMedicineForm');
-    const typeSelect = document.getElementById('med_type_id');
-    const editTypeSelect = document.getElementById('edit_med_type_id');
+    // Surgery management functionality
+    const tableBody = document.getElementById('surgery-list');
+    const typeSelect = document.getElementById('surgery_type_id');
+    const surgForm = document.getElementById('addSurgeryForm');
+    const editForm = document.getElementById('editSurgeryForm');
+    const editTypeSelect = document.getElementById('edit_surgery_type_id');
 
-    let medicines = [];
+    let surgeries = [];
 
-    // Load Medicine Types
-    async function loadMedicineTypes() {
+    // Load Surgery Types
+    async function loadSurgeryTypes() {
         try {
-            const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
-                params: {
-                    operation: 'getTypes'
-                }
+            const response = await axios.get(`${baseApiUrl}/get-surgeries.php`, {
+                params: { operation: 'getTypes' }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
                 const options = data.types.map(type => {
-                    return `<option value="${type.med_type_id}">${type.med_type_name}</option>`;
+                    return `<option value="${type.surgery_type_id}">${type.surgery_type_name}</option>`;
                 }).join('');
 
                 if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value = "">Select Type</option>` + options;
             } else {
                 typeSelect.innerHTML = '<option value="">No types available</option>';
             }
         } catch (error) {
-            console.error('Failed to load medicine types: ', error);
+            console.error('Failed to load surgery types: ', error);
         }
     }
 
-    // Load Medicine List
-    async function loadMedicines() {
+    // Load Surgery List
+    async function loadSurgeries() {
         if (!tableBody) {
-            console.error('Medicine table body not found.');
+            console.error('Surgery table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="7">Loading medicines...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Loading surgeries...</td></tr>';
 
         try {
-            const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
+            const response = await axios.get(`${baseApiUrl}/get-surgeries.php`, {
                 params: {
-                    operation: 'getMedicines',
+                    operation: 'getSurgeries',
                     json: JSON.stringify({})
                 }
             });
 
             const data = response.data;
 
-            if (data.success && Array.isArray(data.medicines)) {
-                medicines = data.medicines;
+            if (data.success && Array.isArray(data.surgeries)) {
+                surgeries = data.surgeries;
 
-                if (medicines.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7">No medicines found. </td></tr>';
+                if (surgeries.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4"> No surgeries found. </td></tr>';
                     return;
                 }
 
                 tableBody.innerHTML = '';
 
-                medicines.forEach(med => {
-                    const isActive = med.is_active == 1 ? 'Active' : 'Inactive';
+                surgeries.forEach(surg => {
+                    const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
 
                     const row = `
-                    <tr>
-                        <td>${med.med_name}</td>
-                        <td>${med.med_type_name}</td>
-                        <td>${med.unit_price}</td>
-                        <td>${med.stock_quantity}</td>
-                        <td>${med.med_unit}</td>
-                        <td>${isActive}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning edit-btn" data-id="${med.med_id}">Edit</button>
-                        </td>
-                    </tr>
-                `;
+                        <tr>
+                            <td>${surg.surgery_name}</td>
+                            <td>${surg.surgery_type_name}</td>
+                            <td>${surg.surgery_price}</td>
+                            <td>${isActive}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning edit-btn" data-id="${surg.surgery_id}">Edit</button>
+                            </td>
+                        </tr>
+                    `;
                     tableBody.innerHTML += row;
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="7">${data.message || 'No data found.'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">Failed to load surgeries.</td></tr>`;
             }
         } catch (error) {
-            console.error('Error loading medicines: ', error);
-            tableBody.innerHTML = '<tr><td colspan="7">Failed to load medicines.</td></tr>';
+            console.error('Error loading surgeries: ', error);
+            tableBody.innerHTML = '<tr><td colspan="4">Failed to load surgeries.</td></tr>';
         }
     }
 
-    // Add Medicine
-    if (medForm) {
-        medForm.addEventListener('submit', async (e) => {
+
+    // Add Surgery
+    if (surgForm) {
+        surgForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const data = {
-                med_name: document.getElementById('med_name').value.trim(),
-                med_type_id: document.getElementById('med_type_id').value,
-                unit_price: document.getElementById('unit_price').value,
-                stock_quantity: document.getElementById('stock_quantity').value,
-                med_unit: document.getElementById('med_unit').value.trim(),
-                is_active: document.getElementById('is_active').value
+                surgery_name: document.getElementById('surgery_name').value.trim(),
+                surgery_type_id: document.getElementById('surgery_type_id').value,
+                surgery_price: document.getElementById('surgery_price').value,
+                is_available: document.getElementById('is_available').value
             };
 
             try {
-                const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
-                    operation: 'addMedicine',
+                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                    operation: 'addSurgery',
                     json: JSON.stringify(data)
                 });
 
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Medicine added successfully');
+                    alert('Surgery added successfully');
                     window.location.reload();
                 } else {
                     alert(resData.message || 'Failed to add medicine');
@@ -253,64 +248,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Edit Button
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('edit-btn')) {
-            const medId = e.target.dataset.id;
-            const med = medicines.find(m => m.med_id == medId);
+            const surgId = e.target.dataset.id;
+            const surg = surgeries.find(s => s.surgery_id == surgId);
 
-            if (med) {
+            if (surg) {
+                // await loadSurgeryTypes();
 
-                // await loadMedicineTypes();
+                document.getElementById('edit_surgery_id').value = surg.surgery_id;
+                document.getElementById('edit_surgery_name').value = surg.surgery_name;
+                document.getElementById('edit_surgery_type_id').value = surg.surgery_type_id;
+                document.getElementById('edit_surgery_price').value = surg.surgery_price;
+                document.getElementById('edit_is_available').value = surg.is_available;
 
-                document.getElementById('edit_med_id').value = med.med_id;
-                document.getElementById('edit_med_name').value = med.med_name;
-                document.getElementById('edit_med_type_id').value = med.med_type_id;
-                document.getElementById('edit_unit_price').value = med.unit_price;
-                document.getElementById('edit_stock_quantity').value = med.stock_quantity;
-                document.getElementById('edit_med_unit').value = med.med_unit;
-                document.getElementById('edit_is_active').value = med.is_active;
-
-                const modal = new bootstrap.Modal(document.getElementById('editMedicineModal'));
+                const modal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
                 modal.show();
             }
         }
+
     });
 
-    // Update Form Submit 
+    // Update Form Submit
 
     if (editForm) {
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const data = {
-                med_id: document.getElementById('edit_med_id').value,
-                med_name: document.getElementById('edit_med_name').value.trim(),
-                med_type_id: document.getElementById('edit_med_type_id').value,
-                unit_price: document.getElementById('edit_unit_price').value,
-                stock_quantity: document.getElementById('edit_stock_quantity').value,
-                med_unit: document.getElementById('edit_med_unit').value.trim(),
-                is_active: document.getElementById('edit_is_active').value
+                surgery_id: document.getElementById('edit_surgery_id').value,
+                surgery_name: document.getElementById('edit_surgery_name').value,
+                surgery_type_id: document.getElementById('edit_surgery_type_id').value,
+                surgery_price: document.getElementById('edit_surgery_price').value,
+                is_available: document.getElementById('edit_is_available').value
             };
 
             try {
-                const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
-                    operation: 'updateMedicine',
+                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                    operation: 'updateSurgery',
                     json: JSON.stringify(data)
                 });
 
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Medicine updated successfully');
+                    alert('Surgery updated successfully');
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to update medicine');
+                    alert(resData.message || 'Failed to update surgery');
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating medicine');
+                alert('Error updating surgery');
             }
         });
     }
 
-    await loadMedicineTypes();
-    await loadMedicines();
+    await loadSurgeryTypes();
+    await loadSurgeries();
+
 });

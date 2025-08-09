@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/require_auth.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
@@ -80,43 +82,36 @@ class Medicines
         ]);
     }
 
-    function getMedicine($data)
+    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
     {
         include 'connection-pdo.php';
-        $sql = "SELECT m.med_id, m.med_name, m.med_type_id, mt.med_type_name, m.unit_price, m.stock_quantity, m.med_unit, m.is_active
-                FROM tbl_medicine m
-                JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
-                WHERE m.med_id = :med_id";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':med_id', $data['med_id']);
-        $stmt->execute();
-        $medicine = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($medicine) {
-            echo json_encode(['success' => true, 'medicine' => $medicine]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Medicine not found']);
-        }
-    }
 
-    function updateMedicine($data)
-    {
-        include 'connection-pdo.php';
-        $sql = "UPDATE tbl_medicine
-                SET med_name = :med_name, med_type_id = :med_type_id, unit_price = :unit_price, stock_quantity = :stock_quantity, med_unit = :med_unit, is_active = :is_active
-                WHERE med_id = :med_id";
+        $sql = "
+            UPDATE tbl_medicine
+            SET med_name = :med_name,
+                med_type_id = :med_type_id,
+                unit_price = :unit_price,
+                stock_quantity = :stock_quantity,
+                med_unit = :med_unit,
+                is_active = :is_active
+            WHERE med_id = :med_id
+        ";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':med_id', $data['med_id']);
-        $stmt->bindParam(':med_name', $data['med_name']);
-        $stmt->bindParam(':med_type_id', $data['med_type_id']);
-        $stmt->bindParam(':unit_price', $data['unit_price']);
-        $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
-        $stmt->bindParam(':med_unit', $data['med_unit']);
-        $stmt->bindParam(':is_active', $data['is_active']);
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Medicine updated']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Update failed']);
-        }
+        $stmt->bindParam(':med_name', $med_name);
+        $stmt->bindParam(':med_type_id', $med_type_id);
+        $stmt->bindParam(':unit_price', $unit_price);
+        $stmt->bindParam(':stock_quantity', $stock_quantity);
+        $stmt->bindParam(':med_unit', $med_unit);
+        $stmt->bindParam(':is_active', $is_active);
+        $stmt->bindParam(':med_id', $med_id);
+
+        $success = $stmt->execute();
+
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
+        ]);
     }
 }
 
@@ -147,10 +142,14 @@ switch ($operation) {
     case 'getTypes':
         $med->getTypes();
         break;
-    case 'getMedicine':
-        $med->getMedicine($data);
-        break;
     case 'updateMedicine':
-        $med->updateMedicine($data);
+        $med_id = $data['med_id'];
+        $med_name = $data['med_name'];
+        $med_type_id = $data['med_type_id'];
+        $unit_price = $data['unit_price'];
+        $stock_quantity = $data['stock_quantity'];
+        $med_unit = $data['med_unit'];
+        $is_active = $data['is_active'];
+        $med->updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active);
         break;
 }

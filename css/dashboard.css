@@ -1,27 +1,243 @@
+/* Base layout */
 body {
-            min-height: 100vh;
-            display: flex;
-        }
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+}
 
-        .sidebar {
-            width: 250px;
-            background-color: #343a40;
-            color: white;
-        }
+header {
+    z-index: 1000;
+    position: sticky;
+    top: 0;
+}
+/* Main layout */
+#page-container {
+    display: flex;
+    flex-grow: 1;
+}
 
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-            padding: 1rem;
-            display: block;
-        }
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: #343a40;
+    color: white;
+    transition: width 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%;
+    z-index: 1000;
+}
 
-        .sidebar a:hover {
-            background-color: #495057;
-        }
+/* Sidebar links */
+#sidebar-links a {
+    color: white;
+    text-decoration: none;
+    padding: 1rem;
+    display: block;
+    white-space: nowrap;
+    opacity: 1;
+    transform: translateX(0);
+    transition: 
+        opacity 0.2s ease 0.15s,
+        transform 0.2s ease 0.15s,
+        visibility 0.2s ease 0.15s;
+    visibility: visible;
+}
 
-        .content {
-            flex-grow: 1;
-            padding: 2rem;
-            background-color: #f8f9fa;
-        }
+#sidebar-links a:hover {
+    background-color: #495057;
+}
+
+/* Collapse behavior */
+.sidebar.collapsed {
+    width: 60px; /* Enough to show hamburger + logout button */
+    margin-left: -250px;
+}
+
+.sidebar.collapsed #sidebar-links a {
+    opacity: 0;
+    transform: translateX(-15px);
+    visibility: hidden;
+    transition: 
+        opacity 0.1s ease,
+        transform 0.1s ease,
+        visibility 0.1s ease;
+}
+
+/* Logout button */
+#logout-btn {
+    width: 100%;
+}
+
+/* Logout Button Container */
+.sidebar .mt-auto {
+    opacity: 1;
+    transform: translateX(0);
+    visibility: visible;
+    transition: 
+        opacity 0.2s ease 0.15s,
+        transform 0.2s ease 0.15s,
+        visibility 0.2s ease 0.15s;
+}
+
+
+/* Hide logout button smoothly in collapsed */
+.sidebar.collapsed .mt-auto {
+    opacity: 0;
+    transform: translateX(-15px);
+    visibility: hidden;
+    transition: 
+        opacity 0.1s ease,
+        transform 0.1s ease,
+        visibility 0.1s ease;
+}
+
+/* Text smoothly hides in collapsed state */
+.sidebar.collapsed a {
+    opacity: 0;
+    transform: translateX(-20px);
+    pointer-events: none;
+}
+
+/* Content Styles */
+.content {
+    margin-left: 0;
+    transition: all 0.3s;
+    width: calc(100% - 250px);
+}
+
+.content.expanded {
+    margin-left: 0;
+    width: 100%;
+}
+
+/* Hamburger Button Styles */
+#hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 2px;
+    background-color: #333;
+    transition: all 0.3s ease;
+}
+
+/* Card Styles for Lab Technician */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+/* Table Styles for Lab Technician */
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Form Styles for Lab Technician */
+.form-label {
+    font-weight: 500;
+}
+
+/* Modal Styles - Softer styling */
+.modal-content {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: rgba(91, 155, 213, 0.05);
+    border-bottom: 1px solid rgba(91, 155, 213, 0.1);
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    background-color: rgba(248, 249, 250, 0.7);
+    border-top: 1px solid rgba(222, 226, 230, 0.5);
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Content area */
+.content {
+    flex-grow: 1;
+    padding: 2rem;
+    background-color: #f8f9fa;
+}
+
+/* Hamburger button styling */
+#hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 3px;
+    background-color: #212529; /* Dark line for white background */
+    border-radius: 2px;
+}
+
+#hamburger-btn:hover .hamburger-line {
+    background-color: #039890; /* Change color on hover if desired */
+}
+
+/* Hide all sidebar text and content when sidebar is collapsed */
+#sidebar.collapsed,
+#sidebar.collapsed * {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+}
+
+/* Hide the entire accordion body when sidebar is collapsed */
+#sidebar.collapsed .accordion-collapse,
+#sidebar.collapsed .accordion-body {
+    display: none !important;
+}
+
+/* Accordion smooth transition */
+.accordion-collapse {
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+    max-height: 0;
+}
+
+/* When expanded */
+.accordion-collapse.show {
+    max-height: 500px; /* Adjust based on expected content height */
+}
+

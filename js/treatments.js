@@ -1,7 +1,129 @@
 console.log('treatments.js is working');
-const baseApiUrl = 'http://localhost/hospital_billing-master/api';
+const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+
 // Load treatment list and populate category select
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check for user authentication
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+        console.error('No user data found. Redirecting to login.');
+        window.location.href = '../index.html';
+        return;
+    }
+
+    // Load Sidebar
+    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+    try {
+        const sidebarResponse = await axios.get('../components/sidebar.html');
+        sidebarPlaceholder.innerHTML = sidebarResponse.data;
+
+        const sidebarElement = document.getElementById('sidebar');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Restore sidebar collapsed state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebarElement.classList.add('collapsed');
+        }
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebarElement.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
+        });
+
+        // Log out Logic
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    await axios.post(`${baseApiUrl}/logout.php`);
+                    localStorage.removeItem('user');
+                    window.location.href = '../index.html';
+                } catch (error) {
+                    console.error('Logout failed: ', error);
+                    alert('Logout failed. Please try again.');
+                }
+            });
+        }
+
+        // Load permissions and populate sidebar
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+                operation: 'getUserPermissions',
+                json: JSON.stringify({ user_id: user.user_id })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                renderModules(data.permissions);
+            }
+        } catch (error) {
+            console.error('Failed to load permissions: ', error);
+        }
+    } catch (err) {
+        console.error('Failed to load sidebar: ', err);
+    }
+    
+    // Function to render sidebar modules
+    function renderModules(permissions) {
+        const moduleMap = {
+            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
+            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
+            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
+            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
+            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
+            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
+            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
+            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
+        };
+
+        const inventoryMap = {
+            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
+            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
+            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
+            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
+            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
+        };
+
+        const sidebarLinks = document.getElementById('sidebar-links');
+        const accordionBody = document.querySelector('#invCollapse .accordion-body');
+
+        // Standalone
+        permissions.forEach(permission => {
+            if (moduleMap[permission]) {
+                const { label, link } = moduleMap[permission];
+                const a = document.createElement('a');
+                a.href = link.startsWith('#') ? `../module/${link}` : link;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                sidebarLinks.appendChild(a);
+            }
+        });
+
+        // inventory modules
+        let inventoryShown = false;
+
+        permissions.forEach(permission => {
+            if (inventoryMap[permission]) {
+                inventoryShown = true;
+
+                const { label, link } = inventoryMap[permission];
+                const a = document.createElement('a');
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+                a.textContent = label;
+                accordionBody.appendChild(a);
+            }
+        });
+
+        if (!inventoryShown) {  
+            const inventoryAccordionItem = document.querySelector('.accordion-item');
+            if (inventoryAccordionItem) {
+                inventoryAccordionItem.style.display = 'none';
+            }
+        }
+    }
+
     // Load treatment list
     const tableBody = document.getElementById('treatment-list');
     if (!tableBody) {
@@ -74,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 treatment_category_id: document.getElementById('treatment_category_id').value
             };
             try {
-                const response = await axios.post('http://localhost/hospital_billing-master/api/get-treatments.php', {
+                const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
                     operation: 'addTreatment',
                     json: JSON.stringify(data)
                 });
@@ -139,7 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     select.innerHTML += `<option value="${cat.treatment_category_id}" ${cat.treatment_category_id == selectedId ? 'selected' : ''}>${cat.category_name}</option>`;
                 });
             }
-        } catch {}
+        } catch { }
     }
     // Update button logic
     tableBody.addEventListener('click', async (e) => {

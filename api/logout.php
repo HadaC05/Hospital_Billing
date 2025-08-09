@@ -1,6 +1,5 @@
 <?php
 session_start(); // resumes to be cleared
-session_unset(); // clears all session variables
 session_destroy(); // ends entire session
 
 header('Access-Control-Allow-Origin: *');

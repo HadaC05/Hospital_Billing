@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 04, 2025 at 02:28 PM
+-- Generation Time: Aug 09, 2025 at 08:30 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -385,24 +385,27 @@ CREATE TABLE `tbl_medicine` (
   `med_name` varchar(100) NOT NULL,
   `med_type_id` int(11) NOT NULL,
   `med_unit` varchar(50) NOT NULL,
-  `is_active` tinyint(1) NOT NULL
+  `is_active` tinyint(1) NOT NULL,
+  `stock_quantity` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_medicine`
 --
 
-INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `med_unit`, `is_active`) VALUES
-(1, 8.50, 'Amoxicillin', 1, 'capsule', 1),
-(2, 18.00, 'Cefuroxime', 1, 'tablet', 1),
-(3, 2.50, 'Paracetamol', 2, 'tablet', 1),
-(4, 4.00, 'Ibuprofen', 2, 'tablet', 1),
-(5, 5.00, 'Mefenamic Acid', 2, 'tablet', 1),
-(6, 10.00, 'Aluminum Hydroxide', 4, '10mL', 1),
-(7, 6.50, 'Cetirizine', 5, 'tablet', 1),
-(8, 25.00, 'Povidone Iodine', 6, 'bottle (60mL)', 1),
-(9, 15.00, 'Salbutamol', 7, 'nebulizer dose', 1),
-(10, 12.00, 'Acyclovir', 8, 'tablet', 1);
+INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `med_unit`, `is_active`, `stock_quantity`) VALUES
+(1, 8.50, 'Amoxicillin', 1, 'capsule', 1, 0),
+(2, 18.00, 'Cefuroxime', 1, 'tablet', 1, 0),
+(3, 2.50, 'Paracetamol', 2, 'tablet', 1, 0),
+(4, 4.00, 'Ibuprofen', 2, 'tablet', 1, 0),
+(5, 5.00, 'Mefenamic Acid', 2, 'tablet', 1, 0),
+(6, 10.00, 'Aluminum Hydroxide', 4, '10mL', 1, 10),
+(7, 6.50, 'Cetirizine', 5, 'tablet', 1, 0),
+(8, 25.00, 'Povidone Iodine', 6, 'bottle (60mL)', 1, 0),
+(9, 15.00, 'Salbutamol', 7, 'nebulizer dose', 1, 0),
+(10, 11.00, 'Acyclovir', 8, 'tablet', 1, 30),
+(11, 5.00, 'Metformin', 3, 'tablet', 1, 50),
+(12, 5.00, 'Omeprazole', 4, 'tablet', 1, 25);
 
 -- --------------------------------------------------------
 
@@ -565,7 +568,8 @@ INSERT INTO `tbl_surgery` (`surgery_id`, `surgery_name`, `surgery_type_id`, `sur
 (8, 'Cesarean Section', 6, 80000.00, 1),
 (9, 'Hysterectomy', 6, 90000.00, 1),
 (10, 'Prostate Surgery', 7, 85000.00, 1),
-(11, 'Rhinoplasty', 8, 60000.00, 1);
+(11, 'Rhinoplasty', 8, 60000.00, 1),
+(12, 'Hernia Repair', 1, 15000.00, 1);
 
 -- --------------------------------------------------------
 
@@ -828,6 +832,7 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (4, 12, 1),
 (5, 9, 1),
 (6, 8, 1),
+(6, 3, 1),
 (7, 11, 1),
 (8, 6, 1),
 (8, 7, 1),
@@ -1238,7 +1243,7 @@ ALTER TABLE `tbl_medication_item`
 -- AUTO_INCREMENT for table `tbl_medicine`
 --
 ALTER TABLE `tbl_medicine`
-  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine_type`
@@ -1280,7 +1285,7 @@ ALTER TABLE `tbl_service_type`
 -- AUTO_INCREMENT for table `tbl_surgery`
 --
 ALTER TABLE `tbl_surgery`
-  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `tbl_surgery_procedure`
