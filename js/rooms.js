@@ -1,10 +1,6 @@
 console.log('rooms.js is working');
-<<<<<<< HEAD
 const baseApiUrl = 'http://localhost/hospital_billing/api';
-=======
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
 
->>>>>>> tads_branch
 // Load room list and populate room types in a single DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -66,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
+
     // Function to render sidebar modules
     function renderModules(permissions) {
         const moduleMap = {
@@ -120,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        if (!inventoryShown) {  
+        if (!inventoryShown) {
             const inventoryAccordionItem = document.querySelector('.accordion-item');
             if (inventoryAccordionItem) {
                 inventoryAccordionItem.style.display = 'none';

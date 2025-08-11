@@ -1,7 +1,7 @@
 console.log('patients.js is working');
 
 // Use relative path for API URL to avoid cross-origin issues
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
+
     // Function to render sidebar modules
     function renderModules(permissions) {
         const moduleMap = {
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        if (!inventoryShown) {  
+        if (!inventoryShown) {
             const inventoryAccordionItem = document.querySelector('.accordion-item');
             if (inventoryAccordionItem) {
                 inventoryAccordionItem.style.display = 'none';
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 patients.forEach(patient => {
                     const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
-                    
+
                     const row = `
                         <tr>
                             <td>${patient.patient_id}</td>
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Patient Details
     async function loadPatientDetails(patientId) {
         currentPatientId = patientId;
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-patients.php`, {
                 operation: 'getPatientDetails',
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Display patient info
                 const patientInfoElement = document.getElementById('patient-info');
                 const birthDate = new Date(patient.birthdate).toLocaleDateString();
-                
+
                 patientInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname}</h4>
@@ -228,16 +228,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display admissions
                 const admissionListElement = document.getElementById('admission-list');
-                
+
                 if (admissions.length === 0) {
                     admissionListElement.innerHTML = '<tr><td colspan="6" class="text-center">No admissions found.</td></tr>';
                 } else {
                     admissionListElement.innerHTML = '';
-                    
+
                     admissions.forEach(admission => {
                         const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                         const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-                        
+
                         const row = `
                             <tr>
                                 <td>${admission.admission_id}</td>
@@ -256,16 +256,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display insurance policies
                 const insuranceListElement = document.getElementById('insurance-list');
-                
+
                 if (insurance.length === 0) {
                     insuranceListElement.innerHTML = '<tr><td colspan="5" class="text-center">No insurance policies found.</td></tr>';
                 } else {
                     insuranceListElement.innerHTML = '';
-                    
+
                     insurance.forEach(policy => {
                         const startDate = new Date(policy.start_date).toLocaleDateString();
                         const endDate = new Date(policy.end_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${policy.policy_number}</td>
@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Admission Details
     async function loadAdmissionDetails(admissionId) {
         currentAdmissionId = admissionId;
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-patients.php`, {
                 operation: 'getAdmissionDetails',
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const admissionInfoElement = document.getElementById('admission-info');
                 const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                 const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-                
+
                 admissionInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>Admission #${admission.admission_id}</h4>
@@ -332,15 +332,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display medications
                 const medicationsListElement = document.getElementById('medications-list');
-                
+
                 if (medications.length === 0) {
                     medicationsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No medications found.</td></tr>';
                 } else {
                     medicationsListElement.innerHTML = '';
-                    
+
                     medications.forEach(medication => {
                         const recordDate = new Date(medication.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${medication.medication_id}</td>
@@ -353,15 +353,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display lab tests
                 const labtestsListElement = document.getElementById('labtests-list');
-                
+
                 if (labtests.length === 0) {
                     labtestsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No lab tests found.</td></tr>';
                 } else {
                     labtestsListElement.innerHTML = '';
-                    
+
                     labtests.forEach(labtest => {
                         const recordDate = new Date(labtest.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${labtest.patient_lab_id}</td>
@@ -374,15 +374,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display surgeries
                 const surgeriesListElement = document.getElementById('surgeries-list');
-                
+
                 if (surgeries.length === 0) {
                     surgeriesListElement.innerHTML = '<tr><td colspan="2" class="text-center">No surgeries found.</td></tr>';
                 } else {
                     surgeriesListElement.innerHTML = '';
-                    
+
                     surgeries.forEach(surgery => {
                         const recordDate = new Date(surgery.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${surgery.patient_surgery_id}</td>
@@ -395,15 +395,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display treatments
                 const treatmentsListElement = document.getElementById('treatments-list');
-                
+
                 if (treatments.length === 0) {
                     treatmentsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No treatments found.</td></tr>';
                 } else {
                     treatmentsListElement.innerHTML = '';
-                    
+
                     treatments.forEach(treatment => {
                         const recordDate = new Date(treatment.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${treatment.patient_treatment_id}</td>
@@ -416,15 +416,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display invoices
                 const invoicesListElement = document.getElementById('invoices-list');
-                
+
                 if (invoices.length === 0) {
                     invoicesListElement.innerHTML = '<tr><td colspan="5" class="text-center">No invoices found.</td></tr>';
                 } else {
                     invoicesListElement.innerHTML = '';
-                    
+
                     invoices.forEach(invoice => {
                         const invoiceDate = new Date(invoice.invoice_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${invoice.invoice_id}</td>

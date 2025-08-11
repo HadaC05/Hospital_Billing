@@ -2,7 +2,7 @@ console.log('index.js is working');
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    const baseApiUrl = 'http://localhost/Hospital_Billing-cubillan_branch/api';
+    const baseApiUrl = 'http://localhost/hospital_billing/api';
     const loginForm = document.getElementById('loginForm');
 
     if (!loginForm) {

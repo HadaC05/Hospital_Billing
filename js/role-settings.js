@@ -1,7 +1,7 @@
 console.log('role-settings.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/Hospital_Billing-cubillan_branch/api';
+    const baseApiUrl = 'http://localhost/hospital_billing/api';
     const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user) {
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to display permissions for a role
     async function displayPermissions(roleId, rolePermissions, roleName) {
         const container = document.getElementById('permissions-container');
-        
+
         try {
             // Get all available permissions
             const response = await axios.post(`${baseApiUrl}/manage-roles.php`, {
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
             if (data.success) {
                 const allPermissions = data.permissions;
-                
+
                 // Create HTML for permissions
                 let html = `
                     <h5>Permissions for ${roleName}</h5>
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Create checkboxes grouped by category
                 for (const [category, permissionNames] of Object.entries(categories)) {
                     html += `<h6 class="mt-3">${category}</h6>`;
-                    
+
                     permissionNames.forEach(permName => {
                         const permission = allPermissions.find(p => p.name === permName);
                         if (permission) {
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function savePermissions() {
         const form = document.getElementById('permissions-form');
         const roleId = form.dataset.roleId;
-        
+
         // Get all checked permissions
         const checkedPermissions = Array.from(form.querySelectorAll('input[name="permission[]"]:checked'))
             .map(input => input.value);
