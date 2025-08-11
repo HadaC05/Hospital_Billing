@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insurance Approval Panel</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <script src="../js/insurance.js" defer></script>
+</head>
+
+<body class="d-flex flex-column vh-100">
+    <!-- Topbar with hamburger -->
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-dark me-3">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        <h4 class="m-0 text-dark">Insurance Approval Panel</h4>
+    </header>
+
+    <div id="page-container" class="d-flex flex-grow-1">
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Claims</h5>
+                    <div class="d-flex gap-2">
+                        <select id="statusFilter" class="form-select" style="max-width: 200px;">
+                            <option value="PENDING" selected>Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="DENIED">Denied</option>
+                            <option value="ALL">All</option>
+                        </select>
+                        <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Claim ID</th>
+                                        <th>Invoice ID</th>
+                                        <th>Patient</th>
+                                        <th>Provider</th>
+                                        <th>Submitted</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Approved Amount</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="claimsBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">Loading claims...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Approve Modal -->
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="approveForm" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Approve Claim</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="approve_claim_id">
+                    <div class="mb-2">
+                        <label class="form-label">Invoice Total</label>
+                        <input type="text" id="approve_invoice_total" class="form-control" disabled>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Current Covered</label>
+                        <input type="text" id="approve_current_covered" class="form-control" disabled>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Amount Due</label>
+                        <input type="text" id="approve_amount_due" class="form-control" disabled>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Approve Amount</label>
+                        <input type="number" id="approve_amount" class="form-control" min="0" step="0.01" required>
+                        <small class="text-muted">Should not exceed current Amount Due.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Approve</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Deny Modal -->
+    <div class="modal fade" id="denyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Deny Claim</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deny_claim_id">
+                    <p>Are you sure you want to deny this insurance claim?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button id="confirmDenyBtn" class="btn btn-danger">Deny</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+

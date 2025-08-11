@@ -1,13 +1,21 @@
 <!-- sidebar.html -->
-<nav class="sidebar d-flex flex-column vh-100 bg-dark text-white" id="sidebar">
+<nav class="sidebar d-flex flex-column vh-100 text-white" id="sidebar">
+    <!-- Hospital Logo/Brand -->
+    <div class="p-3 border-bottom">
+        <h5 class="d-flex align-items-center">
+            <i class="fas fa-hospital me-2"></i>
+            <span>Hospital Billing</span>
+        </h5>
+    </div>
 
     <!-- accordion -->
     <div class="accordion accordion-flush" id="sidebarAccordion">
-        <div class="accordion-item bg-dark">
+        <div class="accordion-item">
             <h2 class="accordion-header" id="invHeading">
-                <button type="button" class="accordion-button collapsed bg-dark text-white" data-bs-toggle="collapse"
-                    data-bs-target="#invCollapse" aria-expanded="false" aria-controls="invCollapse">Inventory
-                    Modules</button>
+                <button type="button" class="accordion-button collapsed text-white" data-bs-toggle="collapse"
+                    data-bs-target="#invCollapse" aria-expanded="false" aria-controls="invCollapse">
+                    <i class="fas fa-boxes me-2"></i>Inventory Modules
+                </button>
             </h2>
             <div id="invCollapse" class="accordion-collapse collapse" aria-labelledby="invHeading"
                 data-bs-parent="#sidebarAccordion">
@@ -18,15 +26,22 @@
         </div>
     </div>
 
-    <!-- Non grouped -->
+    <!-- Non grouped navigation links -->
     <div class="flex-grow-1 overflow-auto" id="sidebar-links">
-        <div id="sidebar-links" class="mb-3">
-            <!-- Dynamic links will be inserted here -->
-        </div>
+        <!-- Dynamic links will be inserted here by JavaScript -->
     </div>
 
-    <!-- Log out button -->
-    <div class="mt-auto px-3 py-2">
-        <button id="logout-btn" class="btn btn-danger w-100">Logout</button>
+    <!-- User info and logout -->
+    <div class="border-top p-3">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-user-circle fs-4 me-2"></i>
+            <div>
+                <small class="d-block text-muted">Logged in as</small>
+                <span id="user-name">User</span>
+            </div>
+        </div>
+        <button id="logout-btn" class="btn btn-danger w-100">
+            <i class="fas fa-sign-out-alt me-2"></i>Logout
+        </button>
     </div>
 </nav>

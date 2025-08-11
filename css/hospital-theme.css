@@ -1,0 +1,364 @@
+/* Hospital Billing System - Main Theme CSS */
+
+:root {
+  /* Primary color palette - Softer medical theme */
+  --primary-color: #5b9bd5;      /* Softer blue */
+  --primary-light: #f0f5fa;      /* Very light blue background */
+  --primary-dark: #3a6ea5;       /* Muted dark blue for hover states */
+  
+  /* Secondary colors - Softer palette */
+  --secondary-color: #7aba7a;    /* Softer success green */
+  --warning-color: #f2d980;      /* Softer warning yellow */
+  --danger-color: #e88a7d;       /* Softer error/danger red */
+  --info-color: #7da7e8;         /* Softer info blue */
+  
+  /* Neutral colors - Softer palette */
+  --light-gray: #f9fafc;         /* Softer background gray */
+  --medium-gray: #edf0f2;        /* Softer border gray */
+  --dark-gray: #5a6268;          /* Softer text gray */
+  --white: #ffffff;              /* White */
+  
+  /* Typography */
+  --font-family: 'Roboto', 'Segoe UI', sans-serif;
+  --heading-weight: 500;
+  --body-weight: 400;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Borders */
+  --border-radius: 0.375rem;
+  --border-width: 1px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Global Styles */
+body {
+  font-family: var(--font-family);
+  color: var(--dark-gray);
+  background-color: var(--light-gray);
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--heading-weight);
+  color: var(--primary-dark);
+}
+
+/* Links - Softer styling */
+a {
+  color: rgba(91, 155, 213, 0.9);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  color: rgba(74, 124, 165, 0.95);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(74, 124, 165, 0.3);
+}
+
+a:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(91, 155, 213, 0.2);
+}
+
+/* Buttons - Softer styling */
+.btn {
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary {
+  background-color: rgba(91, 155, 213, 0.9);
+  border-color: rgba(91, 155, 213, 0.8);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: rgba(74, 124, 165, 0.9);
+  border-color: rgba(74, 124, 165, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success {
+  background-color: rgba(92, 184, 92, 0.85);
+  border-color: rgba(92, 184, 92, 0.8);
+}
+
+.btn-danger {
+  background-color: rgba(217, 83, 79, 0.85);
+  border-color: rgba(217, 83, 79, 0.8);
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  border-color: var(--warning-color);
+  color: #212529;
+}
+
+.btn-info {
+  background-color: var(--info-color);
+  border-color: var(--info-color);
+  color: white;
+}
+
+/* Cards - Softer styling */
+.card {
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  border: var(--border-width) solid var(--medium-gray);
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.card:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.card-header {
+  background-color: rgba(91, 155, 213, 0.08);
+  border-bottom: var(--border-width) solid var(--medium-gray);
+  font-weight: var(--heading-weight);
+  padding: 0.8rem 1.25rem;
+}
+
+.card-header.bg-primary {
+  background-color: rgba(91, 155, 213, 0.85) !important;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Tables - Softer styling */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  --bs-table-striped-bg: rgba(91, 155, 213, 0.03);
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(91, 155, 213, 0.08);
+  transition: background-color 0.2s ease;
+}
+
+.table th {
+  background-color: rgba(91, 155, 213, 0.12);
+  color: #3a6ea5;
+  font-weight: var(--heading-weight);
+  border-bottom-width: 1px;
+}
+
+/* Forms - Softer styling */
+.form-control {
+  border-color: #d9e2ec;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: rgba(91, 155, 213, 0.5);
+  box-shadow: 0 0 0 0.2rem rgba(91, 155, 213, 0.15);
+}
+
+.form-label {
+  font-weight: 500;
+  color: rgba(90, 90, 90, 0.85);
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* Alerts - Softer styling */
+.alert {
+  border-width: 1px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.alert-primary {
+  background-color: rgba(91, 155, 213, 0.08);
+  border-color: rgba(91, 155, 213, 0.2);
+  color: rgba(45, 95, 135, 0.9);
+}
+
+.alert-success {
+  background-color: rgba(92, 184, 92, 0.08);
+  border-color: rgba(92, 184, 92, 0.2);
+  color: rgba(60, 118, 61, 0.9);
+}
+
+.alert-warning {
+  background-color: rgba(240, 173, 78, 0.08);
+  border-color: rgba(240, 173, 78, 0.2);
+  color: rgba(138, 109, 59, 0.9);
+}
+
+.alert-danger {
+  background-color: rgba(217, 83, 79, 0.08);
+  border-color: rgba(217, 83, 79, 0.2);
+  color: rgba(169, 68, 66, 0.9);
+}
+
+/* Badges - Softer styling */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.badge.bg-primary {
+  background-color: rgba(91, 155, 213, 0.85) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.badge.bg-success {
+  background-color: rgba(92, 184, 92, 0.85) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.badge.bg-danger {
+  background-color: rgba(217, 83, 79, 0.85) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.badge.bg-warning {
+  background-color: rgba(240, 173, 78, 0.85) !important;
+  color: rgba(33, 37, 41, 0.9);
+}
+
+.badge.bg-info {
+  background-color: rgba(91, 192, 222, 0.85) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Login Page - Softer styling */
+.login-card {
+  max-width: 400px;
+  margin: 2rem auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.98);
+}
+
+.login-card .card-body {
+  padding: var(--spacing-xl);
+}
+
+.login-card .card-header {
+  background-color: rgba(91, 155, 213, 0.08);
+  border-bottom: 1px solid rgba(91, 155, 213, 0.1);
+}
+
+.login-icon {
+  color: rgba(91, 155, 213, 0.85);
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.login-icon:hover {
+  color: rgba(74, 124, 165, 0.9);
+  transform: scale(1.03);
+}
+
+/* Dashboard */
+.sidebar {
+  background-color: #4a7ca5 !important; /* Softer blue than primary-dark */
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.sidebar .accordion-button {
+  background-color: #4a7ca5 !important; /* Matching sidebar background */
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.sidebar .accordion-button:not(.collapsed) {
+  background-color: rgba(91, 155, 213, 0.8) !important; /* Semi-transparent primary color */
+}
+
+#sidebar-links a {
+  color: rgba(255, 255, 255, 0.9);
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+}
+
+#sidebar-links a:hover, #sidebar-links a.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 3px solid rgba(255, 255, 255, 0.8);
+  color: white;
+}
+
+/* Hamburger button - Softer styling */
+.hamburger-line {
+  display: block;
+  width: 25px;
+  height: 2px;
+  margin: 5px 0;
+  background-color: rgba(90, 90, 90, 0.75);
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+/* Patient Records - Softer styling */
+.patient-card {
+  transition: all 0.3s ease;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.patient-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  border-color: rgba(91, 155, 213, 0.2);
+}
+
+/* Status indicators - Softer styling */
+.status-active {
+  color: rgba(92, 184, 92, 0.9);
+  text-shadow: 0 0 1px rgba(92, 184, 92, 0.1);
+}
+
+.status-pending {
+  color: rgba(240, 173, 78, 0.9);
+  text-shadow: 0 0 1px rgba(240, 173, 78, 0.1);
+}
+
+.status-inactive {
+  color: rgba(217, 83, 79, 0.85);
+  text-shadow: 0 0 1px rgba(217, 83, 79, 0.1);
+}
+
+/* Medical icons and indicators - Softer styling */
+.medical-icon {
+  color: rgba(91, 155, 213, 0.85);
+  text-shadow: 0 0 1px rgba(91, 155, 213, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    position: fixed;
+    z-index: 1030;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.show {
+    transform: translateX(0);
+  }
+  
+  .content-wrapper {
+    margin-left: 0 !important;
+  }
+}

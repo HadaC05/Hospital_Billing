@@ -2,7 +2,7 @@ console.log('dashboard.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const baseApiUrl = 'http://localhost/hospital_billing/api';
+    const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
     const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user) {
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderModules(permissions) {
         const moduleMap = {
+<<<<<<< HEAD
             'manage_users': { label: 'Manage Users', link: '#' },
             'manage_roles': { label: 'Role Settings', link: '#' },
             'view_admissions': { label: 'Admission Records', link: '#' },
@@ -88,6 +89,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             'approve_insurance': { label: 'Insurance Approval Panel', link: '#' }
         };
 
+=======
+            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
+            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
+            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
+            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
+            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
+            'generate_invoice': { label: 'Invoice Generator', link: 'generate-invoice.html' },
+            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
+            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
+            // Remove or update this line - it's causing the issue for Lab Technician
+            // 'manage_labtests': { label: 'Lab Technician ', link: 'lab-technician.html' },
+        };
+    
+>>>>>>> tads_branch
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -95,10 +110,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
+<<<<<<< HEAD
 
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
+=======
+    
+        const sidebarLinks = document.getElementById('sidebar-links');
+        const accordionBody = document.querySelector('#invCollapse .accordion-body');
+    
+>>>>>>> tads_branch
         // Standalone
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
@@ -107,6 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
                 a.textContent = label;
+<<<<<<< HEAD
                 sidebar.appendChild(a);
             }
         });
@@ -118,6 +141,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (inventoryMap[permission]) {
                 inventoryShown = true;
 
+=======
+                sidebarLinks.appendChild(a); // Changed from sidebar to sidebarLinks
+            }
+        });
+    
+        // inventory modules
+        let inventoryShown = false;
+    
+        permissions.forEach(permission => {
+            if (inventoryMap[permission]) {
+                inventoryShown = true;
+    
+>>>>>>> tads_branch
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
@@ -126,8 +162,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 accordionBody.appendChild(a);
             }
         });
+<<<<<<< HEAD
 
         if (!inventoryShown) {
+=======
+    
+        if (!inventoryShown) {  
+>>>>>>> tads_branch
             const inventoryAccordionItem = document.querySelector('.accordion-item');
             if (inventoryAccordionItem) {
                 inventoryAccordionItem.style.display = 'none';

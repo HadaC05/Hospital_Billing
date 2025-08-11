@@ -4,111 +4,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicine Inventory</title>
+    <title>Hospital Billing System - Medicine Inventory</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/hospital-theme.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="../js/medicine.js"></script>
+    <script src="../js/medicine.js" defer></script>
+    <script src="../js/theme-loader.js" defer></script>
 </head>
 
-<body>
-    <h2>Inventory - Medicines</h2>
-    <div id="medicine-container">
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addMedicineModal">Add New
-            Medicine</button>
-
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>name</th>
-                    <th>Type</th>
-                    <th>Unit Price</th>
-                    <th>Stock</th>
-                    <th>Unit</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="medicine-list"></tbody>
-        </table>
-    </div>
-
-    <!-- // modal for adding medicine -->
-    <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="addMedicineForm" class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Medicine</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control mb-2" id="med_name" placeholder="Medicine Name" required>
-                    <select class="form-select mb-2" id="med_type_id" placeholder="Medicine Type" required></select>
-                    <input type="number" class="form-control mb-2" id="unit_price" placeholder="Unit Price" required>
-                    <input type="number" class="form-control mb-2" id="stock_quantity" placeholder="Stock Quantity"
-                        required>
-                    <input type="text" class="form-control mb-2" id="med_unit" placeholder="Unit (e.g., tablet)"
-                        required>
-                    <select id="is_active" class="form-select">
-                        <option value="1" selected>Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add</button>
-                </div>
-            </form>
+<body class="d-flex flex-column vh-100">
+    <!-- Topbar with hamburger -->
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-primary me-3">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h4 class="m-0"><i class="fas fa-pills me-2 medical-icon"></i>Medicine Inventory</h4>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i> Hospital Billing System</span>
         </div>
-    </div>
+    </header>
 
-    <!-- // modal for editing medicine -->
-    <div class="modal fade" id="editMedicineModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="editMedicineForm">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Edit Medicine</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="edit_med_id">
-                        <div class="mb-3">
-                            <label for="edit_med_name">Name</label>
-                            <input type="text" id="edit_med_name" class="form-control">
+    <!-- Sidebar and Content -->
+    <div id="page-container" class="d-flex flex-grow-1">
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <h2><i class="fas fa-pills me-2 medical-icon"></i>Inventory - Medicines</h2>
+            <div id="medicine-container">
+                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
+                    <i class="fas fa-plus me-2"></i>Add New Medicine</button>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>name</th>
+                            <th>Type</th>
+                            <th>Unit Price</th>
+                            <th>Stock</th>
+                            <th>Unit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medicine-list"></tbody>
+                </table>
+            </div>
+
+            <!-- // modal for adding medicine -->
+            <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form id="addMedicineForm" class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Medicine</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="mb-3">
-                            <label for="edit_med_type_id">Type</label>
-                            <select name="" id="edit_med_type_id" class="form-select" required></select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_unit_price">Price</label>
-                            <input type="number" id="edit_unit_price" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_stock_quantity">Quantity</label>
-                            <input type="text" id="edit_stock_quantity" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_med_unit">Unit</label>
-                            <input type="text" id="edit_med_unit" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_is_active">Status</label>
-                            <select id="edit_is_active" class="form-select" required>
-                                <option value="1">Active</option>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" id="med_name" placeholder="Medicine Name"
+                                required>
+                            <select class="form-select mb-2" id="med_type_id" placeholder="Medicine Type"
+                                required></select>
+                            <input type="number" class="form-control mb-2" id="unit_price" placeholder="Unit Price"
+                                required>
+                            <input type="number" class="form-control mb-2" id="stock_quantity"
+                                placeholder="Stock Quantity" required>
+                            <input type="text" class="form-control mb-2" id="med_unit" placeholder="Unit (e.g., tablet)"
+                                required>
+                            <select id="is_active" class="form-select">
+                                <option value="1" selected>Active</option>
                                 <option value="0">Inactive</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+
+            <!-- // modal for editing medicine -->
+            <div class="modal fade" id="editMedicineModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="editMedicineForm">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Medicine</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="edit_med_id">
+                                <div class="mb-3">
+                                    <label for="edit_med_name">Name</label>
+                                    <input type="text" id="edit_med_name" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_med_type_id">Type</label>
+                                    <select name="" id="edit_med_type_id" class="form-select" required></select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_unit_price">Price</label>
+                                    <input type="number" id="edit_unit_price" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_stock_quantity">Quantity</label>
+                                    <input type="text" id="edit_stock_quantity" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_med_unit">Unit</label>
+                                    <input type="text" id="edit_med_unit" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_is_active">Status</label>
+                                    <select id="edit_is_active" class="form-select" required>
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 </body>
 

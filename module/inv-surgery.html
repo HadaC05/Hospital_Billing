@@ -8,96 +8,111 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="../js/surgery.js"></script>
+    <script src="../js/surgery.js" defer></script>
 
 </head>
 
-<body>
-    <h2>Inventory - Surgery</h2>
-    <div id="surgery-container">
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">Add
-            Surgery</button>
+<body class="d-flex flex-column vh-100">
+    <div id="page-container" class="d-flex flex-grow-1">
+        <!-- Sidebar placeholder -->
+        <div id="sidebar-placeholder"></div>
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="surgery-list"></tbody>
-        </table>
-    </div>
+        <!-- Main content -->
+        <main id="main-content" class="flex-grow-1 p-3">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <button id="hamburger-btn" class="btn btn-sm">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h2>Inventory - Surgery</h2>
+            </header>
+            <div id="surgery-container">
+                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">Add
+                    Surgery</button>
 
-    <!-- Add New Surgery modal -->
-    <div class="modal fade" id="addSurgeryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="addSurgeryForm" class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Surgery</h5>
-                    <button class="btn btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control mb-2" id="surgery_name" placeholder="Surgery Name" required>
-                    <select id="surgery_type_id" class="form-select mb-2"></select>
-                    <input type="number" class="form-control mb-2" id="surgery_price" placeholder="Unit Price" required>
-                    <select id="is_available" class="form-select" required>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="surgery-list"></tbody>
+                </table>
+            </div>
 
-    <!-- edit surgery modal -->
-    <div class="modal fade" id="editSurgeryModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="editSurgeryForm">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Edit Surgery</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="edit_surgery_id">
-                        <div class="mb-3">
-                            <label for="">Name</label>
-                            <input type="text" id="edit_surgery_name" class="form-control" required>
+            <!-- Add New Surgery modal -->
+            <div class="modal fade" id="addSurgeryModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form id="addSurgeryForm" class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Surgery</h5>
+                            <button class="btn btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="mb-3">
-                            <label for="">Type</label>
-                            <select name="" id="edit_surgery_type_id" class="form-select" required></select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="">Price</label>
-                            <input type="number" id="edit_surgery_price" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="">Status</label>
-                            <select id="edit_is_available" class="form-select" required>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" id="surgery_name" placeholder="Surgery Name"
+                                required>
+                            <select id="surgery_type_id" class="form-select mb-2"></select>
+                            <input type="number" class="form-control mb-2" id="surgery_price" placeholder="Unit Price"
+                                required>
+                            <select id="is_available" class="form-select" required>
                                 <option value="1">Active</option>
                                 <option value="0">Inactive</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-    </div>
 
+            <!-- edit surgery modal -->
+            <div class="modal fade" id="editSurgeryModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="editSurgeryForm">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Surgery</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="edit_surgery_id">
+                                <div class="mb-3">
+                                    <label for="">Name</label>
+                                    <input type="text" id="edit_surgery_name" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Type</label>
+                                    <select name="" id="edit_surgery_type_id" class="form-select" required></select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Price</label>
+                                    <input type="number" id="edit_surgery_price" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Status</label>
+                                    <select id="edit_is_available" class="form-select" required>
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 </body>
 
 </html>
