@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar modules renderer
     function renderModules(permissions) {
         const moduleMap = {
+            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -77,7 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
+            'doctor_prescription': { label: 'Doctor Prescription', link: 'doctor-prescription.html' }
         };
 
         const inventoryMap = {
@@ -386,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const printContent = `
             <div class="container mt-4">
                 <div class="text-center mb-4">
-                    <h2>Hospital Management System</h2>
+                    <h2>Hospital Billing System</h2>
                     <h3>Patient Admission Detail</h3>
                     <p>Generated on: ${new Date().toLocaleString()}</p>
                 </div>

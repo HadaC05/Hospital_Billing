@@ -7,10 +7,16 @@
     <title>Invoice Generator</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/hospital-theme.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <link rel="stylesheet" href="../css/dashboard.css">
     <script src="../js/invoice.js" defer></script>
+    <script src="../js/theme-loader.js" defer></script>
 </head>
 
 <body class="d-flex flex-column vh-100">
@@ -38,14 +44,16 @@
                             </div>
                             <div class="card-body">
                                 <form id="findAdmissionForm" class="row gy-2 gx-2 align-items-end">
-                                    <div class="col-12 col-md-3">
-                                        <label for="admission_id" class="form-label">Admission ID</label>
-                                        <input type="number" class="form-control" id="admission_id" placeholder="e.g., 1023" required />
+                                    <div class="col-12 col-md-4">
+                                        <label for="patient_select" class="form-label">Select Patient</label>
+                                        <select class="form-select" id="patient_select" required>
+                                            <option value="">Loading patients...</option>
+                                        </select>
                                     </div>
                                     <div class="col-12 col-md-3">
                                         <button class="btn btn-success w-100" id="loadItemsBtn" type="submit">Load Billable Items</button>
                                     </div>
-                                    <div class="col-12 col-md-6 text-md-end">
+                                    <div class="col-12 col-md-5 text-md-end">
                                         <span id="admissionMeta" class="text-muted"></span>
                                     </div>
                                 </form>

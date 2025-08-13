@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar modules renderer
     function renderModules(permissions) {
         const moduleMap = {
+            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -117,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Elements
     const findAdmissionForm = document.getElementById('findAdmissionForm');
-    const admissionIdInput = document.getElementById('admission_id');
+    const patientSelect = document.getElementById('patient_select');
     const itemsBody = document.getElementById('billableItemsBody');
     const itemRowTemplate = document.getElementById('itemRowTemplate');
     const subtotalText = document.getElementById('subtotalText');
@@ -131,6 +132,81 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentAdmissionId = null;
     let currentItems = [];
     let lastCreatedInvoiceId = null;
+    let patientsData = [];
+
+    // Load patients for dropdown
+    async function loadPatients() {
+        try {
+            const response = await axios.get(`${apiBase}/get-patients.php`, {
+                params: {
+                    operation: 'getPatients',
+                    json: JSON.stringify({})
+                }
+            });
+            const data = response.data;
+            if (data.success && Array.isArray(data.patients)) {
+                // Now we need to get admissions for each patient
+                const patientsWithAdmissions = await getPatientsWithAdmissions(data.patients);
+                patientsData = patientsWithAdmissions;
+                populatePatientDropdown(patientsWithAdmissions);
+            } else {
+                patientSelect.innerHTML = '<option value="">No patients found</option>';
+            }
+        } catch (error) {
+            console.error('Error loading patients:', error);
+            patientSelect.innerHTML = '<option value="">Error loading patients</option>';
+        }
+    }
+
+    // Get patients with their admissions
+    async function getPatientsWithAdmissions(patients) {
+        const patientsWithAdmissions = [];
+        
+        for (const patient of patients) {
+            try {
+                const response = await axios.get(`${apiBase}/get-patients.php`, {
+                    params: {
+                        operation: 'getPatientDetails',
+                        json: JSON.stringify({ patient_id: patient.patient_id })
+                    }
+                });
+                
+                if (response.data.success && response.data.admissions && response.data.admissions.length > 0) {
+                    // Add each admission as a separate option
+                    response.data.admissions.forEach(admission => {
+                        patientsWithAdmissions.push({
+                            admission_id: admission.admission_id,
+                            first_name: patient.patient_fname,
+                            last_name: patient.patient_lname,
+                            middle_name: patient.patient_mname,
+                            admission_date: admission.admission_date,
+                            patient_id: patient.patient_id,
+                            status: admission.status
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error(`Error loading admissions for patient ${patient.patient_id}:`, error);
+            }
+        }
+        
+        return patientsWithAdmissions;
+    }
+
+    // Populate patient dropdown
+    function populatePatientDropdown(patients) {
+        patientSelect.innerHTML = '<option value="">Select a patient...</option>';
+        patients.forEach(patient => {
+            const option = document.createElement('option');
+            option.value = patient.admission_id;
+            option.textContent = `${patient.first_name} ${patient.last_name} - Admission #${patient.admission_id}`;
+            option.dataset.patientInfo = JSON.stringify(patient);
+            patientSelect.appendChild(option);
+        });
+    }
+
+    // Initialize patient loading
+    loadPatients();
 
     function peso(amount) {
         return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -229,7 +305,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cov = Number(item.coverage_amount || 0);
             const pay = line - cov;
             return `<tr>
-                <td>${i + 1}</td>
                 <td>${item.service_type_name || item.type || ''}</td>
                 <td>${item.svc_reference_id || ''}</td>
                 <td>${item.description || ''}</td>
@@ -253,7 +328,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <table class="table table-bordered table-sm">
                     <thead>
                         <tr>
-                            <th>#</th>
                             <th>Type</th>
                             <th>Reference</th>
                             <th>Description</th>
@@ -282,9 +356,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (findAdmissionForm) {
         findAdmissionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = admissionIdInput.value.trim();
-            if (!id) return;
-            currentAdmissionId = Number(id);
+            const selectedAdmissionId = patientSelect.value;
+            if (!selectedAdmissionId) return;
+            
+            // Get patient info from selected option
+            const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+            const patientInfo = JSON.parse(selectedOption.dataset.patientInfo || '{}');
+            
+            // Update admission meta display
+            admissionMeta.textContent = `Patient: ${patientInfo.first_name} ${patientInfo.last_name} | Admission Date: ${patientInfo.admission_date || 'N/A'}`;
+            
+            currentAdmissionId = Number(selectedAdmissionId);
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
             itemsBody.innerHTML = '<tr><td colspan="9" class="text-center">Loading...</td></tr>';
@@ -303,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetBtn.addEventListener('click', () => {
             currentAdmissionId = null;
             currentItems = [];
-            admissionIdInput.value = '';
+            patientSelect.value = '';
             admissionMeta.textContent = '';
             itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No items loaded.</td></tr>';
             subtotalText.textContent = '0.00';

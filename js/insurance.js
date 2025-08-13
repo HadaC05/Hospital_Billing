@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderModules(permissions) {
         const moduleMap = {
+            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },

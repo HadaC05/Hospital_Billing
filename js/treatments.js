@@ -1,13 +1,34 @@
 console.log('treatments.js is working');
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
 
-// Load treatment list and populate category select
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check for user authentication
+    const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
     const user = JSON.parse(localStorage.getItem('user'));
+
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
+        return;
+    }
+
+    // Check if user has permission to manage treatments
+    try {
+        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('manage_treatments')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../dashboard.html';
         return;
     }
 
@@ -16,21 +37,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const sidebarResponse = await axios.get('../components/sidebar.html');
         sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
         const sidebarElement = document.getElementById('sidebar');
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const logoutBtn = document.getElementById('logout-btn');
-
+        const pageContainer = document.getElementById('page-container');
+        
         // Restore sidebar collapsed state
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             sidebarElement.classList.add('collapsed');
+            pageContainer.classList.add('expanded');
         }
-
+        
         hamburgerBtn.addEventListener('click', () => {
             sidebarElement.classList.toggle('collapsed');
+            pageContainer.classList.toggle('expanded');
             localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
         });
-
+        
         // Log out Logic
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
@@ -44,28 +67,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+        
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
 
-        // Load permissions and populate sidebar
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user.user_id })
-            });
-
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (error) {
-            console.error('Failed to load permissions: ', error);
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
-    // Function to render sidebar modules
+
+    // Function to render navigation modules based on permissions
     function renderModules(permissions) {
         const moduleMap = {
+            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -74,9 +94,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
         };
-
+    
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -84,47 +103,59 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
-
+    
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Standalone
+    
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+    
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
-
-        // inventory modules
+    
+        // Add inventory modules to accordion
         let inventoryShown = false;
-
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
-
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-box me-2"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'inv-treatments.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {  
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 
-    // Load treatment list
+    // Load treatment list and populate category select
     const tableBody = document.getElementById('treatment-list');
     if (!tableBody) {
         console.error('Treatment table body not found.');
@@ -136,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             params: {
                 operation: 'getTreatments',
                 json: JSON.stringify({})
-            }
+            }   
         });
         const data = response.data;
         if (data.success && Array.isArray(data.treatments)) {
