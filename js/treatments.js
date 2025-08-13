@@ -1,7 +1,7 @@
 console.log('treatments.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+    const baseApiUrl = 'http://localhost/hospital_billing/api';
     const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user) {

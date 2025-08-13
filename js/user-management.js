@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = '../dashboard.html';
             return;
         }
-        
+
         // Store permissions for sidebar rendering
         window.userPermissions = data.permissions;
     } catch (error) {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
         };
-    
+
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -101,14 +101,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
-    
+
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
-    
+
         // Clear existing links
         if (sidebarLinks) sidebarLinks.innerHTML = '';
         if (accordionBody) accordionBody.innerHTML = '';
-    
+
         // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
@@ -117,18 +117,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
                 a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
+
                 // Highlight current page
                 if (link === 'user-management.html') {
                     a.classList.add('bg-primary', 'bg-opacity-25');
                 }
-                
+
                 if (sidebarLinks) {
                     sidebarLinks.appendChild(a);
                 }
             }
         });
-    
+
         // Add inventory modules to accordion
         let inventoryShown = false;
         permissions.forEach(permission => {
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
                 a.innerHTML = `<i class="fas fa-box me-2"></i>${label}`;
-                
+
                 if (accordionBody) {
                     accordionBody.appendChild(a);
                 }
