@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating medicine');
+                alert('Error updating medicine type');
             }
         });
     }
