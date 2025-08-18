@@ -78,7 +78,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // add surgery type
-
     if (typeForm) {
         typeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -101,12 +100,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     alert('Surgery Type added successfully');
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add medicine type');
+                    alert(resData.message || 'Failed to add surgery type');
                 }
 
             } catch (error) {
                 console.error(error);
-                alert('Error adding medicine type');
+                alert('Error adding surgery type');
             }
 
         });
@@ -128,11 +127,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
     })
-
     // edit form submit
     if (editForm) {
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
 
             const data = {
                 surgery_type_id: document.getElementById('edit_surgery_type_id').value,
@@ -141,6 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             try {
+
 
                 const response = await axios.post(`${baseApiUrl}/get-surgery-types.php`, {
                     operation: 'updateSurgeryType',
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating medicine');
+                alert('Error updating surgery');
             }
         })
     }

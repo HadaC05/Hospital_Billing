@@ -69,7 +69,7 @@ class Surgery_Types
 
         $success = $stmt->execute();
 
-        json_encode([
+        echo json_encode([
             'success' => $success,
             'message' => $success ? 'Updated successfully' : 'Failed to update'
         ]);
