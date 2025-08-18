@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/require_auth.php';
+// require_once __DIR__ . '/require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
@@ -66,7 +66,7 @@ class Medicines
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT med_type_id, med_type_name
+            SELECT med_type_id, med_type_name, description
             FROM tbl_medicine_type
             ORDER BY med_type_name ASC
         ";
