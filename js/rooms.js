@@ -163,9 +163,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Initialize room functionality
-    loadRooms();
-    loadRoomTypesForFilter();
-    setupEventListeners();
+    await loadRoomTypesForFilter();
+    await loadRooms();
+    await loadRoomTypes();
+    setupRoomTypeEventListeners();
+    
+    // Ensure Bootstrap modals are properly initialized
+    setTimeout(() => {
+        const addModal = document.getElementById('addRoomTypeModal');
+        const editModal = document.getElementById('editRoomTypeModal');
+        
+        if (addModal && !addModal._modal) {
+            addModal._modal = new bootstrap.Modal(addModal);
+        }
+        if (editModal && !editModal._modal) {
+            editModal._modal = new bootstrap.Modal(editModal);
+        }
+        
+        console.log('Room type modals initialized');
+    }, 500);
     
     // Add Actions column to table header if it doesn't exist
     const tableHeader = document.querySelector('table thead tr');
@@ -178,6 +194,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Global variables
 let rooms = [];
 let filteredRooms = [];
+let roomTypes = [];
+let filteredRoomTypes = [];
 // Load room list
 async function loadRooms() {
     const tableBody = document.getElementById('room-list');
@@ -457,4 +475,203 @@ async function populateModalTypeSelect(selectedId) {
     } catch (error) {
         console.error('Error loading room types:', error);
     }
+}
+
+// Room Type Management Functions
+async function loadRoomTypes() {
+    const tableBody = document.getElementById('room-type-list');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '<tr><td colspan="4">Loading room types...</td></tr>';
+    
+    try {
+        const response = await axios.get(`${baseApiUrl}/get-room-types.php`, {
+            params: { operation: 'getTypes', json: JSON.stringify({}) }
+        });
+        
+        if (response.data.success && Array.isArray(response.data.types)) {
+            roomTypes = response.data.types;
+            filteredRoomTypes = roomTypes;
+            renderRoomTypeTable();
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="4">${response.data.message || 'No data found.'}</td></tr>`;
+        }
+    } catch (error) {
+        console.error('Error loading room types:', error);
+        tableBody.innerHTML = '<tr><td colspan="4">Failed to load room types.</td></tr>';
+    }
+}
+
+function renderRoomTypeTable() {
+    const tableBody = document.getElementById('room-type-list');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    if (filteredRoomTypes.length > 0) {
+        filteredRoomTypes.forEach(type => {
+            const statusBadge = type.is_active == 1 ? 
+                '<span class="status-badge active">Active</span>' : 
+                '<span class="status-badge inactive">Inactive</span>';
+            
+            const row = `
+                <tr>
+                    <td>${type.room_type_name}</td>
+                    <td>${type.description || 'No description'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit-room-type-btn" data-id="${type.room_type_id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-room-type-btn" data-id="${type.room_type_id}" data-name="${type.room_type_name}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    } else {
+        tableBody.innerHTML = '<tr><td colspan="4">No room types found.</td></tr>';
+    }
+}
+
+function applyRoomTypeFilters() {
+    const searchTerm = document.getElementById('searchRoomType').value.toLowerCase();
+    
+    filteredRoomTypes = roomTypes.filter(type => {
+        return type.room_type_name.toLowerCase().includes(searchTerm) ||
+               (type.description && type.description.toLowerCase().includes(searchTerm));
+    });
+    
+    renderRoomTypeTable();
+}
+
+function setupRoomTypeEventListeners() {
+    // Manual event listener for Add New Room Type button (fallback)
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-bs-target="#addRoomTypeModal"]')) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('addRoomTypeModal'));
+            modal.show();
+        }
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchRoomType');
+    if (searchInput) {
+        searchInput.addEventListener('input', applyRoomTypeFilters);
+    }
+    
+    // Add room type form
+    const addRoomTypeForm = document.getElementById('addRoomTypeForm');
+    if (addRoomTypeForm) {
+        addRoomTypeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                room_type_name: document.getElementById('room_type_name').value.trim(),
+                description: document.getElementById('room_type_description').value.trim(),
+                is_active: document.getElementById('room_type_status').value
+            };
+            
+            try {
+                const response = await axios.post(`${baseApiUrl}/get-room-types.php`, {
+                    operation: 'addRoomType',
+                    json: JSON.stringify(formData)
+                });
+                
+                if (response.data.success) {
+                    alert('Room type added successfully');
+                    bootstrap.Modal.getInstance(document.getElementById('addRoomTypeModal')).hide();
+                    addRoomTypeForm.reset();
+                    await loadRoomTypes();
+                    await loadRoomTypesForFilter(); // Refresh dropdown
+                } else {
+                    alert(response.data.message || 'Failed to add room type');
+                }
+            } catch (error) {
+                console.error('Error adding room type:', error);
+                alert('Error adding room type');
+            }
+        });
+    }
+    
+    // Edit room type form
+    const editRoomTypeForm = document.getElementById('editRoomTypeForm');
+    if (editRoomTypeForm) {
+        editRoomTypeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                room_type_id: document.getElementById('edit_room_type_id').value,
+                room_type_name: document.getElementById('edit_room_type_name').value.trim(),
+                description: document.getElementById('edit_room_type_description').value.trim(),
+                is_active: document.getElementById('edit_room_type_status').value
+            };
+            
+            try {
+                const response = await axios.post(`${baseApiUrl}/get-room-types.php`, {
+                    operation: 'updateRoomType',
+                    json: JSON.stringify(formData)
+                });
+                
+                if (response.data.success) {
+                    alert('Room type updated successfully');
+                    bootstrap.Modal.getInstance(document.getElementById('editRoomTypeModal')).hide();
+                    await loadRoomTypes();
+                    await loadRoomTypesForFilter(); // Refresh dropdown
+                } else {
+                    alert(response.data.message || 'Failed to update room type');
+                }
+            } catch (error) {
+                console.error('Error updating room type:', error);
+                alert('Error updating room type');
+            }
+        });
+    }
+    
+    // Edit and delete button handlers
+    document.addEventListener('click', async (e) => {
+        if (e.target.closest('.edit-room-type-btn')) {
+            const btn = e.target.closest('.edit-room-type-btn');
+            const typeId = btn.dataset.id;
+            const roomType = roomTypes.find(type => type.room_type_id == typeId);
+            
+            if (roomType) {
+                document.getElementById('edit_room_type_id').value = roomType.room_type_id;
+                document.getElementById('edit_room_type_name').value = roomType.room_type_name;
+                document.getElementById('edit_room_type_description').value = roomType.description || '';
+                document.getElementById('edit_room_type_status').value = roomType.is_active;
+                
+                new bootstrap.Modal(document.getElementById('editRoomTypeModal')).show();
+            }
+        }
+        
+        if (e.target.closest('.delete-room-type-btn')) {
+            const btn = e.target.closest('.delete-room-type-btn');
+            const typeId = btn.dataset.id;
+            const typeName = btn.dataset.name;
+            
+            if (confirm(`Are you sure you want to delete room type "${typeName}"?`)) {
+                try {
+                    const response = await axios.post(`${baseApiUrl}/get-room-types.php`, {
+                        operation: 'deleteRoomType',
+                        json: JSON.stringify({ room_type_id: typeId })
+                    });
+                    
+                    if (response.data.success) {
+                        alert('Room type deleted successfully');
+                        await loadRoomTypes();
+                        await loadRoomTypesForFilter(); // Refresh dropdown
+                    } else {
+                        alert(response.data.message || 'Failed to delete room type');
+                    }
+                } catch (error) {
+                    console.error('Error deleting room type:', error);
+                    alert('Error deleting room type');
+                }
+            }
+        }
+    });
 }
