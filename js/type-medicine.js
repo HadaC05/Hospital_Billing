@@ -142,10 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Medicine updated successfullly');
+                    alert('Medicine Type updated successfullly');
                     window.location.reload();
                 } else {
-                    alert(resData.message || ' Failed to update medicine');
+                    alert(resData.message || ' Failed to update medicine type');
                 }
             } catch (error) {
                 console.error(error);
