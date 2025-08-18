@@ -2,7 +2,7 @@ console.log('index.js is working');
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    const baseApiUrl = 'http://localhost/Hospital_Billing-cubillan_branch/api';
+    const baseApiUrl = 'api';
     const loginForm = document.getElementById('loginForm');
 
     if (!loginForm) {
@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 localStorage.setItem('user', JSON.stringify(data));
                 window.location.href = './components/dashboard.html';
+            } else {
+                document.getElementById('error-message').textContent = data.message || 'Invalid username or password.';
             }
         } catch (error) {
             console.error('Axios error: ', error);

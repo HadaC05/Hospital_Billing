@@ -3,7 +3,7 @@
  * This script loads the Font Awesome icons and applies the hospital theme to all pages
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Add Font Awesome if not already present
     if (!document.querySelector('link[href*="fontawesome"]')) {
         const fontAwesomeCSS = document.createElement('link');
@@ -13,15 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
         fontAwesomeCSS.crossOrigin = 'anonymous';
         document.head.appendChild(fontAwesomeCSS);
     }
-    
+
     // Add hospital theme CSS if not already present
     if (!document.querySelector('link[href*="hospital-theme.css"]')) {
         const themeCSS = document.createElement('link');
         themeCSS.rel = 'stylesheet';
-        themeCSS.href = '/Hospital_Billing-cubillan_branch/css/hospital-theme.css';
+        themeCSS.href = '/hospital_billing/css/hospital-theme.css';
         document.head.appendChild(themeCSS);
     }
-    
+
     // Apply theme enhancements
     applyThemeEnhancements();
 });
@@ -32,19 +32,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function applyThemeEnhancements() {
     // Enhance login page
     enhanceLoginPage();
-    
+
     // Enhance sidebar
     enhanceSidebar();
-    
+
     // Enhance tables
     enhanceTables();
-    
+
     // Enhance cards
     enhanceCards();
-    
+
     // Enhance buttons
     enhanceButtons();
-    
+
     // Add medical icons to appropriate elements
     addMedicalIcons();
 }
@@ -55,22 +55,22 @@ function applyThemeEnhancements() {
 function enhanceLoginPage() {
     const loginForm = document.getElementById('loginForm');
     if (!loginForm) return;
-    
+
     // Replace the SVG with Font Awesome icon
     const svgIcon = document.querySelector('.bi-person-circle');
     if (svgIcon) {
         const iconContainer = svgIcon.parentElement;
         svgIcon.remove();
-        
+
         const icon = document.createElement('i');
         icon.className = 'fas fa-user-md login-icon text-center d-block mx-auto';
         iconContainer.prepend(icon);
     }
-    
+
     // Add icons to input fields
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-    
+
     if (usernameInput) {
         usernameInput.parentElement.classList.add('input-group');
         const prependDiv = document.createElement('div');
@@ -83,7 +83,7 @@ function enhanceLoginPage() {
         prependDiv.appendChild(prependSpan);
         usernameInput.parentElement.insertBefore(prependDiv, usernameInput);
     }
-    
+
     if (passwordInput) {
         passwordInput.parentElement.classList.add('input-group');
         const prependDiv = document.createElement('div');
@@ -96,7 +96,7 @@ function enhanceLoginPage() {
         prependDiv.appendChild(prependSpan);
         passwordInput.parentElement.insertBefore(prependDiv, passwordInput);
     }
-    
+
     // Enhance login card
     const loginCard = document.querySelector('.card');
     if (loginCard) {
@@ -110,7 +110,7 @@ function enhanceLoginPage() {
 function enhanceSidebar() {
     const sidebarLinks = document.querySelectorAll('#sidebar-links a');
     if (sidebarLinks.length === 0) return;
-    
+
     // Map of link text to Font Awesome icons
     const iconMap = {
         'Dashboard': 'fa-chart-line',
@@ -128,29 +128,29 @@ function enhanceSidebar() {
         'Settings': 'fa-cog',
         'Users': 'fa-users'
     };
-    
+
     // Add icons to sidebar links
     sidebarLinks.forEach(link => {
         const linkText = link.textContent.trim();
         const iconClass = iconMap[linkText] || 'fa-circle'; // Default icon
-        
+
         const icon = document.createElement('i');
         icon.className = `fas ${iconClass} me-2`;
         link.prepend(icon);
     });
-    
+
     // Enhance logout button
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt me-2"></i> Logout';
     }
-    
+
     // Enhance accordion headers
     const accordionButtons = document.querySelectorAll('.accordion-button');
     accordionButtons.forEach(button => {
         const buttonText = button.textContent.trim();
         let iconClass = 'fa-th-list'; // Default icon
-        
+
         if (buttonText.includes('Inventory')) {
             iconClass = 'fa-boxes';
         } else if (buttonText.includes('Reports')) {
@@ -158,7 +158,7 @@ function enhanceSidebar() {
         } else if (buttonText.includes('Admin')) {
             iconClass = 'fa-user-shield';
         }
-        
+
         const icon = document.createElement('i');
         icon.className = `fas ${iconClass} me-2`;
         button.prepend(icon);
@@ -171,11 +171,11 @@ function enhanceSidebar() {
 function enhanceTables() {
     const tables = document.querySelectorAll('.table');
     if (tables.length === 0) return;
-    
+
     tables.forEach(table => {
         // Add Bootstrap table classes if not present
         table.classList.add('table-striped', 'table-hover');
-        
+
         // Enhance action buttons in tables
         const actionButtons = table.querySelectorAll('button, .btn');
         actionButtons.forEach(button => {
@@ -198,19 +198,19 @@ function enhanceTables() {
 function enhanceCards() {
     const cards = document.querySelectorAll('.card');
     if (cards.length === 0) return;
-    
+
     cards.forEach(card => {
         // Add shadow and border radius if not already styled
         if (!card.classList.contains('login-card')) {
             card.classList.add('shadow-sm');
         }
-        
+
         // Enhance card headers with icons based on content
         const cardHeader = card.querySelector('.card-header');
         if (cardHeader && !cardHeader.querySelector('i')) {
             const headerText = cardHeader.textContent.trim().toLowerCase();
             let iconClass = 'fa-list'; // Default icon
-            
+
             if (headerText.includes('patient')) {
                 iconClass = 'fa-hospital-user';
             } else if (headerText.includes('billing') || headerText.includes('invoice')) {
@@ -228,7 +228,7 @@ function enhanceCards() {
             } else if (headerText.includes('treatment')) {
                 iconClass = 'fa-stethoscope';
             }
-            
+
             const icon = document.createElement('i');
             icon.className = `fas ${iconClass} me-2`;
             cardHeader.prepend(icon);
@@ -242,14 +242,14 @@ function enhanceCards() {
 function enhanceButtons() {
     const buttons = document.querySelectorAll('button, .btn');
     if (buttons.length === 0) return;
-    
+
     buttons.forEach(button => {
         // Skip buttons that already have icons
         if (button.querySelector('i') || button.querySelector('svg')) return;
-        
+
         const buttonText = button.textContent.trim().toLowerCase();
         let iconClass = null;
-        
+
         // Determine icon based on button text
         if (buttonText.includes('add') || buttonText.includes('new') || buttonText.includes('create')) {
             iconClass = 'fa-plus';
@@ -276,7 +276,7 @@ function enhanceButtons() {
         } else if (buttonText.includes('submit')) {
             iconClass = 'fa-paper-plane';
         }
-        
+
         // Add icon if one was determined
         if (iconClass) {
             const icon = document.createElement('i');
@@ -296,7 +296,7 @@ function addMedicalIcons() {
         const status = element.textContent.trim().toLowerCase();
         let iconClass = 'fa-circle'; // Default icon
         let statusClass = '';
-        
+
         if (status.includes('active') || status.includes('approved')) {
             iconClass = 'fa-check-circle';
             statusClass = 'status-active';
@@ -307,7 +307,7 @@ function addMedicalIcons() {
             iconClass = 'fa-times-circle';
             statusClass = 'status-inactive';
         }
-        
+
         const icon = document.createElement('i');
         icon.className = `fas ${iconClass} me-1`;
         if (statusClass) {
@@ -316,16 +316,16 @@ function addMedicalIcons() {
         }
         element.prepend(icon);
     });
-    
+
     // Add medical icons to headers
     const headers = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
     headers.forEach(header => {
         // Skip headers that already have icons
         if (header.querySelector('i') || header.querySelector('svg')) return;
-        
+
         const headerText = header.textContent.trim().toLowerCase();
         let iconClass = null;
-        
+
         if (headerText.includes('patient')) {
             iconClass = 'fa-hospital-user';
         } else if (headerText.includes('billing') || headerText.includes('invoice')) {
@@ -351,7 +351,7 @@ function addMedicalIcons() {
         } else if (headerText.includes('user')) {
             iconClass = 'fa-users';
         }
-        
+
         // Add icon if one was determined
         if (iconClass) {
             const icon = document.createElement('i');

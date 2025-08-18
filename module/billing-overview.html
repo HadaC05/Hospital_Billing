@@ -37,6 +37,15 @@
         <!-- Main Content -->
         <main class="content p-3 flex-grow-1">
             <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Billing Overview</h2>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="searchBilling" class="form-control" placeholder="Search billing records..." style="width: 250px;">
+                        <button class="btn btn-primary" onclick="generateReport()">
+                            <i class="fas fa-file-pdf me-2"></i>Generate Report
+                        </button>
+                    </div>
+                </div>
                 <div class="row g-3 align-items-end mb-3">
                     <div class="col-12 col-md-3">
                         <label class="form-label">Start Date</label>

@@ -1,6 +1,6 @@
 console.log('surgery.js is working');
 
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+const baseApiUrl = '../api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -8,6 +8,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
+        return;
+    }
+
+    // Check if user has permission to manage surgeries
+    try {
+        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('manage_surgeries')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../components/dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../components/dashboard.html';
         return;
     }
 
@@ -45,28 +68,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Load permissions and populate sidebar
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user.user_id })
-            });
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
 
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (error) {
-            console.error('Failed to load permissions: ', error);
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
+
     // Function to render sidebar modules
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -75,7 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
         };
 
         const inventoryMap = {
@@ -89,39 +107,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
-        // Standalone
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
 
-        // inventory modules
+        // Add inventory modules to accordion
         let inventoryShown = false;
-
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
-
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'inv-surgery.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {  
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 
@@ -133,6 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editTypeSelect = document.getElementById('edit_surgery_type_id');
 
     let surgeries = [];
+    let filteredSurgeries = [];
 
     // Load Surgery Types
     async function loadSurgeryTypes() {
@@ -149,7 +190,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).join('');
 
                 if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value = "">Select Type</option>` + options;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                
+                // Populate filter dropdown
+                const filterTypeSelect = document.getElementById('filterSurgeryType');
+                if (filterTypeSelect) {
+                    filterTypeSelect.innerHTML = `<option value="">All Types</option>` + options;
+                }
             } else {
                 typeSelect.innerHTML = '<option value="">No types available</option>';
             }
@@ -179,32 +226,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (data.success && Array.isArray(data.surgeries)) {
                 surgeries = data.surgeries;
-
-                if (surgeries.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4"> No surgeries found. </td></tr>';
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                surgeries.forEach(surg => {
-                    const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
-
-                    const row = `
-                        <tr>
-                            <td>${surg.surgery_name}</td>
-                            <td>${surg.surgery_type_name}</td>
-                            <td>${surg.surgery_price}</td>
-                            <td>${isActive}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning edit-btn" data-id="${surg.surgery_id}">Edit</button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
+                filteredSurgeries = surgeries;
+                renderSurgeryTable();
             } else {
-                tableBody.innerHTML = `<tr><td colspan="4">Failed to load surgeries.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found.'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading surgeries: ', error);
@@ -212,17 +237,97 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Render surgery table with current filtered data
+    function renderSurgeryTable() {
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = '';
+        
+        if (filteredSurgeries.length > 0) {
+            filteredSurgeries.forEach(surg => {
+                const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
+                const statusBadge = surg.is_available == 1 ? 
+                    '<span class="status-badge active">Active</span>' : 
+                    '<span class="status-badge inactive">Inactive</span>';
+
+                const row = `
+                    <tr>
+                        <td>${surg.surgery_name}</td>
+                        <td>${surg.surgery_type_name}</td>
+                        <td>${surg.surgery_price}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning edit-btn" data-id="${surg.surgery_id}">Edit</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="4">No surgeries found.</td></tr>';
+        }
+    }
+
+    // Search and Filter Functions
+    function applySurgeryFilters() {
+        const searchTerm = document.getElementById('searchSurgery').value.toLowerCase();
+        const typeFilter = document.getElementById('filterSurgeryType').value;
+        const statusFilter = document.getElementById('filterSurgeryStatus').value;
+
+        filteredSurgeries = surgeries.filter(surg => {
+            const matchesSearch = surg.surgery_name.toLowerCase().includes(searchTerm) ||
+                                surg.surgery_type_name.toLowerCase().includes(searchTerm);
+            const matchesType = !typeFilter || surg.surgery_type_id == typeFilter;
+            const matchesStatus = statusFilter === '' || surg.is_available == statusFilter;
+
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        renderSurgeryTable();
+    }
+
+    // Event listeners for search and filters
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchSurgery');
+        const typeFilter = document.getElementById('filterSurgeryType');
+        const statusFilter = document.getElementById('filterSurgeryStatus');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applySurgeryFilters);
+        }
+        if (typeFilter) {
+            typeFilter.addEventListener('change', applySurgeryFilters);
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', applySurgeryFilters);
+        }
+    });
+
 
     // Add Surgery
     if (surgForm) {
         surgForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Temporarily enable the status field to get its value
+            const statusField = document.getElementById('is_available');
+            statusField.disabled = false;
+            
+            const surgeryName = document.getElementById('surgery_name').value.trim();
+            const surgeryTypeId = document.getElementById('surgery_type_id').value;
+            const surgeryPrice = document.getElementById('surgery_price').value;
+            
+            if (!surgeryName || !surgeryTypeId || !surgeryPrice) {
+                alert('Please fill in all required fields.');
+                statusField.disabled = true; // Re-disable if validation fails
+                return;
+            }
+            
             const data = {
-                surgery_name: document.getElementById('surgery_name').value.trim(),
-                surgery_type_id: document.getElementById('surgery_type_id').value,
-                surgery_price: document.getElementById('surgery_price').value,
-                is_available: document.getElementById('is_available').value
+                surgery_name: surgeryName,
+                surgery_type_id: surgeryTypeId,
+                surgery_price: surgeryPrice,
+                is_available: statusField.value
             };
 
             try {
@@ -237,11 +342,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     alert('Surgery added successfully');
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add medicine');
+                    alert(resData.message || 'Failed to add surgery');
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error adding medicine');
+                alert('Error adding surgery');
+            } finally {
+                // Re-disable the status field
+                statusField.disabled = true;
             }
         });
     }

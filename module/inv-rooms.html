@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Inventory</title>
+    <title>Hospital Billing System - Room Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
@@ -21,12 +21,13 @@
 <body class="d-flex flex-column vh-100">
     <!-- Topbar with hamburger -->
     <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
-        <button id="hamburger-btn" class="btn btn-outline-dark me-3">
-            <span class="hamburger-line"></span>
-            <span class="hamburger-line"></span>
-            <span class="hamburger-line"></span>
+        <button id="hamburger-btn" class="btn btn-outline-primary me-3">
+            <i class="fas fa-bars"></i>
         </button>
-        <h4 class="m-0 text-dark">Room Inventory</h4>
+        <h4 class="m-0"><i class="fas fa-bed me-2 medical-icon"></i>Room Inventory</h4>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i> Hospital Billing System</span>
+        </div>
     </header>
 
     <!-- Sidebar and Content -->
@@ -37,7 +38,23 @@
         <main class="content p-3 flex-grow-1">
             <h2>Inventory - Rooms</h2>
             <div id="room-container">
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addRoomModal">Add New Room</button>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+                        <i class="fas fa-plus me-2"></i>Add New Room</button>
+                    
+                    <div class="d-flex gap-2">
+                        <input type="text" id="searchRoom" class="form-control" placeholder="Search rooms..." style="width: 250px;">
+                        <select id="filterRoomType" class="form-select" style="width: 200px;">
+                            <option value="">All Types</option>
+                        </select>
+                        <select id="filterRoomStatus" class="form-select" style="width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -64,7 +81,7 @@
                     <select class="form-select mb-2" id="room_type_id" required></select>
                     <input type="number" class="form-control mb-2" id="daily_rate" placeholder="Daily Rate" required>
                     <input type="number" class="form-control mb-2" id="max_occupancy" placeholder="Max Occupancy" required>
-                    <select id="is_available" class="form-select">
+                    <select id="is_available" class="form-select" disabled>
                         <option value="1" selected>Available</option>
                         <option value="0">Not Available</option>
                     </select>

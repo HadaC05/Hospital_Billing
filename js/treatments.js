@@ -1,7 +1,7 @@
 console.log('treatments.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+    const baseApiUrl = '../api';
     const user = JSON.parse(localStorage.getItem('user'));
 
     if (!user) {
@@ -19,16 +19,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = response.data;
         if (!data.success || !data.permissions.includes('manage_treatments')) {
             alert('You do not have permission to access this page.');
-            window.location.href = '../dashboard.html';
+            window.location.href = '../components/dashboard.html';
             return;
         }
-        
+
         // Store permissions for sidebar rendering
         window.userPermissions = data.permissions;
     } catch (error) {
         console.error('Error checking permissions:', error);
         alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../dashboard.html';
+        window.location.href = '../components/dashboard.html';
         return;
     }
 
@@ -41,19 +41,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const pageContainer = document.getElementById('page-container');
-        
+
         // Restore sidebar collapsed state
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             sidebarElement.classList.add('collapsed');
             pageContainer.classList.add('expanded');
         }
-        
+
         hamburgerBtn.addEventListener('click', () => {
             sidebarElement.classList.toggle('collapsed');
             pageContainer.classList.toggle('expanded');
             localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
         });
-        
+
         // Log out Logic
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        
+
         // Set user name in sidebar
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
         };
-    
+
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -103,14 +103,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
-    
+
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
-    
+
         // Clear existing links
         if (sidebarLinks) sidebarLinks.innerHTML = '';
         if (accordionBody) accordionBody.innerHTML = '';
-    
+
         // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
@@ -119,13 +119,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
                 a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
+
                 if (sidebarLinks) {
                     sidebarLinks.appendChild(a);
                 }
             }
         });
-    
+
         // Add inventory modules to accordion
         let inventoryShown = false;
         permissions.forEach(permission => {
@@ -133,14 +133,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-box me-2"></i>${label}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
                 
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+
                 // Highlight current page
                 if (link === 'inv-treatments.html') {
                     a.classList.add('bg-primary', 'bg-opacity-25');
                 }
-                
+
                 if (accordionBody) {
                     accordionBody.appendChild(a);
                 }
@@ -167,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             params: {
                 operation: 'getTreatments',
                 json: JSON.stringify({})
-            }   
+            }
         });
         const data = response.data;
         if (data.success && Array.isArray(data.treatments)) {

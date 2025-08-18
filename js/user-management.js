@@ -1,6 +1,6 @@
 console.log('user-management.js is working');
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/Hospital_Billing-cubillan_branch/api';
+    const baseApiUrl = '../api';
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = '../dashboard.html';
             return;
         }
-        
+
         // Store permissions for sidebar rendering
         window.userPermissions = data.permissions;
     } catch (error) {
@@ -39,19 +39,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const pageContainer = document.getElementById('page-container');
-        
+
         // Restore sidebar collapsed state
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             sidebarElement.classList.add('collapsed');
             pageContainer.classList.add('expanded');
         }
-        
+
         hamburgerBtn.addEventListener('click', () => {
             sidebarElement.classList.toggle('collapsed');
             pageContainer.classList.toggle('expanded');
             localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
         });
-        
+
         // Log out Logic
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        
+
         // Set user name in sidebar
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
         };
-    
+
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -101,14 +101,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
-    
+
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
-    
+
         // Clear existing links
         if (sidebarLinks) sidebarLinks.innerHTML = '';
         if (accordionBody) accordionBody.innerHTML = '';
-    
+
         // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
@@ -117,18 +117,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
                 a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
+
                 // Highlight current page
                 if (link === 'user-management.html') {
                     a.classList.add('bg-primary', 'bg-opacity-25');
                 }
-                
+
                 if (sidebarLinks) {
                     sidebarLinks.appendChild(a);
                 }
             }
         });
-    
+
         // Add inventory modules to accordion
         let inventoryShown = false;
         permissions.forEach(permission => {
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 a.href = `../module/${link}`;
                 a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
                 a.innerHTML = `<i class="fas fa-box me-2"></i>${label}`;
-                
+
                 if (accordionBody) {
                     accordionBody.appendChild(a);
                 }
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.edit-user-btn').forEach(button => {
             button.addEventListener('click', () => loadUserDetails(button.dataset.userId));
         });
-        
+
         document.querySelectorAll('.delete-user-btn').forEach(button => {
             button.addEventListener('click', () => {
                 document.getElementById('confirmDeleteUserBtn').dataset.userId = button.dataset.userId;
@@ -234,18 +234,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     function populateRoleDropdowns(roles) {
         const addRoleSelect = document.getElementById('roleId');
         const editRoleSelect = document.getElementById('editRoleId');
-        
+
         // Clear existing options
         addRoleSelect.innerHTML = '<option value="">Select a role</option>';
         editRoleSelect.innerHTML = '<option value="">Select a role</option>';
-        
+
         // Add role options
         roles.forEach(role => {
             const addOption = document.createElement('option');
             addOption.value = role.role_id;
             addOption.textContent = role.role_name;
             addRoleSelect.appendChild(addOption);
-            
+
             const editOption = document.createElement('option');
             editOption.value = role.role_id;
             editOption.textContent = role.role_name;
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to load user details for editing
     async function loadUserDetails(userId) {
         try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php?operation=getUserById&json=${JSON.stringify({user_id: userId})}`);
+            const response = await axios.get(`${baseApiUrl}/manage-users.php?operation=getUserById&json=${JSON.stringify({ user_id: userId })}`);
             const data = response.data;
             if (data.success) {
                 const user = data.user;
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editMobileNumber').value = user.mobile_number || '';
                 document.getElementById('editRoleId').value = user.role_id;
-                
+
                 // Open edit modal
                 new bootstrap.Modal(document.getElementById('editUserModal')).show();
             } else {
@@ -293,30 +293,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             mobile_number: document.getElementById('mobileNumber').value.trim(),
             role_id: document.getElementById('roleId').value
         };
-        
+
         // Validate form
         if (!formData.first_name || !formData.last_name || !formData.username || !formData.password || !formData.email || !formData.role_id) {
             alert('Please fill in all required fields.');
             return;
         }
-        
+
         try {
+            console.log('Sending add user request:', formData);
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'addUser',
-                json: formData
+                json: JSON.stringify(formData)
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+            console.log('Add user response:', response.data);
+            
             const data = response.data;
             if (data.success) {
                 alert('User added successfully!');
                 document.getElementById('addUserForm').reset();
-                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                if (modal) {
+                    modal.hide();
+                } else {
+                    document.getElementById('addUserModal').style.display = 'none';
+                }
                 loadUsers();
             } else {
                 alert('Failed to add user: ' + data.message);
             }
         } catch (error) {
             console.error('Error adding user:', error);
-            alert('Failed to add user. Please try again.');
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+            }
+            alert('Failed to add user. Please check console for details.');
         }
     }
 
@@ -334,51 +350,88 @@ document.addEventListener('DOMContentLoaded', async () => {
             mobile_number: document.getElementById('editMobileNumber').value.trim(),
             role_id: document.getElementById('editRoleId').value
         };
-        
+
         // Validate form
         if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.role_id) {
             alert('Please fill in all required fields.');
             return;
         }
-        
+
         try {
+            console.log('Sending update user request:', formData);
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'updateUser',
-                json: formData
+                json: JSON.stringify(formData)
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+            console.log('Update user response:', response.data);
+            
             const data = response.data;
             if (data.success) {
                 alert('User updated successfully!');
-                bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                if (modal) {
+                    modal.hide();
+                } else {
+                    document.getElementById('editUserModal').style.display = 'none';
+                }
                 loadUsers();
             } else {
                 alert('Failed to update user: ' + data.message);
             }
         } catch (error) {
             console.error('Error updating user:', error);
-            alert('Failed to update user. Please try again.');
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+            }
+            alert('Failed to update user. Please check console for details.');
         }
     }
 
     // Function to delete a user
     async function deleteUser() {
         const userId = document.getElementById('confirmDeleteUserBtn').dataset.userId;
+        if (!userId) {
+            alert('No user selected for deletion.');
+            return;
+        }
+        
         try {
+            console.log('Sending delete user request for user ID:', userId);
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'deleteUser',
-                json: { user_id: userId }
+                json: JSON.stringify({ user_id: userId })
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+            console.log('Delete user response:', response.data);
+            
             const data = response.data;
             if (data.success) {
                 alert('User deleted successfully!');
-                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteUserModal'));
+                if (modal) {
+                    modal.hide();
+                } else {
+                    document.getElementById('deleteUserModal').style.display = 'none';
+                }
                 loadUsers();
             } else {
                 alert('Failed to delete user: ' + data.message);
             }
         } catch (error) {
             console.error('Error deleting user:', error);
-            alert('Failed to delete user. Please try again.');
+            if (error.response) {
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
+            }
+            alert('Failed to delete user. Please check console for details.');
         }
     }
 });

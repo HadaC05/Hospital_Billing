@@ -10,6 +10,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Check if user has permission to generate invoices
+    try {
+        const response = await axios.post(`${apiBase}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('generate_invoice')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../components/dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../components/dashboard.html';
+        return;
+    }
+
     // Sidebar loader (reuse pattern used elsewhere)
     const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
     try {
@@ -41,18 +64,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Load permissions and populate sidebar links
-        try {
-            const response = await axios.post(`${apiBase}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user?.user_id })
-            });
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (permErr) {
-            console.warn('Could not load permissions for sidebar', permErr);
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
+
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (e) {
         console.error('Failed to load sidebar', e);
@@ -61,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar modules renderer
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -84,35 +104,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'invoice-generator.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
 
+        // Add inventory modules to accordion
         let inventoryShown = false;
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
+                
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 
@@ -131,6 +177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentAdmissionId = null;
     let currentItems = [];
+    let allItems = [];
+    let filteredItems = [];
     let lastCreatedInvoiceId = null;
     let patientsData = [];
 
@@ -252,6 +300,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         printPreviewBtn.disabled = false;
     }
 
+    function applyItemsFilter() {
+        const searchTerm = document.getElementById('searchItems')?.value.toLowerCase() || '';
+        const typeFilter = document.getElementById('filterItemType')?.value || '';
+        
+        filteredItems = allItems.filter(item => {
+            const matchesSearch = !searchTerm || 
+                (item.service_type_name && item.service_type_name.toLowerCase().includes(searchTerm)) ||
+                (item.description && item.description.toLowerCase().includes(searchTerm)) ||
+                (item.item_description && item.item_description.toLowerCase().includes(searchTerm)) ||
+                (item.svc_reference_id && item.svc_reference_id.toString().includes(searchTerm));
+            
+            const matchesType = !typeFilter || 
+                (item.service_type_name && item.service_type_name === typeFilter) ||
+                (item.type && item.type === typeFilter);
+            
+            return matchesSearch && matchesType;
+        });
+        
+        currentItems = filteredItems;
+        renderItems(filteredItems);
+    }
+
+    function populateItemTypeFilter(items) {
+        const typeFilter = document.getElementById('filterItemType');
+        if (!typeFilter) return;
+        
+        const types = [...new Set(items.map(item => item.service_type_name || item.type).filter(Boolean))];
+        typeFilter.innerHTML = '<option value="">All Types</option>' + 
+            types.map(type => `<option value="${type}">${type}</option>`).join('');
+    }
+
     async function loadBillableItems(admissionId) {
         try {
             const response = await axios.post(`${apiBase}/invoice.php`, {
@@ -260,9 +339,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (response.data && response.data.success) {
-                currentItems = response.data.items || [];
+                allItems = response.data.items || [];
+                currentItems = [...allItems];
+                filteredItems = [...allItems];
                 const a = response.data.admission || {};
                 admissionMeta.textContent = a && a.admission_id ? `Admission #${a.admission_id} • ${a.patient_lname}, ${a.patient_fname} • ${new Date(a.admission_date).toLocaleDateString()}` : '';
+                populateItemTypeFilter(allItems);
                 renderItems(currentItems);
             } else {
                 itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Failed to load items.</td></tr>';
@@ -385,6 +467,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetBtn.addEventListener('click', () => {
             currentAdmissionId = null;
             currentItems = [];
+            allItems = [];
+            filteredItems = [];
             patientSelect.value = '';
             admissionMeta.textContent = '';
             itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No items loaded.</td></tr>';
@@ -393,7 +477,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             totalDueText.textContent = '0.00';
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
+            
+            // Reset filters
+            const searchItems = document.getElementById('searchItems');
+            const filterItemType = document.getElementById('filterItemType');
+            if (searchItems) searchItems.value = '';
+            if (filterItemType) filterItemType.innerHTML = '<option value="">All Types</option>';
         });
+    }
+
+    // Setup filter event listeners
+    const searchItemsInput = document.getElementById('searchItems');
+    const filterItemTypeSelect = document.getElementById('filterItemType');
+    
+    if (searchItemsInput) {
+        searchItemsInput.addEventListener('input', applyItemsFilter);
+    }
+    
+    if (filterItemTypeSelect) {
+        filterItemTypeSelect.addEventListener('change', applyItemsFilter);
     }
 
     if (printPreviewBtn) {

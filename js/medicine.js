@@ -1,6 +1,6 @@
 console.log('medicine.js is working');
 
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+const baseApiUrl = '../api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -8,6 +8,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
+        return;
+    }
+
+    // Check if user has permission to manage medicine
+    try {
+        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('manage_medicine')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../components/dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../components/dashboard.html';
         return;
     }
 
@@ -45,28 +68,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Load permissions and populate sidebar
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user.user_id })
-            });
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
 
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (error) {
-            console.error('Failed to load permissions: ', error);
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
+
     // Function to render sidebar modules
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -75,7 +94,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
         };
 
         const inventoryMap = {
@@ -89,39 +107,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
-        // Standalone
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
 
-        // inventory modules
+        // Add inventory modules to accordion
         let inventoryShown = false;
-
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
-
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'inv-medicine.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {  
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 
@@ -133,6 +173,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editTypeSelect = document.getElementById('edit_med_type_id');
 
     let medicines = [];
+    let medicineTypes = [];
+    let filteredMedicines = [];
 
     // Load Medicine Types
     async function loadMedicineTypes() {
@@ -152,6 +194,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                
+                // Populate filter dropdown
+                const filterTypeSelect = document.getElementById('filterMedicineType');
+                if (filterTypeSelect) {
+                    filterTypeSelect.innerHTML = `<option value="">All Types</option>` + options;
+                }
             } else {
                 typeSelect.innerHTML = '<option value="">No types available</option>';
             }
@@ -181,32 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (data.success && Array.isArray(data.medicines)) {
                 medicines = data.medicines;
-
-                if (medicines.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7">No medicines found. </td></tr>';
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                medicines.forEach(med => {
-                    const isActive = med.is_active == 1 ? 'Active' : 'Inactive';
-
-                    const row = `
-                    <tr>
-                        <td>${med.med_name}</td>
-                        <td>${med.med_type_name}</td>
-                        <td>${med.unit_price}</td>
-                        <td>${med.stock_quantity}</td>
-                        <td>${med.med_unit}</td>
-                        <td>${isActive}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning edit-btn" data-id="${med.med_id}">Edit</button>
-                        </td>
-                    </tr>
-                `;
-                    tableBody.innerHTML += row;
-                });
+                filteredMedicines = medicines;
+                renderMedicineTable();
             } else {
                 tableBody.innerHTML = `<tr><td colspan="7">${data.message || 'No data found.'}</td></tr>`;
             }
@@ -216,24 +240,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Add Medicine
-    if (medForm) {
-        medForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // Render medicine table with current filtered data
+    function renderMedicineTable() {
+        if (!tableBody) return;
+        
+        tableBody.innerHTML = '';
+        
+        if (filteredMedicines.length > 0) {
+            filteredMedicines.forEach(med => {
+                const isActive = med.is_active == 1 ? 'Active' : 'Inactive';
+                const statusBadge = med.is_active == 1 ? 
+                    '<span class="status-badge active">Active</span>' : 
+                    '<span class="status-badge inactive">Inactive</span>';
 
-            const data = {
-                med_name: document.getElementById('med_name').value.trim(),
+                const row = `
+                <tr>
+                    <td>${med.med_name}</td>
+                    <td>${med.med_type_name}</td>
+                    <td>${med.unit_price}</td>
+                    <td>${med.stock_quantity}</td>
+                    <td>${med.med_unit}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit-btn" data-id="${med.med_id}">Edit</button>
+                    </td>
+                </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="7">No medicines found.</td></tr>';
+        }
+    }
+
+    // Search and Filter Functions
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchMedicine').value.toLowerCase();
+        const typeFilter = document.getElementById('filterMedicineType').value;
+        const statusFilter = document.getElementById('filterMedicineStatus').value;
+
+        filteredMedicines = medicines.filter(med => {
+            const matchesSearch = med.med_name.toLowerCase().includes(searchTerm) ||
+                                med.med_type_name.toLowerCase().includes(searchTerm);
+            const matchesType = !typeFilter || med.med_type_id == typeFilter;
+            const matchesStatus = statusFilter === '' || med.is_active == statusFilter;
+
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        renderMedicineTable();
+    }
+
+    // Event listeners for search and filters
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchMedicine');
+        const typeFilter = document.getElementById('filterMedicineType');
+        const statusFilter = document.getElementById('filterMedicineStatus');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilters);
+        }
+        if (typeFilter) {
+            typeFilter.addEventListener('change', applyFilters);
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', applyFilters);
+        }
+    });
+
+    // Add Medicine Form Submit
+    if (addMedicineForm) {
+        addMedicineForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Temporarily enable the status field to include its value in form submission
+            const statusField = document.getElementById('is_active');
+            statusField.disabled = false;
+            
+            const formData = {
+                med_name: document.getElementById('med_name').value,
                 med_type_id: document.getElementById('med_type_id').value,
                 unit_price: document.getElementById('unit_price').value,
                 stock_quantity: document.getElementById('stock_quantity').value,
-                med_unit: document.getElementById('med_unit').value.trim(),
-                is_active: document.getElementById('is_active').value
+                med_unit: document.getElementById('med_unit').value,
+                is_active: statusField.value
             };
 
             try {
                 const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
                     operation: 'addMedicine',
-                    json: JSON.stringify(data)
+                    json: JSON.stringify(formData)
                 });
 
                 const resData = response.data;
@@ -245,8 +341,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     alert(resData.message || 'Failed to add medicine');
                 }
             } catch (error) {
-                console.error(error);
-                alert('Error adding medicine');
+                console.error('Error adding medicine: ', error);
+                alert('Failed to add medicine');
+            } finally {
+                // Re-disable the status field
+                statusField.disabled = true;
             }
         });
     }

@@ -6,12 +6,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get user from localStorage or create a temporary one for testing
     let user = JSON.parse(localStorage.getItem('user'));
     
-    // For testing purposes - create a temporary user if none exists
     if (!user) {
-        console.warn('No user found in localStorage. Creating temporary user for testing.');
-        // Uncomment the line below to redirect to login in production
-        // window.location.href = '../index.html';
-        // return;
+        console.error('No user data found. Redirecting to login.');
+        window.location.href = '../index.html';
+        return;
+    }
+
+    // Check if user has permission to edit admissions
+    try {
+        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('edit_admissions')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../components/dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../components/dashboard.html';
+        return;
     }
 
     // Load Sidebar
@@ -49,18 +70,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Load permissions and populate sidebar links
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user?.user_id })
-            });
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (permErr) {
-            console.warn('Could not load permissions for sidebar', permErr);
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
+
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
@@ -69,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sidebar modules renderer
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -92,35 +110,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'admission-editor.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
 
+        // Add inventory modules to accordion
         let inventoryShown = false;
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
+                
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 

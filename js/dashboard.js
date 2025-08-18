@@ -1,7 +1,7 @@
 console.log('dashboard.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+    const baseApiUrl = '../api';
     const user = JSON.parse(localStorage.getItem('user'));
     let content, welcomeMessage, sidebar;
 
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const sidebarResponse = await axios.get('../components/sidebar.html');
                 if (sidebarResponse.data) {
                     sidebarPlaceholder.innerHTML = sidebarResponse.data;
-                    
+
                     const sidebarElement = document.getElementById('sidebar');
                     const hamburgerBtn = document.getElementById('hamburger-btn');
                     const logoutBtn = document.getElementById('logout-btn');
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Remove or update this line - it's causing the issue for Lab Technician
             // 'manage_labtests': { label: 'Lab Technician ', link: 'lab-technician.html' },
         };
-        
+
         const inventoryMap = {
             'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
             'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
@@ -122,10 +122,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
         };
-    
+
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
-    
+
         // Standalone
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
@@ -137,14 +137,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sidebarLinks.appendChild(a); // Changed from sidebar to sidebarLinks
             }
         });
-    
+
         // inventory modules
         let inventoryShown = false;
-    
+
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
                 inventoryShown = true;
-    
+
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
@@ -153,8 +153,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 accordionBody.appendChild(a);
             }
         });
-    
-        if (!inventoryShown) {  
+
+        if (!inventoryShown) {
             const inventoryAccordionItem = document.querySelector('.accordion-item');
             if (inventoryAccordionItem) {
                 inventoryAccordionItem.style.display = 'none';

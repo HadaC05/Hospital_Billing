@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surgery Inventory</title>
+    <title>Hospital Billing System - Surgery Inventory</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -21,97 +21,119 @@
 </head>
 
 <body class="d-flex flex-column vh-100">
+    <!-- Topbar with hamburger -->
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-primary me-3">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h4 class="m-0"><i class="fas fa-user-md me-2 medical-icon"></i>Surgery Inventory</h4>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i> Hospital Billing System</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
     <div id="page-container" class="d-flex flex-grow-1">
-        <!-- Sidebar placeholder -->
         <div id="sidebar-placeholder"></div>
 
-        <!-- Main content -->
-        <main id="main-content" class="flex-grow-1 p-3">
-            <header class="d-flex justify-content-between align-items-center mb-4">
-                <button id="hamburger-btn" class="btn btn-sm">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <h2>Inventory - Surgery</h2>
-            </header>
-    <div id="surgery-container">
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">Add
-            Surgery</button>
-
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="surgery-list"></tbody>
-        </table>
-    </div>
-
-    <!-- Add New Surgery modal -->
-    <div class="modal fade" id="addSurgeryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="addSurgeryForm" class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Surgery</h5>
-                    <button class="btn btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control mb-2" id="surgery_name" placeholder="Surgery Name" required>
-                    <select id="surgery_type_id" class="form-select mb-2"></select>
-                    <input type="number" class="form-control mb-2" id="surgery_price" placeholder="Unit Price" required>
-                    <select id="is_available" class="form-select" required>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- edit surgery modal -->
-    <div class="modal fade" id="editSurgeryModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="editSurgeryForm">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Edit Surgery</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <h2>Inventory - Surgery</h2>
+            <div id="surgery-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">
+                        <i class="fas fa-plus me-2"></i>Add Surgery</button>
+                    
+                    <div class="d-flex gap-2">
+                        <input type="text" id="searchSurgery" class="form-control" placeholder="Search surgeries..." style="width: 250px;">
+                        <select id="filterSurgeryType" class="form-select" style="width: 200px;">
+                            <option value="">All Types</option>
+                        </select>
+                        <select id="filterSurgeryStatus" class="form-select" style="width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
                     </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="edit_surgery_id">
-                        <div class="mb-3">
-                            <label for="">Name</label>
-                            <input type="text" id="edit_surgery_name" class="form-control" required>
+                </div>
+
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="surgery-list"></tbody>
+                </table>
+            </div>
+
+            <!-- Add New Surgery modal -->
+            <div class="modal fade" id="addSurgeryModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form id="addSurgeryForm" class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Surgery</h5>
+                            <button class="btn btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="mb-3">
-                            <label for="">Type</label>
-                            <select name="" id="edit_surgery_type_id" class="form-select" required></select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="">Price</label>
-                            <input type="number" id="edit_surgery_price" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="">Status</label>
-                            <select id="edit_is_available" class="form-select" required>
-                                <option value="1">Active</option>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" id="surgery_name" placeholder="Surgery Name"
+                                required>
+                            <select id="surgery_type_id" class="form-select mb-2"></select>
+                            <input type="number" class="form-control mb-2" id="surgery_price" placeholder="Unit Price"
+                                required>
+                            <select id="is_available" class="form-select" required disabled>
+                                <option value="1" selected>Active</option>
                                 <option value="0">Inactive</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
-                </form>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-    </div>
+
+            <!-- edit surgery modal -->
+            <div class="modal fade" id="editSurgeryModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="editSurgeryForm">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Surgery</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="edit_surgery_id">
+                                <div class="mb-3">
+                                    <label for="">Name</label>
+                                    <input type="text" id="edit_surgery_name" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Type</label>
+                                    <select name="" id="edit_surgery_type_id" class="form-select" required></select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Price</label>
+                                    <input type="number" id="edit_surgery_price" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="">Status</label>
+                                    <select id="edit_is_available" class="form-select" required>
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 </body>

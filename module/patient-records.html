@@ -23,18 +23,23 @@
 </head>
 
 <body class="d-flex flex-column vh-100">
+    <!-- Topbar with hamburger -->
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-primary me-3">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h4 class="m-0"><i class="fas fa-hospital-user me-2 medical-icon"></i>Patient Records</h4>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i> Hospital Billing System</span>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
     <div id="page-container" class="d-flex flex-grow-1">
-        <!-- Sidebar placeholder -->
         <div id="sidebar-placeholder"></div>
 
-        <!-- Main content -->
-        <main id="main-content" class="flex-grow-1 p-3">
-            <header class="d-flex justify-content-between align-items-center mb-4">
-                <button id="hamburger-btn" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h2><i class="fas fa-hospital-user me-2 medical-icon"></i>Patient Records Viewer</h2>
-            </header>
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
 
             <div class="row mb-4">
                 <div class="col-md-12">
@@ -65,6 +70,16 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Patient Management</h2>
+                <div class="d-flex gap-2">
+                    <input type="text" id="searchPatients" class="form-control" placeholder="Search patients..." style="width: 250px;">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+                        <i class="fas fa-plus me-2"></i>Add Patient
+                    </button>
                 </div>
             </div>
 

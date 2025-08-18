@@ -1,7 +1,7 @@
 console.log('patients.js is working');
 
 // Use relative path for API URL to avoid cross-origin issues
-const baseApiUrl = 'http://localhost/hospital_billing-cubillan_branch/api';
+const baseApiUrl = '../api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -9,6 +9,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
+        return;
+    }
+
+    // Check if user has permission to view patient records
+    try {
+        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
+            operation: 'getUserPermissions',
+            json: JSON.stringify({ user_id: user.user_id })
+        });
+
+        const data = response.data;
+        if (!data.success || !data.permissions.includes('view_patient_records')) {
+            alert('You do not have permission to access this page.');
+            window.location.href = '../components/dashboard.html';
+            return;
+        }
+        
+        // Store permissions for sidebar rendering
+        window.userPermissions = data.permissions;
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+        alert('Failed to verify permissions. Please try again.');
+        window.location.href = '../components/dashboard.html';
         return;
     }
 
@@ -46,28 +69,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Load permissions and populate sidebar
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user.user_id })
-            });
+        // Set user name in sidebar
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.username;
+        }
 
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (error) {
-            console.error('Failed to load permissions: ', error);
+        // Render navigation modules based on permissions
+        if (window.userPermissions) {
+            renderModules(window.userPermissions);
         }
     } catch (err) {
         console.error('Failed to load sidebar: ', err);
     }
-    
+
     // Function to render sidebar modules
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -77,7 +96,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
             'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-            'doctor_prescription': { label: 'Doctor Prescription', link: 'doctor-prescription.html' }
         };  
 
         const inventoryMap = {
@@ -91,39 +109,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sidebarLinks = document.getElementById('sidebar-links');
         const accordionBody = document.querySelector('#invCollapse .accordion-body');
 
-        // Standalone
+        // Clear existing links
+        if (sidebarLinks) sidebarLinks.innerHTML = '';
+        if (accordionBody) accordionBody.innerHTML = '';
+
+        // Add standalone navigation links
         permissions.forEach(permission => {
             if (moduleMap[permission]) {
                 const { label, link } = moduleMap[permission];
                 const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
+                a.href = `../module/${link}`;
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
+                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
+                
+                // Highlight current page
+                if (link === 'patient-records.html') {
+                    a.classList.add('bg-primary', 'bg-opacity-25');
+                }
+                
+                if (sidebarLinks) {
+                    sidebarLinks.appendChild(a);
+                }
             }
         });
 
-        // inventory modules
+        // Add inventory modules to accordion
         let inventoryShown = false;
-
         permissions.forEach(permission => {
             if (inventoryMap[permission]) {
-                inventoryShown = true;
-
                 const { label, link } = inventoryMap[permission];
                 const a = document.createElement('a');
                 a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
+                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
+                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
+                
+                // Add hover effects
+                a.addEventListener('mouseenter', () => {
+                    a.classList.add('bg-light');
+                });
+                a.addEventListener('mouseleave', () => {
+                    if (!a.classList.contains('bg-primary')) {
+                        a.classList.remove('bg-light');
+                    }
+                });
+                
+                if (accordionBody) {
+                    accordionBody.appendChild(a);
+                }
+                inventoryShown = true;
             }
         });
 
-        if (!inventoryShown) {  
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
+        // Show/hide inventory accordion based on permissions
+        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
+        if (inventoryAccordion) {
+            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
         }
     }
 
@@ -157,31 +197,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.patients)) {
-                const patients = data.patients;
+                let patients = data.patients;
+                let filteredPatients = [...patients];
 
-                if (patients.length === 0) {
-                    patientListElement.innerHTML = '<tr><td colspan="5" class="text-center">No patients found.</td></tr>';
-                    return;
+                // Search functionality
+                function applyPatientSearch() {
+                    const searchTerm = document.getElementById('searchPatients')?.value.toLowerCase() || '';
+                    
+                    filteredPatients = patients.filter(patient => {
+                        return patient.patient_fname.toLowerCase().includes(searchTerm) ||
+                               patient.patient_lname.toLowerCase().includes(searchTerm) ||
+                               patient.email.toLowerCase().includes(searchTerm) ||
+                               patient.mobile_number.includes(searchTerm);
+                    });
+                    
+                    renderPatientTable();
                 }
 
-                patientListElement.innerHTML = '';
+                // Render patient table
+                function renderPatientTable() {
+                    if (filteredPatients.length === 0) {
+                        patientListElement.innerHTML = '<tr><td colspan="5" class="text-center">No patients found.</td></tr>';
+                        return;
+                    }
 
-                patients.forEach(patient => {
-                    const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
-                    
-                    const row = `
-                        <tr>
-                            <td>${patient.patient_id}</td>
-                            <td>${fullName}</td>
-                            <td>${patient.mobile_number}</td>
-                            <td>${patient.email}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info view-patient-btn" data-id="${patient.patient_id}">View Details</button>
-                            </td>
-                        </tr>
-                    `;
-                    patientListElement.innerHTML += row;
-                });
+                    patientListElement.innerHTML = '';
+
+                    filteredPatients.forEach(patient => {
+                        const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
+
+                        const row = `
+                            <tr>
+                                <td>${patient.patient_id}</td>
+                                <td>${fullName}</td>
+                                <td>${patient.mobile_number}</td>
+                                <td>${patient.email}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info view-patient-btn" data-id="${patient.patient_id}">View Details</button>
+                                </td>
+                            </tr>
+                        `;
+                        patientListElement.innerHTML += row;
+                    });
+                }
+
+                // Event listener for search
+                const searchInput = document.getElementById('searchPatients');
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyPatientSearch);
+                }
+
+                // Initial render
+                renderPatientTable();
             } else {
                 patientListElement.innerHTML = `<tr><td colspan="5" class="text-center">Failed to load patients.</td></tr>`;
             }
@@ -194,7 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Patient Details
     async function loadPatientDetails(patientId) {
         currentPatientId = patientId;
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-patients.php`, {
                 operation: 'getPatientDetails',
@@ -211,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Display patient info
                 const patientInfoElement = document.getElementById('patient-info');
                 const birthDate = new Date(patient.birthdate).toLocaleDateString();
-                
+
                 patientInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname}</h4>
@@ -230,16 +297,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display admissions
                 const admissionListElement = document.getElementById('admission-list');
-                
+
                 if (admissions.length === 0) {
                     admissionListElement.innerHTML = '<tr><td colspan="6" class="text-center">No admissions found.</td></tr>';
                 } else {
                     admissionListElement.innerHTML = '';
-                    
+
                     admissions.forEach(admission => {
                         const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                         const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-                        
+
                         const row = `
                             <tr>
                                 <td>${admission.admission_id}</td>
@@ -258,16 +325,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display insurance policies
                 const insuranceListElement = document.getElementById('insurance-list');
-                
+
                 if (insurance.length === 0) {
                     insuranceListElement.innerHTML = '<tr><td colspan="5" class="text-center">No insurance policies found.</td></tr>';
                 } else {
                     insuranceListElement.innerHTML = '';
-                    
+
                     insurance.forEach(policy => {
                         const startDate = new Date(policy.start_date).toLocaleDateString();
                         const endDate = new Date(policy.end_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${policy.policy_number}</td>
@@ -297,7 +364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Admission Details
     async function loadAdmissionDetails(admissionId) {
         currentAdmissionId = admissionId;
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-patients.php`, {
                 operation: 'getAdmissionDetails',
@@ -318,7 +385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const admissionInfoElement = document.getElementById('admission-info');
                 const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                 const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-                
+
                 admissionInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>Admission #${admission.admission_id}</h4>
@@ -334,15 +401,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display medications
                 const medicationsListElement = document.getElementById('medications-list');
-                
+
                 if (medications.length === 0) {
                     medicationsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No medications found.</td></tr>';
                 } else {
                     medicationsListElement.innerHTML = '';
-                    
+
                     medications.forEach(medication => {
                         const recordDate = new Date(medication.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${medication.medication_id}</td>
@@ -355,15 +422,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display lab tests
                 const labtestsListElement = document.getElementById('labtests-list');
-                
+
                 if (labtests.length === 0) {
                     labtestsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No lab tests found.</td></tr>';
                 } else {
                     labtestsListElement.innerHTML = '';
-                    
+
                     labtests.forEach(labtest => {
                         const recordDate = new Date(labtest.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${labtest.patient_lab_id}</td>
@@ -376,15 +443,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display surgeries
                 const surgeriesListElement = document.getElementById('surgeries-list');
-                
+
                 if (surgeries.length === 0) {
                     surgeriesListElement.innerHTML = '<tr><td colspan="2" class="text-center">No surgeries found.</td></tr>';
                 } else {
                     surgeriesListElement.innerHTML = '';
-                    
+
                     surgeries.forEach(surgery => {
                         const recordDate = new Date(surgery.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${surgery.patient_surgery_id}</td>
@@ -397,15 +464,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display treatments
                 const treatmentsListElement = document.getElementById('treatments-list');
-                
+
                 if (treatments.length === 0) {
                     treatmentsListElement.innerHTML = '<tr><td colspan="2" class="text-center">No treatments found.</td></tr>';
                 } else {
                     treatmentsListElement.innerHTML = '';
-                    
+
                     treatments.forEach(treatment => {
                         const recordDate = new Date(treatment.record_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${treatment.patient_treatment_id}</td>
@@ -418,15 +485,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Display invoices
                 const invoicesListElement = document.getElementById('invoices-list');
-                
+
                 if (invoices.length === 0) {
                     invoicesListElement.innerHTML = '<tr><td colspan="5" class="text-center">No invoices found.</td></tr>';
                 } else {
                     invoicesListElement.innerHTML = '';
-                    
+
                     invoices.forEach(invoice => {
                         const invoiceDate = new Date(invoice.invoice_date).toLocaleDateString();
-                        
+
                         const row = `
                             <tr>
                                 <td>${invoice.invoice_id}</td>

@@ -3,9 +3,15 @@
 require_once __DIR__ . '/require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 class UserManager {
     private $conn;
@@ -79,6 +85,17 @@ class UserManager {
      */
     function addUser($userData) {
         try {
+            // Validate required fields
+            if (empty($userData['first_name']) || empty($userData['last_name']) || 
+                empty($userData['username']) || empty($userData['password']) || 
+                empty($userData['email']) || empty($userData['role_id'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'All required fields must be filled'
+                ]);
+                return;
+            }
+
             // Check if username already exists
             $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username";
             $checkStmt = $this->conn->prepare($checkQuery);
@@ -89,6 +106,20 @@ class UserManager {
                 echo json_encode([
                     'success' => false,
                     'message' => 'Username already exists'
+                ]);
+                return;
+            }
+
+            // Check if email already exists
+            $emailCheckQuery = "SELECT COUNT(*) FROM users WHERE email = :email";
+            $emailCheckStmt = $this->conn->prepare($emailCheckQuery);
+            $emailCheckStmt->bindParam(':email', $userData['email']);
+            $emailCheckStmt->execute();
+            
+            if ($emailCheckStmt->fetchColumn() > 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email already exists'
                 ]);
                 return;
             }
@@ -115,9 +146,11 @@ class UserManager {
             $stmt->execute();
             echo json_encode([
                 'success' => true,
-                'message' => 'User added successfully'
+                'message' => 'User added successfully',
+                'user_id' => $this->conn->lastInsertId()
             ]);
         } catch (PDOException $e) {
+            error_log("Add user error: " . $e->getMessage());
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
@@ -196,10 +229,19 @@ class UserManager {
      */
     function deleteUser($userId) {
         try {
+            // Validate user ID
+            if (empty($userId) || !is_numeric($userId)) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Invalid user ID'
+                ]);
+                return;
+            }
+
             // Check if user exists
             $checkQuery = "SELECT COUNT(*) FROM users WHERE user_id = :user_id";
             $checkStmt = $this->conn->prepare($checkQuery);
-            $checkStmt->bindParam(':user_id', $userId);
+            $checkStmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $checkStmt->execute();
             
             if ($checkStmt->fetchColumn() == 0) {
@@ -222,14 +264,22 @@ class UserManager {
             // Delete user
             $query = "DELETE FROM users WHERE user_id = :user_id";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $userId);
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
             
-            echo json_encode([
-                'success' => true,
-                'message' => 'User deleted successfully'
-            ]);
+            if ($stmt->rowCount() > 0) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'User deleted successfully'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to delete user'
+                ]);
+            }
         } catch (PDOException $e) {
+            error_log("Delete user error: " . $e->getMessage());
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
@@ -287,6 +337,11 @@ if ($method === 'GET') {
 }
 
 $data = json_decode($json, true);
+
+// Debug logging
+error_log("Operation: " . $operation);
+error_log("JSON data: " . $json);
+error_log("Decoded data: " . print_r($data, true));
 
 switch ($operation) {
     case 'getAllUsers':
