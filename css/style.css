@@ -33,3 +33,16 @@ body {
     font-size: 0.9rem;
     text-align: center;
 }
+
+/* Additional professional login refinements */
+.login-card .card-footer {
+    border-top: 1px solid rgba(91, 155, 213, 0.1);
+}
+
+.login-card .form-control::placeholder {
+    color: rgba(0,0,0,0.35);
+}
+
+.login-card .btn-primary {
+    font-weight: 500;
+}

@@ -21,44 +21,51 @@
 </head>
 
 <body>
-    <!-- Have navigation here -->
-
     <section class="login-page-wrapper">
         <div class="container">
             <div class="row content d-flex justify-content-center">
-                <div class="col-12 col-sm-8 col-md-6 m-auto">
+                <div class="col-12 col-sm-10 col-md-7 col-lg-5 m-auto">
                     <div class="login-card card">
                         <div class="card-header text-center">
-                            <h4 class="mt-2">Hospital Billing System</h4>
+                            <img src="assets/images/logo.png" alt="Hospital Logo" style="height:48px" />
+                            <h4 class="mt-2 mb-0">Hospital Billing System</h4>
+                            <small class="text-muted">Authorized access only</small>
                         </div>
-                        <div class="card-body text-center">
-                            <i class="fas fa-user-md login-icon"></i>
-                            <form id="loginForm">
-                                <div id="error-message"></div>
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-user-md login-icon"></i>
+                                <div class="small text-muted">Use your organizational credentials to sign in</div>
+                            </div>
+                            <form id="loginForm" novalidate>
+                                <div id="error-message" class="text-danger small"></div>
                                 <div class="input-group mb-3">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" name="" id="username" class="form-control py-2"
-                                        placeholder="Username">
+                                    <label for="username" class="visually-hidden">Username</label>
+                                    <input type="text" id="username" class="form-control py-2" placeholder="Username" autocomplete="username" required>
                                 </div>
-                                <div class="input-group mb-3">
+                                <div class="input-group mb-2">
                                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                    <input type="password" name="" id="password" class="form-control py-2"
-                                        placeholder="Password">
+                                    <label for="password" class="visually-hidden">Password</label>
+                                    <input type="password" id="password" class="form-control py-2" placeholder="Password" autocomplete="current-password" required>
                                 </div>
-                                <div class="text-center mt-4">
-                                    <button type="submit" class="btn btn-primary px-4 py-2">
-                                        LOGIN
-                                    </button>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">Forgot password? Contact IT Support</small>
+                                </div>
+                                <div class="d-grid mt-3">
+                                    <button type="submit" class="btn btn-primary py-2">Sign In</button>
                                 </div>
                             </form>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="small text-muted text-center">
+                                This private system is monitored. By signing in, you agree to institutional policies.
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-
-    <!-- Have footer here -->
 </body>
 
 </html>

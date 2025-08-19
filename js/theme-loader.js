@@ -67,35 +67,9 @@ function enhanceLoginPage() {
         iconContainer.prepend(icon);
     }
 
-    // Add icons to input fields
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-
-    if (usernameInput) {
-        usernameInput.parentElement.classList.add('input-group');
-        const prependDiv = document.createElement('div');
-        prependDiv.className = 'input-group-prepend';
-        const prependSpan = document.createElement('span');
-        prependSpan.className = 'input-group-text bg-primary text-white';
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-user';
-        prependSpan.appendChild(icon);
-        prependDiv.appendChild(prependSpan);
-        usernameInput.parentElement.insertBefore(prependDiv, usernameInput);
-    }
-
-    if (passwordInput) {
-        passwordInput.parentElement.classList.add('input-group');
-        const prependDiv = document.createElement('div');
-        prependDiv.className = 'input-group-prepend';
-        const prependSpan = document.createElement('span');
-        prependSpan.className = 'input-group-text bg-primary text-white';
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-lock';
-        prependSpan.appendChild(icon);
-        prependDiv.appendChild(prependSpan);
-        passwordInput.parentElement.insertBefore(prependDiv, passwordInput);
-    }
+    // Bootstrap 5: do not inject input-group-prepend icons; keep fields clean
+    // Also remove any legacy/pre-injected prepend wrappers if present
+    document.querySelectorAll('.input-group-prepend').forEach(el => el.remove());
 
     // Enhance login card
     const loginCard = document.querySelector('.card');
