@@ -293,8 +293,27 @@ a:focus {
   color: #ffffff !important;
 }
 
+/* Ensure accordion panels in sidebar inherit dark styling */
+.sidebar .accordion,
+.sidebar .accordion-item,
+.sidebar .accordion-collapse,
+.sidebar .accordion-body {
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.sidebar .accordion-item {
+  border: none !important;
+}
+
+.sidebar .accordion-button::after {
+  filter: invert(1) opacity(0.85);
+}
+
 .accordion-body a.sidebar-link {
   color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(31, 75, 85, 0.95) !important;
+  
 }
 
 #sidebar-links a.sidebar-link {
