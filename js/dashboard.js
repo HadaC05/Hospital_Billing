@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderModules(permissions) {
         const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
+            'admin_dashboard': { label: 'Administrator Dashboard', link: '../components/dashboard.html' },
             'manage_users': { label: 'Manage Users', link: 'user-management.html' },
             'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
             'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
@@ -111,8 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
             'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
             'doctor_prescription': { label: 'Doctor Prescription', link: 'doctor-prescription.html' },
-            // Remove or update this line - it's causing the issue for Lab Technician
-            // 'manage_labtests': { label: 'Lab Technician ', link: 'lab-technician.html' },
         };
 
         const inventoryMap = {
