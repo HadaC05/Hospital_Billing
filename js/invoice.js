@@ -10,111 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Sidebar loader (reuse pattern used elsewhere)
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${apiBase}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (e) {
-                    alert('Logout failed.');
-                }
-            });
-        }
-
-        // Load permissions and populate sidebar links
-        try {
-            const response = await axios.post(`${apiBase}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user?.user_id })
-            });
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (permErr) {
-            console.warn('Could not load permissions for sidebar', permErr);
-        }
-    } catch (e) {
-        console.error('Failed to load sidebar', e);
-    }
-
-    // Sidebar modules renderer
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
-            }
-        });
-
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                inventoryShown = true;
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
-            }
-        });
-
-        if (!inventoryShown) {
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
-        }
-    }
+    // Sidebar is handled globally by js/sidebar.js
 
     // Elements
     const findAdmissionForm = document.getElementById('findAdmissionForm');
@@ -161,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get patients with their admissions
     async function getPatientsWithAdmissions(patients) {
         const patientsWithAdmissions = [];
-        
+
         for (const patient of patients) {
             try {
                 const response = await axios.get(`${apiBase}/get-patients.php`, {
@@ -170,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         json: JSON.stringify({ patient_id: patient.patient_id })
                     }
                 });
-                
+
                 if (response.data.success && response.data.admissions && response.data.admissions.length > 0) {
                     // Add each admission as a separate option
                     response.data.admissions.forEach(admission => {
@@ -189,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error(`Error loading admissions for patient ${patient.patient_id}:`, error);
             }
         }
-        
+
         return patientsWithAdmissions;
     }
 
@@ -358,14 +254,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.preventDefault();
             const selectedAdmissionId = patientSelect.value;
             if (!selectedAdmissionId) return;
-            
+
             // Get patient info from selected option
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
             const patientInfo = JSON.parse(selectedOption.dataset.patientInfo || '{}');
-            
+
             // Update admission meta display
             admissionMeta.textContent = `Patient: ${patientInfo.first_name} ${patientInfo.last_name} | Admission Date: ${patientInfo.admission_date || 'N/A'}`;
-            
+
             currentAdmissionId = Number(selectedAdmissionId);
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
