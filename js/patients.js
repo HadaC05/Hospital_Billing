@@ -12,8 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Sidebar is handled globally by js/sidebar.js
-
     // Patient Records functionality
     const patientListElement = document.getElementById('patient-list');
     const patientDetailsSection = document.getElementById('patient-details-section');

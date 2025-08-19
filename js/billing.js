@@ -5,8 +5,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) { window.location.href = '../index.html'; return; }
 
-    // Sidebar is handled globally by js/sidebar.js
-
     // Elements
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');

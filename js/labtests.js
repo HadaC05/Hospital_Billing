@@ -11,133 +11,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
-
-        // Load permissions and populate sidebar
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-                operation: 'getUserPermissions',
-                json: JSON.stringify({ user_id: user.user_id })
-            });
-
-            const data = response.data;
-            if (data.success) {
-                renderModules(data.permissions);
-            }
-        } catch (error) {
-            console.error('Failed to load permissions: ', error);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
-
-    // Function to render sidebar modules
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Standalone
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = link.startsWith('#') ? `../module/${link}` : link;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                sidebarLinks.appendChild(a);
-            }
-        });
-
-        // inventory modules
-        let inventoryShown = false;
-
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                inventoryShown = true;
-
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white');
-                a.textContent = label;
-                accordionBody.appendChild(a);
-            }
-        });
-
-        if (!inventoryShown) {
-            const inventoryAccordionItem = document.querySelector('.accordion-item');
-            if (inventoryAccordionItem) {
-                inventoryAccordionItem.style.display = 'none';
-            }
-        }
-    }
 
     // Labtest management functionality
     const tableBody = document.getElementById('labtest-list');
     let labtests = [];
-    
+
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addLabtestModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editLabtestModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteLabtestModal'));
-    
+
     // Form elements
     const addForm = document.getElementById('addLabtestForm');
     const editForm = document.getElementById('editLabtestForm');
-    
+
     // Button event listeners
     document.getElementById('saveLabtestBtn').addEventListener('click', saveLabtest);
     document.getElementById('updateLabtestBtn').addEventListener('click', updateLabtest);
@@ -162,13 +49,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Populate all category dropdowns
                 const addCategorySelect = document.getElementById('add_labtest_category_id');
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
-                
+
                 if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
                 if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
             } else {
                 const addCategorySelect = document.getElementById('add_labtest_category_id');
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
-                
+
                 if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">No categories available</option>`;
                 if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">No categories available</option>`;
             }
@@ -238,19 +125,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // CRUD Functions
-    
+
     // Create new lab test
     async function saveLabtest() {
         const testName = document.getElementById('add_test_name').value.trim();
         const categoryId = document.getElementById('add_labtest_category_id').value;
         const unitPrice = document.getElementById('add_unit_price').value;
         const isActive = document.getElementById('add_is_active').value;
-        
+
         if (!testName || !categoryId || !unitPrice) {
             alert('Please fill in all required fields.');
             return;
         }
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-labtests.php`, {
                 operation: 'createLabtest',
@@ -261,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     is_active: parseInt(isActive)
                 })
             });
-            
+
             const data = response.data;
             if (data.success) {
                 alert('Lab test added successfully!');
@@ -276,25 +163,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Failed to add lab test. Please try again.');
         }
     }
-    
+
     // Edit lab test
-    window.editLabtest = async function(labtestId) {
+    window.editLabtest = async function (labtestId) {
         const labtest = labtests.find(test => test.labtest_id == labtestId);
         if (!labtest) {
             alert('Lab test not found.');
             return;
         }
-        
+
         // Populate edit form
         document.getElementById('edit_labtest_id').value = labtest.labtest_id;
         document.getElementById('edit_test_name').value = labtest.test_name;
         document.getElementById('edit_labtest_category_id').value = labtest.labtest_category_id;
         document.getElementById('edit_unit_price').value = labtest.unit_price;
         document.getElementById('edit_is_active').value = labtest.is_active;
-        
+
         editModal.show();
     };
-    
+
     // Update lab test
     async function updateLabtest() {
         const labtestId = document.getElementById('edit_labtest_id').value;
@@ -302,12 +189,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryId = document.getElementById('edit_labtest_category_id').value;
         const unitPrice = document.getElementById('edit_unit_price').value;
         const isActive = document.getElementById('edit_is_active').value;
-        
+
         if (!testName || !categoryId || !unitPrice) {
             alert('Please fill in all required fields.');
             return;
         }
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-labtests.php`, {
                 operation: 'updateLabtest',
@@ -319,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     is_active: parseInt(isActive)
                 })
             });
-            
+
             const data = response.data;
             if (data.success) {
                 alert('Lab test updated successfully!');
@@ -333,18 +220,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Failed to update lab test. Please try again.');
         }
     }
-    
+
     // Confirm delete lab test
-    window.confirmDeleteLabtest = function(labtestId, testName) {
+    window.confirmDeleteLabtest = function (labtestId, testName) {
         document.getElementById('delete_labtest_id').value = labtestId;
         document.getElementById('deleteLabtestName').textContent = testName;
         deleteModal.show();
     };
-    
+
     // Delete lab test
     async function deleteLabtest() {
         const labtestId = document.getElementById('delete_labtest_id').value;
-        
+
         try {
             const response = await axios.post(`${baseApiUrl}/get-labtests.php`, {
                 operation: 'deleteLabtest',
@@ -352,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     labtest_id: parseInt(labtestId)
                 })
             });
-            
+
             const data = response.data;
             if (data.success) {
                 alert('Lab test deleted successfully!');
@@ -366,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('Failed to delete lab test. Please try again.');
         }
     }
-    
+
     // Initialize the module
     await loadLabtestTypes();
     await loadLabtest();

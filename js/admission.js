@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // return;
     }
 
-    // Sidebar is handled globally by js/sidebar.js
-
     // Local API URL for relative paths
     const localApiUrl = '../api/';
 
