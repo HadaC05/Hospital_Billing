@@ -5,7 +5,7 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Treatment_Types
+class Labtest_Types
 {
     // get types
     function getTypes()
@@ -80,27 +80,27 @@ if ($method === 'GET') {
     $json = $_GET['json'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents('php://input');
-    $payload = json_encode($body, true);
+    $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
 }
 
-$data = json_encode($json, true);
+$data = json_decode($json, true);
 
-$treatmentType = new Treatment_Types();
+$labtestType = new Labtest_Types();
 
 switch ($operation) {
-    case 'getTypes';
-        $treatmentType->getTypes();
+    case 'getTypes':
+        $labtestType->getTypes();
         break;
-    case 'addType';
-        $treatmentType->addType($data);
+    case 'addType':
+        $labtestType->addType($data);
         break;
     case 'updateType':
         $labtest_category_id = $data['labtest_category_id'];
         $labtest_category_name = $data['labtest_category_name'];
         $labtest_category_desc = $data['labtest_category_desc'];
-        $treatmentType->updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc);
+        $labtestType->updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc);
         break;
 }

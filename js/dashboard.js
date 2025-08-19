@@ -121,6 +121,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
             'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
             'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
+            'manage_medicine_types': { label: 'Medicine Type Module', link: 'type-medicine.html' },
+            'manage_room_types': { label: 'Room Type Module', link: 'type-room.html' },
+            'manage_surgery_types': { label: 'Surgery Type Module', link: 'type-surgery.html' },
+            'manage_treatment_types': { label: 'Treatment Type Module', link: 'type-treatment.html' },
+            'manage_labtest_types': { label: 'Labtest Type Module', link: 'type-labtest.html' },
         };
 
         const sidebarLinks = document.getElementById('sidebar-links');
