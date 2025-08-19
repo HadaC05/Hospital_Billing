@@ -19,10 +19,8 @@ header {
 }
 
 /* Sidebar */
-.sidebar {
-    width: 250px;
-    background-color: #343a40;
-    color: white;
+.sidebar { /* Let theme override colors; keep layout only */
+    width: 280px;
     transition: width 0.3s ease;
     overflow: hidden;
     display: flex;
@@ -33,8 +31,7 @@ header {
 }
 
 /* Sidebar links */
-#sidebar-links a {
-    color: white;
+#sidebar-links a { /* colors from theme */
     text-decoration: none;
     padding: 1rem;
     display: block;
@@ -46,10 +43,6 @@ header {
         transform 0.2s ease 0.15s,
         visibility 0.2s ease 0.15s;
     visibility: visible;
-}
-
-#sidebar-links a:hover {
-    background-color: #495057;
 }
 
 /* Collapse behavior */

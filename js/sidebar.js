@@ -120,7 +120,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
             if (!config || !sidebarLinks) return;
             const link = document.createElement('a');
             link.href = config.link;
-            link.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+            link.classList.add('sidebar-link', 'd-block', 'px-3', 'py-2');
             link.textContent = config.label;
             sidebarLinks.appendChild(link);
         });
@@ -133,7 +133,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
             inventoryShown = true;
             const link = document.createElement('a');
             link.href = config.link;
-            link.classList.add('d-block', 'px-3', 'py-2', 'text-white');
+            link.classList.add('sidebar-link', 'd-block', 'px-3', 'py-2');
             link.textContent = config.label;
             accordionBody.appendChild(link);
         });
