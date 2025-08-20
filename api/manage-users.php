@@ -7,17 +7,20 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-class UserManager {
+class UserManager
+{
     private $conn;
 
-    public function __construct($conn) {
+    public function __construct($conn)
+    {
         $this->conn = $conn;
     }
 
     /**
      * Get all users with their roles
      */
-    function getAllUsers() {
+    function getAllUsers()
+    {
         try {
             $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
                       u.email, u.mobile_number, u.role_id, r.role_name 
@@ -43,7 +46,8 @@ class UserManager {
     /**
      * Get a specific user by ID
      */
-    function getUserById($userId) {
+    function getUserById($userId)
+    {
         try {
             $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
                       u.email, u.mobile_number, u.role_id, r.role_name 
@@ -57,14 +61,14 @@ class UserManager {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($user) {
                 echo json_encode([
-                'success' => true,
-                'user' => $user
-            ]);
+                    'success' => true,
+                    'user' => $user
+                ]);
             } else {
                 echo json_encode([
-                'success' => false,
-                'message' => 'User not found'
-            ]);
+                    'success' => false,
+                    'message' => 'User not found'
+                ]);
             }
         } catch (PDOException $e) {
             echo json_encode([
@@ -77,14 +81,15 @@ class UserManager {
     /**
      * Add a new user
      */
-    function addUser($userData) {
+    function addUser($userData)
+    {
         try {
             // Check if username already exists
             $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username";
             $checkStmt = $this->conn->prepare($checkQuery);
             $checkStmt->bindParam(':username', $userData['username']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -101,7 +106,7 @@ class UserManager {
                       email, mobile_number, role_id) 
                       VALUES (:username, :password, :first_name, :middle_name, :last_name, 
                       :email, :mobile_number, :role_id)";
-            
+
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
             $stmt->bindParam(':password', $hashedPassword);
@@ -111,7 +116,7 @@ class UserManager {
             $stmt->bindParam(':email', $userData['email']);
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
-            
+
             $stmt->execute();
             echo json_encode([
                 'success' => true,
@@ -128,7 +133,8 @@ class UserManager {
     /**
      * Update an existing user
      */
-    function updateUser($userData) {
+    function updateUser($userData)
+    {
         try {
             // Check if username already exists for another user
             $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username AND user_id != :user_id";
@@ -136,7 +142,7 @@ class UserManager {
             $checkStmt->bindParam(':username', $userData['username']);
             $checkStmt->bindParam(':user_id', $userData['user_id']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -154,14 +160,14 @@ class UserManager {
                       email = :email, 
                       mobile_number = :mobile_number, 
                       role_id = :role_id";
-            
+
             // Add password to update query if provided
             if (!empty($userData['password'])) {
                 $query .= ", password = :password";
             }
-            
+
             $query .= " WHERE user_id = :user_id";
-            
+
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
             $stmt->bindParam(':first_name', $userData['first_name']);
@@ -171,13 +177,13 @@ class UserManager {
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
             $stmt->bindParam(':user_id', $userData['user_id']);
-            
+
             // Bind password if provided
             if (!empty($userData['password'])) {
                 $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
                 $stmt->bindParam(':password', $hashedPassword);
             }
-            
+
             $stmt->execute();
             echo json_encode([
                 'success' => true,
@@ -194,14 +200,15 @@ class UserManager {
     /**
      * Delete a user
      */
-    function deleteUser($userId) {
+    function deleteUser($userId)
+    {
         try {
             // Check if user exists
             $checkQuery = "SELECT COUNT(*) FROM users WHERE user_id = :user_id";
             $checkStmt = $this->conn->prepare($checkQuery);
             $checkStmt->bindParam(':user_id', $userId);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() == 0) {
                 echo json_encode([
                     'success' => false,
@@ -224,7 +231,7 @@ class UserManager {
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $userId);
             $stmt->execute();
-            
+
             echo json_encode([
                 'success' => true,
                 'message' => 'User deleted successfully'
@@ -247,7 +254,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
-    
+
     // For backward compatibility
     if (isset($_GET['user_id'])) {
         $operation = 'getUserById';
@@ -258,7 +265,7 @@ if ($method === 'GET') {
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
-    
+
     // For backward compatibility
     if (isset($payload['action'])) {
         switch ($payload['action']) {
@@ -312,4 +319,3 @@ switch ($operation) {
             'message' => 'Invalid operation'
         ]);
 }
-?>
