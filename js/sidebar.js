@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const sidebarElement = document.getElementById('sidebar');
         const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
         const userName = document.getElementById('user-name');
 
         if (userName) {
@@ -43,19 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // Logout
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
+
 
         // Load user permissions and build links
         await buildSidebarLinks(baseApiUrl, user);
