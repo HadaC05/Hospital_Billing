@@ -11,7 +11,7 @@
         crossorigin="anonymous">
     <link rel="stylesheet" href="../css/hospital-theme.css">
     <link rel="stylesheet" href="../css/dashboard.css">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="../js/sidebar.js" defer></script>
@@ -25,34 +25,39 @@
     <!-- Header -->
     <div id="header-placeholder"></div>
 
-
+    <!-- sidebard and content  -->
     <div id="page-container" class="d-flex flex-grow-1">
-        <!-- Sidebar placeholder -->
         <div id="sidebar-placeholder"></div>
 
         <!-- Main content -->
-        <main id="main-content" class="flex-grow-1 p-3">
-            <header class="d-flex justify-content-between align-items-center mb-4">
-                <button id="hamburger-btn" class="btn btn-sm">
-                    <span class="navbar-toggler-icon"></span>
+        <main class="content flex-grow-1 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Treatment Masterfile</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTreatmentModal">
+                    <i class="fas fa-plus"></i> Add New Medicine
                 </button>
-                <h2>Inventory - Treatments</h2>
-            </header>
-            <div id="treatment-container">
-                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addTreatmentModal">Add New
-                    Treatment</button>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Treatment Name</th>
-                            <th>Unit Price</th>
-                            <th>Category</th>
-                        </tr>
-                    </thead>
-                    <tbody id="treatment-list"></tbody>
-                </table>
             </div>
 
+            <!-- Treatment table  -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Treatment Name</th>
+                                    <th>Unit Price</th>
+                                    <th>Category</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="treatment-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add new treatment modal  -->
             <div class="modal fade" id="addTreatmentModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                     <form id="addTreatmentForm" class="modal-content">

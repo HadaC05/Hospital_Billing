@@ -25,32 +25,42 @@
     <!-- Header -->
     <div id="header-placeholder"></div>
 
-
-
     <!-- Sidebar and Content -->
     <div id="page-container" class="d-flex flex-grow-1">
         <div id="sidebar-placeholder"></div>
 
         <!-- Main Content -->
         <main class="content p-3 flex-grow-1">
-            <h2>Inventory - Rooms</h2>
-            <div id="room-container">
-                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addRoomModal">Add New
-                    Room</button>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Room Number</th>
-                            <th>Type</th>
-                            <th>Daily Rate</th>
-                            <th>Max Occupancy</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="room-list"></tbody>
-                </table>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Room Masterfile</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+                    <i class="fas fa-plus"></i> Add New Room
+                </button>
             </div>
 
+            <!-- Room table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Room Number</th>
+                                    <th>Type</th>
+                                    <th>Daily Rate</th>
+                                    <th>Max Occupancy</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="room-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Room Modal -->
             <div class="modal fade" id="addRoomModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                     <form id="addRoomForm" class="modal-content">

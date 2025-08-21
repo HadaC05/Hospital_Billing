@@ -27,34 +27,36 @@
     <!-- Header -->
     <div id="header-placeholder"></div>
 
-
     <div id="page-container" class="d-flex flex-grow-1">
         <!-- Sidebar placeholder -->
         <div id="sidebar-placeholder"></div>
 
         <!-- Main content -->
-        <main id="main-content" class="flex-grow-1 p-3">
-            <header class="d-flex justify-content-between align-items-center mb-4">
-                <button id="hamburger-btn" class="btn btn-sm">
-                    <span class="navbar-toggler-icon"></span>
+        <main class="content flex-grow-1 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Surgery Masterfile</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">
+                    <i class="fas fa-plus"></i> Add New Surgery
                 </button>
-                <h2>Inventory - Surgery</h2>
-            </header>
-            <div id="surgery-container">
-                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addSurgeryModal">Add
-                    Surgery</button>
+            </div>
 
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Price</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="surgery-list"></tbody>
-                </table>
+            <!-- Surgery table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="surgery-list"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- Add New Surgery modal -->
