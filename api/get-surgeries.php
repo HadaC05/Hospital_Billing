@@ -16,6 +16,7 @@ class Surgeries
             SELECT 
                 s.surgery_id,
                 s.surgery_name,
+                s.surgery_type_id,
                 st.surgery_type_name,
                 s.surgery_price,
                 s.is_available
@@ -39,25 +40,38 @@ class Surgeries
     {
         include 'connection-pdo.php';
 
+        // Check duplicate
+        $checkSql = "SELECT COUNT(*) FROM tbl_surgery WHERE surgery_name = :surgery_name";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':surgery_name', $data['surgery_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A surgery with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             INSERT INTO tbl_surgery (surgery_name, surgery_type_id, surgery_price, is_available)
-            VALUES (:surgery_name, :surgery_type_id, :surgery_price, :is_available)
+            VALUES (:surgery_name, :surgery_type_id, :surgery_price, 1)
         ";
 
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':surgery_name', $data['surgery_name']);
         $stmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
         $stmt->bindParam(':surgery_price', $data['surgery_price']);
-        $stmt->bindParam(':is_available', $data['is_available']);
 
         if ($stmt->execute()) {
             echo json_encode([
                 'success' => true,
-                'message' => 'Medicine added'
+                'message' => 'Surgery added'
             ]);
         } else {
             echo json_encode([
-                'success' => false, //recheck
+                'success' => false,
                 'message' => 'Insert failed'
             ]);
         }
@@ -87,6 +101,21 @@ class Surgeries
     function updateSurgery($surgery_id, $surgery_name, $surgery_type_id, $surgery_price, $is_available)
     {
         include 'connection-pdo.php';
+
+        // Check duplicate name (exclude current record)
+        $checkSql = "SELECT COUNT(*) FROM tbl_surgery WHERE surgery_name = :surgery_name AND surgery_id != :surgery_id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':surgery_name', $surgery_name);
+        $checkStmt->bindParam(':surgery_id', $surgery_id);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Another surgery with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_surgery

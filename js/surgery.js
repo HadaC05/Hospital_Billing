@@ -13,12 +13,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Surgery management functionality
     const tableBody = document.getElementById('surgery-list');
-    const typeSelect = document.getElementById('surgery_type_id');
-    const surgForm = document.getElementById('addSurgeryForm');
-    const editForm = document.getElementById('editSurgeryForm');
-    const editTypeSelect = document.getElementById('edit_surgery_type_id');
-
     let surgeries = [];
+
+    // Modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addSurgeryModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
+
+    // Form elements
+    const addForm = document.getElementById('addSurgeryForm');
+    const editForm = document.getElementById('editSurgeryForm');
+
+    // button event listeners
+    document.getElementById('saveSurgeryBtn').addEventListener('click', saveSurgery);
+    document.getElementById('updateSurgeryBtn').addEventListener('click', updateRoom);
 
     // Load Surgery Types
     async function loadSurgeryTypes() {
@@ -34,10 +41,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return `<option value="${type.surgery_type_id}">${type.surgery_type_name}</option>`;
                 }).join('');
 
-                if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                // populate dropdowns
+                const addTypeSelect = document.getElementById('surgery_type_id');
+                const editTypeSelect = document.getElementById('edit_surgery_type_id');
+
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value = "">Select Type</option>` + options;
             } else {
-                typeSelect.innerHTML = '<option value="">No types available</option>';
+                const addTypeSelect = document.getElementById('surgery_type_id');
+                const editTypeSelect = document.getElementById('edit_surgery_type_id');
+
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">No types available</option>`;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">No types available</option>`;
             }
         } catch (error) {
             console.error('Failed to load surgery types: ', error);
@@ -55,10 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-surgeries.php`, {
-                params: {
-                    operation: 'getSurgeries',
-                    json: JSON.stringify({})
-                }
+                params: { operation: 'getSurgeries' }
             });
 
             const data = response.data;
@@ -75,22 +87,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 surgeries.forEach(surg => {
                     const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
+                    const statusBadge = surg.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
                     const row = `
                         <tr>
                             <td>${surg.surgery_name}</td>
                             <td>${surg.surgery_type_name}</td>
-                            <td>${surg.surgery_price}</td>
-                            <td>${isActive}</td>
+                            <td>₱${parseFloat(surg.surgery_price).toFixed(2)}</td>
+                            <td><span class="${statusBadge}">${isActive}</span></td>
                             <td>
-                                <button class="btn btn-sm btn-warning edit-btn" data-id="${surg.surgery_id}">Edit</button>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSurgery(${surg.surgery_id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                                </button>
                             </td>
                         </tr>
                     `;
                     tableBody.innerHTML += row;
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="4">Failed to load surgeries.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading surgeries: ', error);
@@ -99,94 +114,99 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
-    // Add Surgery
-    if (surgForm) {
-        surgForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // Add new Surgery
+    async function saveSurgery() {
+        const name = document.getElementById('surgery_name').value.trim();
+        const typeId = document.getElementById('surgery_type_id').value;
+        const price = document.getElementById('surgery_price').value;
 
-            const data = {
-                surgery_name: document.getElementById('surgery_name').value.trim(),
-                surgery_type_id: document.getElementById('surgery_type_id').value,
-                surgery_price: document.getElementById('surgery_price').value,
-                is_available: document.getElementById('is_available').value
-            };
-
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
-                    operation: 'addSurgery',
-                    json: JSON.stringify(data)
-                });
-
-                const resData = response.data;
-
-                if (resData.success) {
-                    alert('Surgery added successfully');
-                    window.location.reload();
-                } else {
-                    alert(resData.message || 'Failed to add medicine');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error adding medicine');
-            }
-        });
-    }
-
-    // Edit Button
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const surgId = e.target.dataset.id;
-            const surg = surgeries.find(s => s.surgery_id == surgId);
-
-            if (surg) {
-                // await loadSurgeryTypes();
-
-                document.getElementById('edit_surgery_id').value = surg.surgery_id;
-                document.getElementById('edit_surgery_name').value = surg.surgery_name;
-                document.getElementById('edit_surgery_type_id').value = surg.surgery_type_id;
-                document.getElementById('edit_surgery_price').value = surg.surgery_price;
-                document.getElementById('edit_is_available').value = surg.is_available;
-
-                const modal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
-                modal.show();
-            }
+        if (!name || !typeId || !price) {
+            alert('Please fill in all required fields.');
+            return;
         }
 
-    });
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                operation: 'addSurgery',
+                json: JSON.stringify({
+                    surgery_name: name,
+                    surgery_type_id: parseInt(typeId),
+                    surgery_price: parseFloat(price),
+                    is_available: 1
+                })
+            });
 
-    // Update Form Submit
+            const data = response.data;
 
-    if (editForm) {
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const data = {
-                surgery_id: document.getElementById('edit_surgery_id').value,
-                surgery_name: document.getElementById('edit_surgery_name').value,
-                surgery_type_id: document.getElementById('edit_surgery_type_id').value,
-                surgery_price: document.getElementById('edit_surgery_price').value,
-                is_available: document.getElementById('edit_is_available').value
-            };
-
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
-                    operation: 'updateSurgery',
-                    json: JSON.stringify(data)
-                });
-
-                const resData = response.data;
-
-                if (resData.success) {
-                    alert('Surgery updated successfully');
-                    window.location.reload();
-                } else {
-                    alert(resData.message || 'Failed to update surgery');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error updating surgery');
+            if (data.success) {
+                alert('Surgery added successfully!');
+                addModal.hide();
+                addForm.reset();
+                await loadSurgeries();
+            } else {
+                alert(data.message || 'Failed to add surgery');
             }
-        });
+        } catch (error) {
+            console.error('Error adding surgery:', error);
+            alert('Failed to add surgery. Please try again.');
+        }
+    }
+
+    // Edit Surgery
+    window.editSurgery = async function (surgeryId) {
+        const surgery = surgeries.find(s => s.surgery_id == surgId);
+        if (!surgery) {
+            alert('Surgery not found');
+            return;
+        }
+
+        document.getElementById('edit_surgery_id').value = surgery.surgery_id;
+        document.getElementById('edit_surgery_name').value = surgery.surgery_name;
+        document.getElementById('edit_surgery_type_id').value = surgery.surgery_type_id;
+        document.getElementById('edit_surgery_price').value = surg.surgery_price;
+        document.getElementById('edit_is_available').value = surgery.is_available;
+
+        editModal.show();
+    };
+
+    // Update Surgery
+    async function updateSurgery() {
+        const id = document.getElementById('edit_surgery_id').value;
+        const name = document.getElementById('edit_surgery_name').value;
+        const typeId = document.getElementById('edit_surgery_type_id').value;
+        const price = document.getElementById('edit_surgery_price').value;
+        const isAvailable = document.getElementById('edit_is_available').value;
+
+        if (!name || !typeId || !price) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                operation: 'updateSurgery',
+                json: JSON.stringify({
+                    surgery_id: parseInt(id),
+                    surgery_name: name,
+                    surgery_type_id: parseInt(typeId),
+                    surgery_price: parseFloat(price),
+                    is_available: parseInt(isAvailable)
+                })
+            });
+
+            const data = response.data;
+
+            if (data.success) {
+                alert('Surgery updated successfully');
+                editModal.hide();
+                await loadSurgeries();
+            } else {
+                alert(data.message || 'Failed to update surgery');
+            }
+        } catch (error) {
+            console.error('Error updating surgery', error);
+            alert('Failed to update surgery. Please try again.');
+        }
     }
 
     await loadSurgeryTypes();
