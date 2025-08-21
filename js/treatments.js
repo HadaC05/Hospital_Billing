@@ -1,221 +1,212 @@
 console.log('treatments.js is working');
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/hospital_billing/api';
-    const user = JSON.parse(localStorage.getItem('user'));
+const baseApiUrl = 'http://localhost/hospital_billing/api';
 
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check for user authentication
+    const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
         return;
     }
 
-    // Check if user has permission to manage treatments
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
-        });
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('manage_treatments')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../dashboard.html';
+    // Treatment management functionality
+    const tableBody = document.getElementById('treatment-list');
+    let treatments = [];
+
+    // Modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addTreatmentModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editTreatmentModal'));
+
+    // Form elements
+    const addForm = document.getElementById('addTreatmentForm');
+    const editForm = document.getElementById('editTreatmentForm');
+
+    // Button event listeners
+    document.getElementById('saveTreatmentBtn').addEventListener('click', saveTreatment);
+    document.getElementById('updateTreatmentBtn').addEventListener('click', updateTreatment);
+
+    // Load treatment categories
+    async function loadTreatmentCategories() {
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
+                params: { operation: 'getTreatmentCategories' }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.categories)) {
+                const options = data.categories.map(c => {
+                    return `<option value="${c.treatment_category_id}">${c.category_name}</option>`;
+                }).join('');
+
+                // Populate dropdowns
+                const addCategorySelect = document.getElementById('treatment_category_id');
+                const editCategorySelect = document.getElementById('edit_treatment_category_id');
+
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+            } else {
+                const addCategorySelect = document.getElementById('treatment_category_id');
+                const editCategorySelect = document.getElementById('edit_treatment_category_id');
+
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+            }
+        } catch (error) {
+            console.error('Failed to load treatment categories', error);
+        }
+    }
+
+    // Load treatments
+    async function loadTreatments() {
+        if (!tableBody) {
+            console.error('Treatment table body not found');
             return;
         }
 
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../dashboard.html';
-        return;
+        tableBody.innerHTML = '<tr><td colspan="5">Loading treatments...</td></tr>';
+
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
+                params: { operation: 'getTreatments' }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.treatments)) {
+                treatments = data.treatments;
+
+                if (treatments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                treatments.forEach(t => {
+                    const status = t.is_active == 1 ? 'Active' : 'Inactive';
+                    const statusBadge = t.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+
+                    const row = `
+                        <tr>
+                            <td>${t.treatment_name}</td>
+                            <td>₱${parseFloat(t.unit_price).toFixed(2)}</td>
+                            <td>${t.treatment_category}</td>
+                            <td><span class="${statusBadge}">${status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTreatment(${t.treatment_id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error loading treatments: ', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Failed to load treatments</td></tr>';
+        }
     }
 
-    // Load treatment list and populate category select
-    const tableBody = document.getElementById('treatment-list');
-    if (!tableBody) {
-        console.error('Treatment table body not found.');
-        return;
-    }
-    tableBody.innerHTML = '<tr><td colspan="4">Loading treatments...</td></tr>';
-    try {
-        const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-            params: {
-                operation: 'getTreatments',
-                json: JSON.stringify({})
-            }
-        });
-        const data = response.data;
-        if (data.success && Array.isArray(data.treatments)) {
-            if (data.treatments.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4">No treatments found.</td></tr>';
-                return;
-            }
-            tableBody.innerHTML = '';
-            data.treatments.forEach(treatment => {
-                const row = `
-                    <tr>
-                        <td>${treatment.treatment_name}</td>
-                        <td>${treatment.unit_price}</td>
-                        <td>${treatment.treatment_category}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm update-treatment" data-id="${treatment.treatment_id}">Update</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found.'}</td></tr>`;
+    // Create new treatment
+    async function saveTreatment() {
+        const treatmentName = document.getElementById('treatment_name').value.trim();
+        const unitPrice = document.getElementById('unit_price').value;
+        const categoryId = document.getElementById('treatment_category_id').value;
+
+        if (!treatmentName || !unitPrice || !categoryId) {
+            alert('Please fill in all required fields.');
+            return;
         }
-    } catch (error) {
-        console.error('Error loading treatments: ', error);
-        tableBody.innerHTML = '<tr><td colspan="4">Failed to load treatments.</td></tr>';
-    }
-    // Populate treatment categories
-    const categorySelect = document.getElementById('treatment_category_id');
-    if (categorySelect) {
+
         try {
-            const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                params: { operation: 'getTreatmentCategories', json: JSON.stringify({}) }
+            const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
+                operation: 'addTreatment',
+                json: JSON.stringify({
+                    treatment_name: treatmentName,
+                    unit_price: parseFloat(unitPrice),
+                    treatment_category_id: parseInt(categoryId),
+                    is_active: 1
+                })
             });
-            if (resp.data.success && Array.isArray(resp.data.categories)) {
-                // Add default "Select a category" option
-                categorySelect.innerHTML = '<option value="">Select a category</option>';
-                resp.data.categories.forEach(cat => {
-                    categorySelect.innerHTML += `<option value="${cat.treatment_category_id}">${cat.category_name}</option>`;
-                });
+
+            const data = response.data;
+            if (data.success) {
+                alert('Treatment added successfully!');
+                addModal.hide();
+                addForm.reset();
+                await loadTreatments();
             } else {
-                categorySelect.innerHTML = '<option value="">No categories found</option>';
+                alert(data.message || 'Failed to add treatment.');
             }
-        } catch (err) {
-            categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+        } catch (error) {
+            console.error('Error adding treatment:', error);
+            alert('Failed to add treatment. Please try again.');
         }
     }
-    // Add Treatment
-    const addTreatmentForm = document.getElementById('addTreatmentForm');
-    if (addTreatmentForm) {
-        addTreatmentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                treatment_name: document.getElementById('treatment_name').value.trim(),
-                unit_price: document.getElementById('unit_price').value,
-                treatment_category_id: document.getElementById('treatment_category_id').value
-            };
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
-                    operation: 'addTreatment',
-                    json: JSON.stringify(data)
-                });
-                const respData = response.data;
-                if (respData.success) {
-                    alert('Treatment added successfully');
-                    window.location.reload();
-                } else {
-                    alert(respData.message || 'Failed to add treatment');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error adding treatment');
-            }
-        });
-    } else {
-        console.error('Add Treatment form not found.');
-    }
-    // Add modal HTML if not present
-    if (!document.getElementById('treatmentModal')) {
-        const modalHtml = `
-        <div class="modal fade" id="treatmentModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <form id="treatmentModalForm" class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Update Treatment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="modal_treatment_id">
-                        <div class="mb-2">
-                            <label>Treatment Name</label>
-                            <input type="text" class="form-control" id="modal_treatment_name" required>
-                        </div>
-                        <div class="mb-2">
-                            <label>Unit Price</label>
-                            <input type="number" class="form-control" id="modal_unit_price" required>
-                        </div>
-                        <div class="mb-2">
-                            <label>Category</label>
-                            <select class="form-select" id="modal_treatment_category_id" required></select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
-                </form>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-    // Helper to populate category select in modal
-    async function populateModalCategorySelect(selectedId) {
-        const select = document.getElementById('modal_treatment_category_id');
-        try {
-            const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                params: { operation: 'getTreatmentCategories', json: JSON.stringify({}) }
-            });
-            if (resp.data.success && Array.isArray(resp.data.categories)) {
-                select.innerHTML = '';
-                resp.data.categories.forEach(cat => {
-                    select.innerHTML += `<option value="${cat.treatment_category_id}" ${cat.treatment_category_id == selectedId ? 'selected' : ''}>${cat.category_name}</option>`;
-                });
-            }
-        } catch { }
-    }
-    // Update button logic
-    tableBody.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('update-treatment')) {
-            const treatmentId = e.target.getAttribute('data-id');
-            try {
-                const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                    params: { operation: 'getTreatment', json: JSON.stringify({ treatment_id: treatmentId }) }
-                });
-                if (resp.data.success) {
-                    const treatment = resp.data.treatment;
-                    document.getElementById('modal_treatment_id').value = treatment.treatment_id;
-                    document.getElementById('modal_treatment_name').value = treatment.treatment_name;
-                    document.getElementById('modal_unit_price').value = treatment.unit_price;
-                    await populateModalCategorySelect(treatment.treatment_category_id);
-                    new bootstrap.Modal(document.getElementById('treatmentModal')).show();
-                } else {
-                    alert(resp.data.message || 'Treatment not found');
-                }
-            } catch {
-                alert('Failed to fetch treatment');
-            }
+
+    // Edit treatment
+    window.editTreatment = async function (treatmentId) {
+        const treatment = treatments.find(t => t.treatment_id == treatmentId);
+        if (!treatment) {
+            alert('Treatment not found.');
+            return;
         }
-    });
-    // Update logic
-    document.getElementById('treatmentModalForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const data = {
-            treatment_id: document.getElementById('modal_treatment_id').value,
-            treatment_name: document.getElementById('modal_treatment_name').value.trim(),
-            unit_price: document.getElementById('modal_unit_price').value,
-            treatment_category_id: document.getElementById('modal_treatment_category_id').value
-        };
+
+        document.getElementById('edit_treatment_id').value = treatment.treatment_id;
+        document.getElementById('edit_treatment_name').value = treatment.treatment_name;
+        document.getElementById('edit_unit_price').value = treatment.unit_price;
+        document.getElementById('edit_treatment_category_id').value = treatment.treatment_category_id;
+        document.getElementById('edit_is_active').value = treatment.is_active;
+
+        editModal.show();
+    };
+
+    // Update treatment
+    async function updateTreatment() {
+        const treatmentId = document.getElementById('edit_treatment_id').value;
+        const treatmentName = document.getElementById('edit_treatment_name').value.trim();
+        const unitPrice = document.getElementById('edit_unit_price').value;
+        const categoryId = document.getElementById('edit_treatment_category_id').value;
+        const isActive = document.getElementById('edit_is_active').value;
+
+        if (!treatmentName || !unitPrice || !categoryId) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
         try {
-            const resp = await axios.post(`${baseApiUrl}/get-treatments.php`, {
+            const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
                 operation: 'updateTreatment',
-                json: JSON.stringify(data)
+                json: JSON.stringify({
+                    treatment_id: parseInt(treatmentId),
+                    treatment_name: treatmentName,
+                    unit_price: parseFloat(unitPrice),
+                    treatment_category_id: parseInt(categoryId),
+                    is_active: parseInt(isActive)
+                })
             });
-            if (resp.data.success) {
-                alert('Treatment updated successfully');
-                window.location.reload();
+
+            const data = response.data;
+            if (data.success) {
+                alert('Treatment updated successfully!');
+                editModal.hide();
+                await loadTreatments();
             } else {
-                alert(resp.data.message || 'Failed to update treatment');
+                alert(data.message || 'Failed to update treatment.');
             }
-        } catch {
-            alert('Error updating treatment');
+        } catch (error) {
+            console.error('Error updating treatment:', error);
+            alert('Failed to update treatment. Please try again.');
         }
-    });
+    }
+
+    // Initialize
+    await loadTreatmentCategories();
+    await loadTreatments();
 });

@@ -13,7 +13,9 @@ class Treatments
             SELECT 
                 t.treatment_id,
                 t.treatment_name,
+                t.treatment_category_id,
                 t.unit_price,
+                t.is_active,
                 tc.category_name AS treatment_category
             FROM tbl_treatment t
             JOIN tbl_treatment_category tc ON t.treatment_category_id = tc.treatment_category_id
@@ -32,9 +34,28 @@ class Treatments
     function addTreatment($data)
     {
         include 'connection-pdo.php';
+
+        // check dupicate name 
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_treatment
+            WHERE treatment_name = :treatment_name
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':treatment_name', $data['treatment_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A room with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
-            INSERT INTO tbl_treatment (treatment_name, unit_price, treatment_category_id)
-            VALUES (:treatment_name, :unit_price, :treatment_category_id)
+            INSERT INTO tbl_treatment (treatment_name, unit_price, treatment_category_id, is_active)
+            VALUES (:treatment_name, :unit_price, :treatment_category_id, 1)
         ";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':treatment_name', $data['treatment_name']);
@@ -64,38 +85,36 @@ class Treatments
         ]);
     }
 
-    function getTreatment($data)
-    {
-        include 'connection-pdo.php';
-        $sql = "
-            SELECT 
-                t.treatment_id,
-                t.treatment_name,
-                t.unit_price,
-                t.treatment_category_id
-            FROM tbl_treatment t
-            WHERE t.treatment_id = :treatment_id
-        ";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':treatment_id', $data['treatment_id']);
-        $stmt->execute();
-        $treatment = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($treatment) {
-            echo json_encode(['success' => true, 'treatment' => $treatment]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Treatment not found']);
-        }
-    }
-
     function updateTreatment($data)
     {
         include 'connection-pdo.php';
+
+        // check dupicate name 
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_treatment
+            WHERE treatment_name = :treatment_name AND treatment_id != :treatment_id
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':treatment_name', $data['treatment_name']);
+        $checkStmt->bindParam(':treatment_id', $data['treatment_id']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A treatment with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             UPDATE tbl_treatment 
             SET 
                 treatment_name = :treatment_name,
                 unit_price = :unit_price,
-                treatment_category_id = :treatment_category_id
+                treatment_category_id = :treatment_category_id,
+                is_active = :is_active
             WHERE treatment_id = :treatment_id
         ";
         $stmt = $conn->prepare($sql);
@@ -103,6 +122,7 @@ class Treatments
         $stmt->bindParam(':treatment_name', $data['treatment_name']);
         $stmt->bindParam(':unit_price', $data['unit_price']);
         $stmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
+        $stmt->bindParam(':is_active', $data['is_active']);
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Treatment updated']);
         } else {
@@ -132,9 +152,6 @@ switch ($operation) {
         break;
     case 'getTreatmentCategories':
         $treatment->getTreatmentCategories();
-        break;
-    case 'getTreatment':
-        $treatment->getTreatment($data);
         break;
     case 'updateTreatment':
         $treatment->updateTreatment($data);
