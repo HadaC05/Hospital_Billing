@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
 
-            if (data.success && Array.isArray(data.roomTypes)) {
-                const options = data.roomTypes.map(type => {
+            if (data.success && Array.isArray(data.types)) {
+                const options = data.types.map(type => {
                     return `<option value="${type.room_type_id}">${type.room_type_name}</option>`;
                 }).join('');
 
@@ -120,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeId = document.getElementById('room_type_id').value;
         const dailyRate = document.getElementById('daily_rate').value;
         const maxOccupancy = document.getElementById('max_occupancy').value;
-        const isAvailable = document.getElementById('is_available').value;
 
         if (!roomNumber || !typeId || !dailyRate || !maxOccupancy) {
             alert('Please fill in all required fields.');
@@ -135,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     room_type_id: parseInt(typeId),
                     daily_rate: parseFloat(dailyRate),
                     max_occupancy: parseInt(maxOccupancy),
-                    is_available: parseInt(isAvailable)
+                    is_available: 1
                 })
             });
 
