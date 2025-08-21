@@ -13,6 +13,7 @@ class Rooms
             SELECT 
                 r.room_id,
                 r.room_number,
+                r.room_type_id,
                 rt.room_type_name,
                 r.daily_rate,
                 r.max_occupancy,
@@ -34,16 +35,36 @@ class Rooms
     function addRoom($data)
     {
         include 'connection-pdo.php';
+
+        // check dupicate name 
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_room
+            WHERE room_number = :room_number
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':room_number', $data['room_number']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A room with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             INSERT INTO tbl_room (room_number, room_type_id, daily_rate, max_occupancy, is_available)
-            VALUES (:room_number, :room_type_id, :daily_rate, :max_occupancy, :is_available)
+            VALUES (:room_number, :room_type_id, :daily_rate, :max_occupancy, 1)
         ";
+
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':room_number', $data['room_number']);
         $stmt->bindParam(':room_type_id', $data['room_type_id']);
         $stmt->bindParam(':daily_rate', $data['daily_rate']);
         $stmt->bindParam(':max_occupancy', $data['max_occupancy']);
-        $stmt->bindParam(':is_available', $data['is_available']);
+
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Room added']);
         } else {
@@ -54,6 +75,7 @@ class Rooms
     function getRoomTypes()
     {
         include 'connection-pdo.php';
+
         $sql = "
             SELECT room_type_id, room_type_name
             FROM tbl_room_type
@@ -68,34 +90,29 @@ class Rooms
         ]);
     }
 
-    function getRoom($data)
-    {
-        include 'connection-pdo.php';
-        $sql = "
-            SELECT 
-                r.room_id,
-                r.room_number,
-                r.room_type_id,
-                r.daily_rate,
-                r.max_occupancy,
-                r.is_available
-            FROM tbl_room r
-            WHERE r.room_id = :room_id
-        ";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':room_id', $data['room_id']);
-        $stmt->execute();
-        $room = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($room) {
-            echo json_encode(['success' => true, 'room' => $room]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Room not found']);
-        }
-    }
-
     function updateRoom($data)
     {
         include 'connection-pdo.php';
+
+        // check duplicate
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_room
+            WHERE room_number = :room_number AND room_id != :room_id
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':room_number', $data['room_number']);
+        $checkStmt->bindParam(':room_id', $data['room_id']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Another room with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             UPDATE tbl_room 
             SET 
@@ -142,9 +159,6 @@ switch ($operation) {
         break;
     case 'getRoomTypes':
         $room->getRoomTypes();
-        break;
-    case 'getRoom':
-        $room->getRoom($data);
         break;
     case 'updateRoom':
         $room->updateRoom($data);

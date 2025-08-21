@@ -38,7 +38,7 @@ class Medicines
     {
         include 'connection-pdo.php';
 
-        // 🔎 Check duplicate medicine name
+        // Check duplicate name
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name";
         $checkStmt = $conn->prepare($checkSql);
         $checkStmt->bindParam(':med_name', $data['med_name']);
@@ -94,7 +94,7 @@ class Medicines
     {
         include 'connection-pdo.php';
 
-        // 🔎 Check duplicate name (exclude current record)
+        // Check duplicate name (exclude current record)
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name AND med_id != :med_id";
         $checkStmt = $conn->prepare($checkSql);
         $checkStmt->bindParam(':med_name', $med_name);
