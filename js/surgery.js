@@ -1,6 +1,7 @@
 console.log('surgery.js is working');
+console.log('is this currently working');
 
-const baseApiUrl = 'http://localhost/hospital_billing/api';
+const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -25,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // button event listeners
     document.getElementById('saveSurgeryBtn').addEventListener('click', saveSurgery);
-    document.getElementById('updateSurgeryBtn').addEventListener('click', updateRoom);
+    document.getElementById('updateSurgeryBtn').addEventListener('click', updateSurgery);
 
     // Load Surgery Types
     async function loadSurgeryTypes() {
@@ -154,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit Surgery
     window.editSurgery = async function (surgeryId) {
-        const surgery = surgeries.find(s => s.surgery_id == surgId);
+        const surgery = surgeries.find(s => s.surgery_id == surgeryId);
         if (!surgery) {
             alert('Surgery not found');
             return;
@@ -163,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit_surgery_id').value = surgery.surgery_id;
         document.getElementById('edit_surgery_name').value = surgery.surgery_name;
         document.getElementById('edit_surgery_type_id').value = surgery.surgery_type_id;
-        document.getElementById('edit_surgery_price').value = surg.surgery_price;
+        document.getElementById('edit_surgery_price').value = surgery.surgery_price;
         document.getElementById('edit_is_available').value = surgery.is_available;
 
         editModal.show();

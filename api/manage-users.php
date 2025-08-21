@@ -23,10 +23,10 @@ class UserManager
     {
         try {
             $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
-                      u.email, u.mobile_number, u.role_id, r.role_name 
-                      FROM users u 
-                      JOIN user_roles r ON u.role_id = r.role_id 
-                      ORDER BY u.last_name, u.first_name";
+                        u.email, u.mobile_number, u.role_id, r.role_name 
+                        FROM users u 
+                        JOIN user_roles r ON u.role_id = r.role_id 
+                        ORDER BY u.last_name, u.first_name";
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
 
@@ -50,10 +50,10 @@ class UserManager
     {
         try {
             $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
-                      u.email, u.mobile_number, u.role_id, r.role_name 
-                      FROM users u 
-                      JOIN user_roles r ON u.role_id = r.role_id 
-                      WHERE u.user_id = :user_id";
+                        u.email, u.mobile_number, u.role_id, r.role_name 
+                        FROM users u 
+                        JOIN user_roles r ON u.role_id = r.role_id 
+                        WHERE u.user_id = :user_id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $userId);
             $stmt->execute();
@@ -103,9 +103,9 @@ class UserManager
 
             // Insert new user
             $query = "INSERT INTO users (username, password, first_name, middle_name, last_name, 
-                      email, mobile_number, role_id) 
-                      VALUES (:username, :password, :first_name, :middle_name, :last_name, 
-                      :email, :mobile_number, :role_id)";
+                        email, mobile_number, role_id) 
+                        VALUES (:username, :password, :first_name, :middle_name, :last_name, 
+                        :email, :mobile_number, :role_id)";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
@@ -153,13 +153,13 @@ class UserManager
 
             // Start building the update query
             $query = "UPDATE users SET 
-                      username = :username, 
-                      first_name = :first_name, 
-                      middle_name = :middle_name, 
-                      last_name = :last_name, 
-                      email = :email, 
-                      mobile_number = :mobile_number, 
-                      role_id = :role_id";
+                        username = :username, 
+                        first_name = :first_name, 
+                        middle_name = :middle_name, 
+                        last_name = :last_name, 
+                        email = :email, 
+                        mobile_number = :mobile_number, 
+                        role_id = :role_id";
 
             // Add password to update query if provided
             if (!empty($userData['password'])) {

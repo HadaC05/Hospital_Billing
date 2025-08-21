@@ -22,6 +22,7 @@
 </head>
 
 <body class="d-flex flex-column vh-100">
+    <div id="header-placeholder"></div>
 
     <!-- Sidebar -->
     <div id="page-container" class="d-flex flex-grow-1">
@@ -30,7 +31,121 @@
         <!-- Main Content -->
         <main class="content p-3 flex-grow-1">
             <h2 id="welcome-msg"></h2>
-            <div id="dashboard-content"></div>
+            <div id="dashboard-content">
+                <div class="container-fluid">
+                    <div class="row g-3" id="kpi-row">
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3 text-primary"><i class="fas fa-bed fa-2x"></i></div>
+                                        <div>
+                                            <div class="small text-muted">Admitted Patients</div>
+                                            <div class="fs-4 fw-bold" id="kpi-admitted">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3 text-success"><i class="fas fa-file-invoice-dollar fa-2x"></i></div>
+                                        <div>
+                                            <div class="small text-muted">Total Invoices</div>
+                                            <div class="fs-4 fw-bold" id="kpi-invoices">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3 text-warning"><i class="fas fa-sack-dollar fa-2x"></i></div>
+                                        <div>
+                                            <div class="small text-muted">Total Billed</div>
+                                            <div class="fs-5 fw-bold" id="kpi-billed">₱0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3 text-danger"><i class="fas fa-circle-exclamation fa-2x"></i></div>
+                                        <div>
+                                            <div class="small text-muted">Total Due</div>
+                                            <div class="fs-5 fw-bold" id="kpi-due">₱0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white d-flex align-items-center">
+                                    <i class="fas fa-clipboard-check me-2 text-primary"></i>
+                                    <span class="fw-semibold">Recent Invoices</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Date</th>
+                                                    <th>Patient</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-end">Due</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recent-invoices">
+                                                <tr><td colspan="6" class="text-center text-muted">No data</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white d-flex align-items-center">
+                                    <i class="fas fa-shield-halved me-2 text-success"></i>
+                                    <span class="fw-semibold">Insurance Claims</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Provider</th>
+                                                    <th>Patient</th>
+                                                    <th>Status</th>
+                                                    <th class="text-end">Approved</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recent-claims">
+                                                <tr><td colspan="5" class="text-center text-muted">No data</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 </body>

@@ -35,7 +35,7 @@ class Treatments
     {
         include 'connection-pdo.php';
 
-        // check dupicate name 
+        // check duplicate name 
         $checkSql = "
             SELECT COUNT(*)
             FROM tbl_treatment

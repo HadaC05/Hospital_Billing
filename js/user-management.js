@@ -1,156 +1,11 @@
 console.log('user-management.js is working');
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = 'http://localhost/hospital_billing/api';
+    const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
         return;
-    }
-
-    // Check if user has permission to manage users
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
-        });
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('manage_users')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../dashboard.html';
-            return;
-        }
-
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../dashboard.html';
-        return;
-    }
-
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const pageContainer = document.getElementById('page-container');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-            pageContainer.classList.add('expanded');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            pageContainer.classList.toggle('expanded');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
-
-        // Set user name in sidebar
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = user.full_name || user.username;
-        }
-
-        // Render navigation modules based on permissions
-        if (window.userPermissions) {
-            renderModules(window.userPermissions);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
-
-    // Function to render navigation modules based on permissions
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Clear existing links
-        if (sidebarLinks) sidebarLinks.innerHTML = '';
-        if (accordionBody) accordionBody.innerHTML = '';
-
-        // Add standalone navigation links
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-
-                // Highlight current page
-                if (link === 'user-management.html') {
-                    a.classList.add('bg-primary', 'bg-opacity-25');
-                }
-
-                if (sidebarLinks) {
-                    sidebarLinks.appendChild(a);
-                }
-            }
-        });
-
-        // Add inventory modules to accordion
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-box me-2"></i>${label}`;
-
-                if (accordionBody) {
-                    accordionBody.appendChild(a);
-                }
-                inventoryShown = true;
-            }
-        });
-
-        // Show/hide inventory accordion based on permissions
-        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
-        if (inventoryAccordion) {
-            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
-        }
     }
 
     // Load users and roles
@@ -303,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'addUser',
-                json: formData
+                json: JSON.stringify(formData)
             });
             const data = response.data;
             if (data.success) {
@@ -344,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'updateUser',
-                json: formData
+                json: JSON.stringify(formData)
             });
             const data = response.data;
             if (data.success) {
@@ -366,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'deleteUser',
-                json: { user_id: userId }
+                json: JSON.stringify({ user_id: userId })
             });
             const data = response.data;
             if (data.success) {
