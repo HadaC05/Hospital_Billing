@@ -133,7 +133,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const unitPrice = document.getElementById('add_unit_price').value;
 
         if (!testName || !categoryId || !unitPrice) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -150,16 +154,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Lab test added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Lab test added successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadLabtest();
             } else {
-                alert(data.message || 'Failed to add lab test.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to add lab test',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding lab test:', error);
-            alert('Failed to add lab test. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to add lab test',
+                icon: 'error'
+            });
         }
     }
 
@@ -167,7 +183,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editLabtest = async function (labtestId) {
         const labtest = labtests.find(test => test.labtest_id == labtestId);
         if (!labtest) {
-            alert('Lab test not found.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Lab test not found.',
+                icon: 'error'
+            });
             return;
         }
 
@@ -190,7 +210,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!testName || !categoryId || !unitPrice) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -208,15 +232,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Lab test updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Lab test updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadLabtest();
             } else {
-                alert(data.message || 'Failed to update lab test.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to update lab test.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating lab test:', error);
-            alert('Failed to update lab test. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to update lab test',
+                icon: 'error'
+            });
         }
     }
 
@@ -241,15 +277,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Lab test deleted successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Lab test deleted successfully!',
+                    icon: 'success'
+                });
                 deleteModal.hide();
                 await loadLabtest();
             } else {
-                alert(data.message || 'Failed to delete lab test.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to delete lab test',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error deleting lab test:', error);
-            alert('Failed to delete lab test. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to delete lab test',
+                icon: 'error'
+            });
         }
     }
 

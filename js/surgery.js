@@ -122,7 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const price = document.getElementById('surgery_price').value;
 
         if (!name || !typeId || !price) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -140,16 +144,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success) {
-                alert('Surgery added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Surgery added successfully!',
+                    icon: 'success'
+                })
                 addModal.hide();
                 addForm.reset();
                 await loadSurgeries();
             } else {
-                alert(data.message || 'Failed to add surgery');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to add surgery',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding surgery:', error);
-            alert('Failed to add surgery. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to add surgery',
+                icon: 'error'
+            });
         }
     }
 
@@ -157,7 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editSurgery = async function (surgeryId) {
         const surgery = surgeries.find(s => s.surgery_id == surgeryId);
         if (!surgery) {
-            alert('Surgery not found');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Surgery not found',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -179,7 +199,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAvailable = document.getElementById('edit_is_available').value;
 
         if (!name || !typeId || !price) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -198,15 +222,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success) {
-                alert('Surgery updated successfully');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Surgery updated successfully',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadSurgeries();
             } else {
-                alert(data.message || 'Failed to update surgery');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to update surgery',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating surgery', error);
-            alert('Failed to update surgery. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to update surgery',
+                icon: 'error'
+            });
         }
     }
 

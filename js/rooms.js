@@ -122,7 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const maxOccupancy = document.getElementById('max_occupancy').value;
 
         if (!roomNumber || !typeId || !dailyRate || !maxOccupancy) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -140,16 +144,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Room added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Room added successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadRooms();
             } else {
-                alert(data.message || 'Failed to add room.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to add room.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding room:', error);
-            alert('Failed to add room. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to add room.',
+                icon: 'error'
+            });
         }
     }
 
@@ -157,7 +173,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editRoom = async function (roomId) {
         const room = rooms.find(r => r.room_id == roomId);
         if (!room) {
-            alert('Room not found.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Room not found.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -181,7 +201,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAvailable = document.getElementById('edit_is_available').value;
 
         if (!roomNumber || !typeId || !dailyRate || !maxOccupancy) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -200,15 +224,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Room updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Room updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadRooms();
             } else {
-                alert(data.message || 'Failed to update room.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to update room.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating room:', error);
-            alert('Failed to update room. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to update room.',
+                icon: 'error'
+            });
         }
     }
 
