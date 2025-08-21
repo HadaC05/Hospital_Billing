@@ -130,7 +130,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const medUnit = document.getElementById('med_unit').value.trim();
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -149,16 +153,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Medicine added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Medicine added successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadMedicines();
             } else {
-                alert(data.message || 'Failed to add medicine.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: data.message || 'Failed to add medicine',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding medicine:', error);
-            alert('Failed to add medicine. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to add medicine',
+                icon: 'error'
+            });
         }
     }
 
@@ -166,7 +182,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editMedicine = async function (medId) {
         const med = medicines.find(m => m.med_id == medId);
         if (!med) {
-            alert('Medicine not found.');
+            Swal.fire({
+                title: "Warning",
+                text: "Medicine not found",
+                icon: "warning"
+            });
             return;
         }
 
@@ -193,7 +213,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -213,15 +237,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Medicine updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Medicine updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadMedicines();
             } else {
-                alert(data.message || 'Failed to update medicine.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to update medicine',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating medicine:', error);
-            alert('Failed to update medicine. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to update medicine',
+                icon: 'error'
+            });
         }
     }
 
@@ -246,15 +282,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Medicine deleted successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Medicine deleted successfully!',
+                    icon: 'success'
+                });
                 deleteModal.hide();
                 await loadMedicines();
             } else {
-                alert(data.message || 'Failed to delete medicine.');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to delete medicine',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error deleting medicine:', error);
-            alert('Failed to delete medicine. Please try again.');
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to delete medicine',
+                icon: 'error'
+            });
         }
     }
 

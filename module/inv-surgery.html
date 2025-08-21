@@ -75,11 +75,12 @@
                                     <input type="text" class="form-control" id="surgery_name" required>
                                 </div>
                                 <div class="mb-3">
+                                    <label for="surgery_type_id" class="form-label">Type</label>
                                     <select id="surgery_type_id" class="form-select"></select>
                                 </div>
                                 <div class="mb-3">
-                                    <input type="number" class="form-control" id="surgery_price"
-                                        placeholder="Unit Price" required>
+                                    <label for="surgery_price" class="form-label">Unit Price</label>
+                                    <input type="number" class="form-control" id="surgery_price" required>
                                 </div>
 
                             </form>
@@ -117,6 +118,13 @@
                                     <label for="edit_surgery_price" class="form-label">Price</label>
                                     <input type="number" step="0.01" id="edit_surgery_price" class="form-control"
                                         required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_is_available" class="form-label">Status</label>
+                                    <select id="edit_is_available" class="form-select" required>
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
                                 </div>
                             </form>
                         </div>

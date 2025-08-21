@@ -98,13 +98,12 @@ class LabTestManager
 
             // Insert new lab test
             $sql = "INSERT INTO tbl_labtest (test_name, labtest_category_id, unit_price, is_active) 
-                    VALUES (:test_name, :labtest_category_id, :unit_price, :is_active)";
+                    VALUES (:test_name, :labtest_category_id, :unit_price, 1)";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':test_name', $data['test_name']);
             $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
             $stmt->bindParam(':unit_price', $data['unit_price']);
-            $stmt->bindParam(':is_active', $isActive);
 
             if ($stmt->execute()) {
                 echo json_encode([

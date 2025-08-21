@@ -131,7 +131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const testName = document.getElementById('add_test_name').value.trim();
         const categoryId = document.getElementById('add_labtest_category_id').value;
         const unitPrice = document.getElementById('add_unit_price').value;
-        const isActive = document.getElementById('add_is_active').value;
 
         if (!testName || !categoryId || !unitPrice) {
             alert('Please fill in all required fields.');
@@ -145,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     test_name: testName,
                     labtest_category_id: categoryId,
                     unit_price: parseFloat(unitPrice),
-                    is_active: parseInt(isActive)
+                    is_active: 1
                 })
             });
 
