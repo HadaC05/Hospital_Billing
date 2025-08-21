@@ -84,7 +84,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':test_name', $data['test_name']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -99,13 +99,13 @@ class LabTestManager
             // Insert new lab test
             $sql = "INSERT INTO tbl_labtest (test_name, labtest_category_id, unit_price, is_active) 
                     VALUES (:test_name, :labtest_category_id, :unit_price, :is_active)";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':test_name', $data['test_name']);
             $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
             $stmt->bindParam(':unit_price', $data['unit_price']);
             $stmt->bindParam(':is_active', $isActive);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -144,7 +144,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() == 0) {
                 echo json_encode([
                     'success' => false,
@@ -159,7 +159,7 @@ class LabTestManager
             $checkNameStmt->bindParam(':test_name', $data['test_name']);
             $checkNameStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkNameStmt->execute();
-            
+
             if ($checkNameStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -175,17 +175,17 @@ class LabTestManager
                         unit_price = :unit_price, 
                         is_active = :is_active 
                     WHERE labtest_id = :labtest_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
             $stmt->bindParam(':test_name', $data['test_name']);
             $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
             $stmt->bindParam(':unit_price', $data['unit_price']);
-            
+
             // Set is_active to 1 if not provided
             $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
             $stmt->bindParam(':is_active', $isActive);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -223,7 +223,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() == 0) {
                 echo json_encode([
                     'success' => false,
@@ -237,13 +237,13 @@ class LabTestManager
             $usageStmt = $this->conn->prepare($usageSql);
             $usageStmt->bindParam(':labtest_id', $data['labtest_id']);
             $usageStmt->execute();
-            
+
             if ($usageStmt->fetchColumn() > 0) {
                 // Instead of deleting, mark as inactive
                 $deactivateSql = "UPDATE tbl_labtest SET is_active = 0 WHERE labtest_id = :labtest_id";
                 $deactivateStmt = $this->conn->prepare($deactivateSql);
                 $deactivateStmt->bindParam(':labtest_id', $data['labtest_id']);
-                
+
                 if ($deactivateStmt->execute()) {
                     echo json_encode([
                         'success' => true,
@@ -262,7 +262,7 @@ class LabTestManager
             $sql = "DELETE FROM tbl_labtest WHERE labtest_id = :labtest_id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -304,13 +304,13 @@ class LabTestManager
                     FROM tbl_labtest l
                     JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
                     WHERE l.labtest_id = :labtest_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
             $stmt->execute();
-            
+
             $labtest = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($labtest) {
                 echo json_encode([
                     'success' => true,
@@ -344,7 +344,7 @@ if ($method === 'GET') {
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
-    
+
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '{}';
 }

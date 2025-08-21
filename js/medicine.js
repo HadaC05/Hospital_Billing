@@ -37,17 +37,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const data = response.data;
-            const addTypeSelect = document.getElementById('med_type_id');
-            const editTypeSelect = document.getElementById('edit_med_type_id');
 
             if (data.success && Array.isArray(data.types)) {
                 const options = data.types.map(type => {
                     return `<option value="${type.med_type_id}">${type.med_type_name}</option>`;
                 }).join('');
 
+                // Populate all category dropdowns
+                const addTypeSelect = document.getElementById('med_type_id');
+                const editTypeSelect = document.getElementById('edit_med_type_id');
+
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
             } else {
+
+                const addTypeSelect = document.getElementById('med_type_id');
+                const editTypeSelect = document.getElementById('edit_med_type_id');
+
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">No types available</option>`;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">No types available</option>`;
             }
@@ -122,7 +128,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const unitPrice = document.getElementById('unit_price').value;
         const stockQty = document.getElementById('stock_quantity').value;
         const medUnit = document.getElementById('med_unit').value.trim();
-        const isActive = document.getElementById('is_active').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
             alert('Please fill in all required fields.');
@@ -138,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
                     med_unit: medUnit,
-                    is_active: parseInt(isActive)
+                    is_active: 1
                 })
             });
 

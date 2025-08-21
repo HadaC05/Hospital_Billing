@@ -1,7 +1,5 @@
 <?php
 
-// require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
@@ -15,6 +13,7 @@ class Medicines
             SELECT 
                 m.med_id,
                 m.med_name,
+                m.med_type_id,
                 mt.med_type_name,
                 m.unit_price,
                 m.stock_quantity,
@@ -29,21 +28,33 @@ class Medicines
         $stmt->execute();
         $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $response = [
+        echo json_encode([
             'success' => true,
             'medicines' => $medicines
-        ];
-
-        echo json_encode($response);
+        ]);
     }
 
     function addMedicine($data)
     {
         include 'connection-pdo.php';
 
+        // 🔎 Check duplicate medicine name
+        $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':med_name', $data['med_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A medicine with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, med_unit, is_active)
-            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, :is_active)
+            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -52,7 +63,6 @@ class Medicines
         $stmt->bindParam(':unit_price', $data['unit_price']);
         $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
         $stmt->bindParam(':med_unit', $data['med_unit']);
-        $stmt->bindParam(':is_active', $data['is_active']);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Medicine added']);
@@ -74,17 +84,30 @@ class Medicines
         $stmt = $conn->prepare($sql);
         $stmt->execute();
 
-        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         echo json_encode([
             'success' => true,
-            'types' => $types
+            'types' => $stmt->fetchAll(PDO::FETCH_ASSOC)
         ]);
     }
 
     function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
     {
         include 'connection-pdo.php';
+
+        // 🔎 Check duplicate name (exclude current record)
+        $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name AND med_id != :med_id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':med_name', $med_name);
+        $checkStmt->bindParam(':med_id', $med_id);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Another medicine with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_medicine
@@ -143,13 +166,14 @@ switch ($operation) {
         $med->getTypes();
         break;
     case 'updateMedicine':
-        $med_id = $data['med_id'];
-        $med_name = $data['med_name'];
-        $med_type_id = $data['med_type_id'];
-        $unit_price = $data['unit_price'];
-        $stock_quantity = $data['stock_quantity'];
-        $med_unit = $data['med_unit'];
-        $is_active = $data['is_active'];
-        $med->updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active);
+        $med->updateMedicine(
+            $data['med_id'],
+            $data['med_name'],
+            $data['med_type_id'],
+            $data['unit_price'],
+            $data['stock_quantity'],
+            $data['med_unit'],
+            $data['is_active']
+        );
         break;
 }
