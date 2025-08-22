@@ -92,14 +92,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Medicine type added successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Medicine type added successfully!',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add medicine type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to add medicine type.',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error adding medicine type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error adding medicine type',
+                    icon: 'error'
+                });
             }
         });
     }
@@ -142,14 +154,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Medicine Type updated successfullly');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Medicine type updated successfully!',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || ' Failed to update medicine type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to update medicine type',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating medicine type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error updating medicine type',
+                    icon: 'error'
+                });
             }
         });
     }

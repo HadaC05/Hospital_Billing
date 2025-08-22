@@ -89,14 +89,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Treatment type added successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Treatment type added successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add treatment type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to add treatment type',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error adding treatment type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error adding treatment type',
+                    icon: 'error'
+                });
             }
         });
     }
@@ -138,14 +150,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert("Treatment type updated successfully");
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Treatment type updated successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to update treatment type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to update treatment type',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating treatment type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error updating treatment type',
+                    icon: 'error'
+                });
             }
         });
     }

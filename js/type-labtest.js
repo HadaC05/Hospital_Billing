@@ -92,14 +92,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data
 
                 if (resData.success) {
-                    alert('Labtest type added successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Lab test type added successfully!',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add labtest type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to add lab test type.',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error adding labtest type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error adding lab test type.',
+                    icon: 'error'
+                });
             }
         });
     }
@@ -141,14 +153,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Labtest type updated successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Labtest type updated successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to update labtest type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to update lab test type',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating labtest type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error updating lab test type.',
+                    icon: 'error'
+                });
             }
         });
     }

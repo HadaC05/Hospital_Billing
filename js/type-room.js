@@ -91,15 +91,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Room type added successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Room type added successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add room type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to add room type',
+                        icon: 'error'
+                    });
                 }
 
             } catch (error) {
                 console.error(error);
-                alert('Error adding room type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error adding room type',
+                    icon: 'error'
+                });
             }
         });
     }
@@ -141,14 +153,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Room type updated succesfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Room type updated succesfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to update the room type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to update the room type',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating room type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error updating room type',
+                    icon: 'error'
+                });
             }
         })
     }

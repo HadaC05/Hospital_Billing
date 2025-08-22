@@ -97,15 +97,27 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Surgery Type added successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Surgery Type added successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to add surgery type');
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to add surgery type',
+                        icon: 'error'
+                    });
                 }
 
             } catch (error) {
                 console.error(error);
-                alert('Error adding surgery type');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error adding surgery type',
+                    icon: 'error'
+                });
             }
 
         });
@@ -150,15 +162,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const resData = response.data;
 
                 if (resData.success) {
-                    alert('Surgery type updated successfully');
+                    Swal.fire({
+                        title: 'Success',
+                        text: 'Surgery type updated successfully',
+                        icon: 'success'
+                    });
                     window.location.reload();
                 } else {
-                    alert(resData.message || 'Failed to update surgery type.');
-
+                    Swal.fire({
+                        title: 'Failed',
+                        text: 'Failed to update surgery type.',
+                        icon: 'error'
+                    });
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error updating surgery');
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Error updating surgery',
+                    icon: 'error'
+                });
             }
         })
     }
