@@ -54,8 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
             if (data.success && Array.isArray(data.types)) {
                 testTypes = data.types;
-
-
                 filteredTypes = [...testTypes];
                 renderTable(filteredTypes, data.pagination);
             } else {
