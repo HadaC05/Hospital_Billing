@@ -48,6 +48,24 @@
             <!-- Treatment Type Table  -->
             <div class="card">
                 <div class="card-body">
+
+                    <!-- Search and Filter Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="searchInput" class="form-control"
+                                    placeholder="Search treatment types...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="filterSelect" class="form-select">
+                                <option value="all">All Types</option>
+                                <option value="name">By Name</option>
+                                <option value="description">By Description</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead class="table-dark">

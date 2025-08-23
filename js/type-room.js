@@ -1,10 +1,8 @@
 console.log('type-room.js is working');
-
 const baseApiUrl = 'http://localhost/hospital_billing/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
-
-    // user authentication
+    // User authentication
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login');
@@ -12,15 +10,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // DOM elements
     const tableBody = document.getElementById('room-type-list');
     const typeForm = document.getElementById('addRoomTypeForm');
     const editForm = document.getElementById('editRoomTypeForm');
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
 
     let roomTypes = [];
+    let filteredTypes = [];
 
-    // load room types
+    // Load room types
     async function loadRoomTypes() {
-
         if (!tableBody) {
             console.error('Room types table body not found');
             return;
@@ -37,42 +38,70 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const data = response.data;
-
             if (data.success && Array.isArray(data.types)) {
-
                 roomTypes = data.types;
-
-                if (roomTypes.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="3">No room type found</td></tr>';
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                roomTypes.forEach(roomType => {
-                    const row = `
-                        <tr>
-                            <td>${roomType.room_type_name}</td>
-                            <td>${roomType.room_description}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning edit-btn" data-id="${roomType.room_type_id}">Edit</button>
-                            </td>
-                        </tr>
-                    `;
-
-                    tableBody.innerHTML += row;
-                });
+                filteredTypes = [...roomTypes];
+                renderTable(filteredTypes);
             } else {
-                tableBody.innerHTML = `<tr><td colspan = "3">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
             }
-
         } catch (error) {
             console.error('Failed to load room types: ', error);
             tableBody.innerHTML = '<tr><td colspan="3">Failed to load room types.</td></tr>';
         }
     }
 
-    // add room type
+    // Render table with provided data
+    function renderTable(typesToRender) {
+        if (!tableBody) {
+            console.error('Table body not found');
+            return;
+        }
+
+        if (typesToRender.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3">No room type found</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        typesToRender.forEach(roomType => {
+            const row = `
+                <tr>
+                    <td>${roomType.room_type_name}</td>
+                    <td>${roomType.room_description}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit-btn" data-id="${roomType.room_type_id}">Edit</button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    // Filter room types based on search and filter criteria
+    function filterRoomTypes() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const filterType = filterSelect.value;
+
+        filteredTypes = roomTypes.filter(type => {
+            const matchesSearch = searchTerm === '' ||
+                type.room_type_name.toLowerCase().includes(searchTerm) ||
+                type.room_description.toLowerCase().includes(searchTerm);
+
+            let matchesFilter = true;
+            if (filterType === 'name') {
+                matchesFilter = type.room_type_name.toLowerCase().includes(searchTerm);
+            } else if (filterType === 'description') {
+                matchesFilter = type.room_description.toLowerCase().includes(searchTerm);
+            }
+
+            return matchesSearch && matchesFilter;
+        });
+
+        renderTable(filteredTypes);
+    }
+
+    // Add room type
     if (typeForm) {
         typeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -80,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = {
                 room_type_name: document.getElementById('room_type_name').value.trim(),
                 room_description: document.getElementById('room_description').value.trim()
-            }
+            };
 
             try {
                 const response = await axios.post(`${baseApiUrl}/get-room-types.php`, {
@@ -89,14 +118,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 const resData = response.data;
-
                 if (resData.success) {
                     Swal.fire({
                         title: 'Success',
                         text: 'Room type added successfully',
                         icon: 'success'
                     });
-                    window.location.reload();
+
+                    // Reset form and reload data
+                    typeForm.reset();
+                    await loadRoomTypes();
+
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRoomTypeModal'));
+                    modal.hide();
                 } else {
                     Swal.fire({
                         title: 'Failed',
@@ -104,7 +139,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         icon: 'error'
                     });
                 }
-
             } catch (error) {
                 console.error(error);
                 Swal.fire({
@@ -116,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // edit button
+    // Edit button click handler
     document.addEventListener('click', async (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const roomTypeId = e.target.dataset.id;
@@ -133,9 +167,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // edit form
+    // Edit form submission
     if (editForm) {
-        document.addEventListener('submit', async (e) => {
+        editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const data = {
@@ -151,14 +185,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 const resData = response.data;
-
                 if (resData.success) {
                     Swal.fire({
                         title: 'Success',
-                        text: 'Room type updated succesfully',
+                        text: 'Room type updated successfully',
                         icon: 'success'
                     });
-                    window.location.reload();
+
+                    // Reload data
+                    await loadRoomTypes();
+
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editRoomTypeModal'));
+                    modal.hide();
                 } else {
                     Swal.fire({
                         title: 'Failed',
@@ -174,8 +213,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'error'
                 });
             }
-        })
+        });
     }
 
+    // Search input event listener
+    if (searchInput) {
+        searchInput.addEventListener('input', filterRoomTypes);
+    }
+
+    // Filter select event listener
+    if (filterSelect) {
+        filterSelect.addEventListener('change', filterRoomTypes);
+    }
+
+    // Initial load
     await loadRoomTypes();
 });

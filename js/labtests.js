@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 editModal.hide();
+
                 await loadLabtest();
             } else {
                 Swal.fire({
