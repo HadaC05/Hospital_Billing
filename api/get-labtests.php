@@ -22,7 +22,7 @@ class LabTestManager
     }
 
     // Get all lab tests
-    public function getLabtests()
+    public function getLabtests($params = [])
     {
         include 'connection-pdo.php';
 
@@ -420,7 +420,12 @@ $data = json_decode($json, true) ?? [];
 // Route the request to the appropriate method
 switch ($operation) {
     case 'getLabtests':
-        $manager->getLabtests();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $manager->getLabtests($params);
         break;
     case 'getTypes':
         $manager->getTypes();
