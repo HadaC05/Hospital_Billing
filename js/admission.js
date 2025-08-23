@@ -59,7 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         modal.hide();
                         addAdmissionForm.reset();
                         loadAdmissions();
-                        alert('Admission added successfully!');
+                        Swal.fire({
+                            title: 'Success',
+                            text: 'Admission added successfully!',
+                            icon: 'success'
+                        });
                     } else {
                         alert('Error: ' + response.data.message);
                     }
@@ -107,7 +111,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const modal = bootstrap.Modal.getInstance(document.getElementById('editAdmissionModal'));
                         modal.hide();
                         loadAdmissions();
-                        alert('Admission updated successfully!');
+                        Swal.fire({
+                            title: 'Success',
+                            text: 'Admission updated successfully!',
+                            icon: 'success'
+                        });
                     } else {
                         alert('Error: ' + response.data.message);
                     }
@@ -258,24 +266,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to delete admission
-    function deleteAdmission(admissionId) {
-        axios.post(localApiUrl + 'get-admissions.php', {
-            operation: 'deleteAdmission',
-            admission_id: admissionId
-        })
-            .then(function (response) {
-                if (response.data.status === 'success') {
-                    loadAdmissions();
-                    alert('Admission deleted successfully!');
-                } else {
-                    alert('Error: ' + response.data.message);
-                }
-            })
-            .catch(function (error) {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the admission.');
-            });
-    }
+    // function deleteAdmission(admissionId) {
+    //     axios.post(localApiUrl + 'get-admissions.php', {
+    //         operation: 'deleteAdmission',
+    //         admission_id: admissionId
+    //     })
+    //         .then(function (response) {
+    //             if (response.data.status === 'success') {
+    //                 loadAdmissions();
+    //                 alert('Admission deleted successfully!');
+    //             } else {
+    //                 alert('Error: ' + response.data.message);
+    //             }
+    //         })
+    //         .catch(function (error) {
+    //             console.error('Error:', error);
+    //             alert('An error occurred while deleting the admission.');
+    //         });
+    // }
 
     // Check for permissions and render modules
     try {
