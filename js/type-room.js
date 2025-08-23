@@ -20,8 +20,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let roomTypes = [];
     let filteredTypes = [];
 
+    // initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadRoomTypes(page);
+        },
+        onItemsPerPaageChange: (itemsPerPage) => {
+            loadRoomTypes(1, itemsPerPage);
+        }
+    });
+
     // Load room types
-    async function loadRoomTypes() {
+    async function loadRoomTypes(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Room types table body not found');
             return;
@@ -33,6 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-room-types.php`, {
                 params: {
                     operation: 'getTypes',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search,
                     json: JSON.stringify({})
                 }
             });
@@ -41,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success && Array.isArray(data.types)) {
                 roomTypes = data.types;
                 filteredTypes = [...roomTypes];
-                renderTable(filteredTypes);
+                renderTable(filteredTypes, data.pagination);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
             }
@@ -52,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Render table with provided data
-    function renderTable(typesToRender) {
+    function renderTable(typesToRender, paginationData = null) {
         if (!tableBody) {
             console.error('Table body not found');
             return;
@@ -60,6 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (typesToRender.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="3">No room type found</td></tr>';
+
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) {
+                paginationContainer.innerHTML = '';
+            }
             return;
         }
 
@@ -76,6 +95,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             tableBody.innerHTML += row;
         });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
     }
 
     // Filter room types based on search and filter criteria
