@@ -7,10 +7,42 @@ header('Content-Type: application/json');
 
 class Patients
 {
-    function getPatients()
+    function getPatients($params = [])
     {
         include 'connection-pdo.php';
 
+        // Get pagination parameters
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        $search = isset($params['search']) ? $params['search'] : '';
+
+        // Calculate offset
+        $offset = ($page - 1) * $itemsPerPage;
+
+        // Build WHERE clause for search
+        $whereClause = '';
+        $searchParams = [];
+
+        if (!empty($search)) {
+            $whereClause = "WHERE p.patient_fname LIKE :search 
+                            OR p.patient_lname LIKE :search 
+                            OR p.patient_mname LIKE :search 
+                            OR p.mobile_number LIKE :search 
+                            OR p.email LIKE :search";
+            $searchParams[':search'] = "%$search%";
+        }
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM patients p $whereClause";
+        $countStmt = $conn->prepare($countSql);
+        if (!empty($searchParams)) {
+            $countStmt->execute($searchParams);
+        } else {
+            $countStmt->execute();
+        }
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
         $sql = "
             SELECT 
                 p.patient_id,
@@ -25,16 +57,40 @@ class Patients
                 p.em_contact_number,
                 p.em_contact_address
             FROM patients p
+            $whereClause
             ORDER BY p.patient_lname ASC
+            LIMIT :limit OFFSET :offset
         ";
 
         $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        if (!empty($searchParams)) {
+            foreach ($searchParams as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+        }
+
         $stmt->execute();
         $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Calculate pagination info
+        $totalPages = ceil($totalCount / $itemsPerPage);
+        $startIndex = $offset + 1;
+        $endIndex = min($offset + $itemsPerPage, $totalCount);
+
         $response = [
             'success' => true,
-            'patients' => $patients
+            'patients' => $patients,
+            'pagination' => [
+                'currentPage' => $page,
+                'itemsPerPage' => $itemsPerPage,
+                'totalItems' => $totalCount,
+                'totalPages' => $totalPages,
+                'startIndex' => $startIndex,
+                'endIndex' => $endIndex
+            ]
         ];
 
         echo json_encode($response);
@@ -249,12 +305,22 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
+
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
 }
 
 $data = json_decode($json, true);
@@ -263,7 +329,12 @@ $patients = new Patients();
 
 switch ($operation) {
     case 'getPatients':
-        $patients->getPatients();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $patients->getPatients($params);
         break;
     case 'getPatientDetails':
         $patient_id = $data['patient_id'];

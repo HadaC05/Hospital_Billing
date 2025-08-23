@@ -53,16 +53,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadAdmissions(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadAdmissions(1, itemsPerPage);
+        }
+    });
+
     // Function to load all admissions
-    function loadAdmissions() {
+    function loadAdmissions(page = 1, itemsPerPage = 10, search = '') {
         axios.post(localApiUrl + 'get-admissions.php', {
-            operation: 'getAdmissions'
+            operation: 'getAdmissions',
+            page: page,
+            itemsPerPage: itemsPerPage,
+            search: search
         })
             .then(function (response) {
                 if (response.data.status === 'success') {
                     // Store admissions in a global variable for filtering
                     window.allAdmissions = response.data.data;
                     displayAdmissions(window.allAdmissions);
+
+                    // Update pagination controls
+                    if (response.data.pagination) {
+                        pagination.calculatePagination(response.data.pagination.totalItems, response.data.pagination.currentPage, response.data.pagination.itemsPerPage);
+                        pagination.generatePaginationControls('pagination-container');
+                    }
                 } else {
                     console.error('Error:', response.data.message);
                 }
@@ -90,9 +110,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             const admissionDate = new Date(admission.admission_date).toLocaleDateString();
             const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
 
-            // Determine status
-            const status = admission.discharge_date ? 'Discharged' : 'Active';
-            const statusClass = admission.discharge_date ? 'text-success' : 'text-primary';
+            // Get status from the database field
+            const status = admission.status || (admission.discharge_date ? 'Discharged' : 'Active');
+            let statusClass = 'text-primary';
+
+            // Set status class based on status value
+            switch (status) {
+                case 'Discharged':
+                    statusClass = 'text-success';
+                    break;
+                case 'Active':
+                    statusClass = 'text-primary';
+                    break;
+                case 'Pending':
+                    statusClass = 'text-warning';
+                    break;
+                case 'Critical':
+                    statusClass = 'text-danger';
+                    break;
+                case 'Stable':
+                    statusClass = 'text-info';
+                    break;
+                default:
+                    statusClass = 'text-primary';
+            }
 
             row.innerHTML = `
                 <td>${admission.patient_id}</td>
@@ -136,9 +177,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Filter by status
             let statusMatch = true;
             if (statusValue === 'active') {
-                statusMatch = !admission.discharge_date;
+                statusMatch = admission.status === 'Active';
             } else if (statusValue === 'discharged') {
-                statusMatch = !!admission.discharge_date;
+                statusMatch = admission.status === 'Discharged';
+            } else if (statusValue === 'pending') {
+                statusMatch = admission.status === 'Pending';
+            } else if (statusValue === 'critical') {
+                statusMatch = admission.status === 'Critical';
+            } else if (statusValue === 'stable') {
+                statusMatch = admission.status === 'Stable';
             }
 
             return searchMatch && statusMatch;
@@ -162,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const birthdate = new Date(data.birthdate).toLocaleDateString();
                     const admissionDate = new Date(data.admission_date).toLocaleDateString();
                     const dischargeDate = data.discharge_date ? new Date(data.discharge_date).toLocaleDateString() : 'Not discharged';
-                    const status = data.discharge_date ? 'Discharged' : 'Active';
+                    const status = data.status || (data.discharge_date ? 'Discharged' : 'Active');
 
                     // Set modal values
                     document.getElementById('view_patient_id').textContent = data.patient_id;
@@ -270,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const birthdate = new Date(data.birthdate).toLocaleDateString();
         const admissionDate = new Date(data.admission_date).toLocaleDateString();
         const dischargeDate = data.discharge_date ? new Date(data.discharge_date).toLocaleDateString() : 'Not discharged';
-        const status = data.discharge_date ? 'Discharged' : 'Active';
+        const status = data.status || (data.discharge_date ? 'Discharged' : 'Active');
 
         // Create print content
         const printContent = `

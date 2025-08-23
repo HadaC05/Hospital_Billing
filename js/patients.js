@@ -22,8 +22,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentPatientId = null;
     let currentAdmissionId = null;
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadPatients(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadPatients(1, itemsPerPage);
+        }
+    });
+
     // Load Patient List
-    async function loadPatients() {
+    async function loadPatients(page = 1, itemsPerPage = 10, search = '') {
         if (!patientListElement) {
             console.error('Patient list element not found');
             return;
@@ -35,7 +46,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-patients.php`, {
                 params: {
                     operation: 'getPatients',
-                    json: JSON.stringify({})
+                    json: JSON.stringify({}),
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
                 }
             });
 
@@ -43,9 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (data.success && Array.isArray(data.patients)) {
                 const patients = data.patients;
+                const paginationData = data.pagination;
 
                 if (patients.length === 0) {
                     patientListElement.innerHTML = '<tr><td colspan="5" class="text-center">No patients found.</td></tr>';
+                    // Clear pagination controls
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
+                    }
                     return;
                 }
 
@@ -67,6 +87,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     patientListElement.innerHTML += row;
                 });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
                 patientListElement.innerHTML = `<tr><td colspan="5" class="text-center">Failed to load patients.</td></tr>`;
             }

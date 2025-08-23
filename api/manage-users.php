@@ -19,21 +19,79 @@ class UserManager
     /**
      * Get all users with their roles
      */
-    function getAllUsers()
+    function getAllUsers($params = [])
     {
         try {
+            // Get pagination parameters
+            $page = isset($params['page']) ? (int)$params['page'] : 1;
+            $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+            $search = isset($params['search']) ? $params['search'] : '';
+
+            // Calculate offset
+            $offset = ($page - 1) * $itemsPerPage;
+
+            // Build WHERE clause for search
+            $whereClause = '';
+            $searchParams = [];
+
+            if (!empty($search)) {
+                $whereClause = "WHERE u.first_name LIKE :search 
+                               OR u.last_name LIKE :search 
+                               OR u.username LIKE :search 
+                               OR u.email LIKE :search 
+                               OR r.role_name LIKE :search";
+                $searchParams[':search'] = "%$search%";
+            }
+
+            // Get total count
+            $countQuery = "SELECT COUNT(*) as total FROM users u 
+                          JOIN user_roles r ON u.role_id = r.role_id 
+                          $whereClause";
+            $countStmt = $this->conn->prepare($countQuery);
+            if (!empty($searchParams)) {
+                $countStmt->execute($searchParams);
+            } else {
+                $countStmt->execute();
+            }
+            $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Get paginated data
             $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
                         u.email, u.mobile_number, u.role_id, r.role_name 
                         FROM users u 
                         JOIN user_roles r ON u.role_id = r.role_id 
-                        ORDER BY u.last_name, u.first_name";
+                        $whereClause
+                        ORDER BY u.last_name, u.first_name
+                        LIMIT :limit OFFSET :offset";
             $stmt = $this->conn->prepare($query);
-            $stmt->execute();
+            $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 
+            if (!empty($searchParams)) {
+                foreach ($searchParams as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+
+            $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculate pagination info
+            $totalPages = ceil($totalCount / $itemsPerPage);
+            $startIndex = $offset + 1;
+            $endIndex = min($offset + $itemsPerPage, $totalCount);
+
             echo json_encode([
                 'success' => true,
-                'users' => $users
+                'users' => $users,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'itemsPerPage' => $itemsPerPage,
+                    'totalItems' => $totalCount,
+                    'totalPages' => $totalPages,
+                    'startIndex' => $startIndex,
+                    'endIndex' => $endIndex
+                ]
             ]);
         } catch (PDOException $e) {
             echo json_encode([
@@ -98,8 +156,6 @@ class UserManager
                 return;
             }
 
-            // Hash the password
-            $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
 
             // Insert new user
             $query = "INSERT INTO users (username, password, first_name, middle_name, last_name, 
@@ -109,7 +165,7 @@ class UserManager
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':password', $hashedPassword);
+            $stmt->bindParam(':password', $userData['password']);
             $stmt->bindParam(':first_name', $userData['first_name']);
             $stmt->bindParam(':middle_name', $userData['middle_name']);
             $stmt->bindParam(':last_name', $userData['last_name']);
@@ -180,8 +236,7 @@ class UserManager
 
             // Bind password if provided
             if (!empty($userData['password'])) {
-                $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-                $stmt->bindParam(':password', $hashedPassword);
+                $stmt->bindParam(':password', $userData['password']);  // Store plain text password
             }
 
             $stmt->execute();
@@ -255,6 +310,11 @@ if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
 
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
+
     // For backward compatibility
     if (isset($_GET['user_id'])) {
         $operation = 'getUserById';
@@ -265,6 +325,11 @@ if ($method === 'GET') {
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
 
     // For backward compatibility
     if (isset($payload['action'])) {
@@ -297,7 +362,12 @@ $data = json_decode($json, true);
 
 switch ($operation) {
     case 'getAllUsers':
-        $userManager->getAllUsers();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $userManager->getAllUsers($params);
         break;
     case 'getUserById':
         $user_id = $data['user_id'] ?? null;

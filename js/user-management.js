@@ -8,6 +8,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadUsers(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadUsers(1, itemsPerPage);
+        }
+    });
+
     // Load users and roles
     loadUsers();
     loadRoles();
@@ -18,12 +29,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('confirmDeleteUserBtn').addEventListener('click', deleteUser);
 
     // Function to load all users
-    async function loadUsers() {
+    async function loadUsers(page = 1, itemsPerPage = 10, search = '') {
         try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php?operation=getAllUsers`);
+            const response = await axios.get(`${baseApiUrl}/manage-users.php`, {
+                params: {
+                    operation: 'getAllUsers',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
+                }
+            });
             const data = response.data;
             if (data.success) {
                 displayUsers(data.users);
+
+                // Update pagination controls
+                if (data.pagination) {
+                    pagination.calculatePagination(data.pagination.totalItems, data.pagination.currentPage, data.pagination.itemsPerPage);
+                    pagination.generatePaginationControls('pagination-container');
+                }
             } else {
                 alert('Failed to load users: ' + data.message);
             }

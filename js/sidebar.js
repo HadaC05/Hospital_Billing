@@ -69,6 +69,11 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../module/admission-editor.html',
             icon: 'fas fa-edit'
         },
+        view_patient_records: {
+            label: 'Patient Records Viewer',
+            link: '../module/patient-records.html',
+            icon: 'fas fa-folder-open'
+        },
         access_billing: {
             label: 'Billing Overview',
             link: '../module/billing-overview.html',
@@ -78,11 +83,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Invoice Generator',
             link: '../module/invoice-generator.html',
             icon: 'fas fa-file-invoice'
-        },
-        view_patient_records: {
-            label: 'Patient Records Viewer',
-            link: '../module/patient-records.html',
-            icon: 'fas fa-folder-open'
         },
         approve_insurance: {
             label: 'Insurance Approval Panel',
