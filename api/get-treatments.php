@@ -6,9 +6,40 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 class Treatments
 {
-    function getTreatments()
+    function getTreatments($params = [])
     {
         include 'connection-pdo.php';
+
+        // Get pagination parameters
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        $search = isset($params['search']) ? $params['search'] : '';
+
+        // Calculate offset
+        $offset = ($page - 1) * $itemsPerPage;
+
+        // Build WHERE clause for search
+        $whereClause = '';
+        $searchParams = [];
+
+        if (!empty($search)) {
+            $whereClause = "WHERE t.treatment_nameLIKE :search 
+                            OR tc.category_name LIKE :search";
+            $searchParams[':search'] = "%$search%";
+        }
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM tbl_treatment t
+                        JOIN tbl_treatment_category tc ON t.treatment_category_id = tc.treatment_category_id 
+                        $whereClause";
+        $countStmt = $conn->prepare($countSql);
+        if (!empty($searchParams)) {
+            $countStmt->execute($searchParams);
+        } else {
+            $countStmt->execute();
+        }
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
         $sql = "
             SELECT 
                 t.treatment_id,
@@ -19,14 +50,39 @@ class Treatments
                 tc.category_name AS treatment_category
             FROM tbl_treatment t
             JOIN tbl_treatment_category tc ON t.treatment_category_id = tc.treatment_category_id
+            $whereClause
             ORDER BY t.treatment_name ASC
+            LIMIT :limit OFFSET :offset
         ";
         $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        if (!empty($searchParams)) {
+            foreach ($searchParams as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+        }
+
         $stmt->execute();
         $treatments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Calculate pagination info
+        $totalPages = ceil($totalCount / $itemsPerPage);
+        $startIndex = $offset + 1;
+        $endIndex = min($offset + $itemsPerPage, $totalCount);
+
         $response = [
             'success' => true,
-            'treatments' => $treatments
+            'treatments' => $treatments,
+            'pagination' => [
+                'currentPage' => $page,
+                'itemsPerPage' => $itemsPerPage,
+                'totalItems' => $totalCount,
+                'totalPages' => $totalPages,
+                'startIndex' => $startIndex,
+                'endIndex' => $endIndex
+            ]
         ];
         echo json_encode($response);
     }
@@ -48,7 +104,7 @@ class Treatments
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'A room with this name already exists'
+                'message' => 'A treatment with this name already exists'
             ]);
             return;
         }
@@ -135,17 +191,32 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
+
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
 }
 $data = json_decode($json, true);
 $treatment = new Treatments();
 switch ($operation) {
     case 'getTreatments':
-        $treatment->getTreatments();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $treatment->getTreatments($params);
         break;
     case 'addTreatment':
         $treatment->addTreatment($data);

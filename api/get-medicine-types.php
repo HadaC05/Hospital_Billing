@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 class Medicine_Types
 {
     // function to display all types from database
-    function getTypes($params)
+    function getTypes($params = [])
     {
         include 'connection-pdo.php';
 
