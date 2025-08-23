@@ -20,8 +20,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let testTypes = [];
     let filteredTypes = [];
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadLabtestTypes(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadLabtestTypes(1, itemsPerPage)
+        }
+    });
+
     // Load labtest types
-    async function loadLabtestTypes() {
+    async function loadLabtestTypes(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Table body not found');
             return;
@@ -33,6 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-labtest-types.php`, {
                 params: {
                     operation: 'getTypes',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search,
                     json: JSON.stringify({})
                 }
             });
@@ -40,8 +54,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
             if (data.success && Array.isArray(data.types)) {
                 testTypes = data.types;
+
+
                 filteredTypes = [...testTypes];
-                renderTable(filteredTypes);
+                renderTable(filteredTypes, data.pagination);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
             }
@@ -52,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Render table with provided data
-    function renderTable(typesToRender) {
+    function renderTable(typesToRender, paginationData = null) {
         if (!tableBody) {
             console.error('Table body not found');
             return;
@@ -60,11 +76,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (typesToRender.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="3">No labtest types found</td></tr>';
+
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) {
+                paginationContainer.innerHTML = '';
+            }
             return;
         }
 
+
         tableBody.innerHTML = '';
         typesToRender.forEach(testType => {
+
             const row = `
                 <tr>
                     <td>${testType.labtest_category_name}</td>
@@ -76,6 +99,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             tableBody.innerHTML += row;
         });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
     }
 
     // Filter labtest types based on search and filter criteria
