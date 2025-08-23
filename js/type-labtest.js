@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadLabtestTypes(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadLabtestTypes(1, itemsPerPage)
+            loadLabtestTypes(1, itemsPerPage);
         }
     });
 
