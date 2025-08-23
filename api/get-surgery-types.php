@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 class Surgery_Types
 {
     // function to display list of surgery types
-    function getTypes()
+    function getTypes($params)
     {
         include 'connection-pdo.php';
 

@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 class Treatment_Types
 {
     // get types
-    function getTypes()
+    function getTypes($params)
     {
         include 'connection-pdo.php';
 
