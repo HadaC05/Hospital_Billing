@@ -64,9 +64,28 @@ class Room_Types
     {
         include 'connection-pdo.php';
 
+        // check duplicate name
+        $checkSql = "
+            SELECT COUNT(*) 
+            FROM tbl_room_type
+            WHERE room_type_name = :room_type_name
+        ";
+
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
-            INSERT INTO tbl_room_type (room_type_name, room_description)
-            VALUES (:room_type_name, :room_description)
+            INSERT INTO tbl_room_type (room_type_name, room_description, is_active)
+            VALUES (:room_type_name, :room_description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -81,14 +100,35 @@ class Room_Types
     }
 
     // update room type
-    function updateRoomType($room_type_name, $room_description, $room_type_id)
+    function updateRoomType($room_type_name, $room_description, $room_type_id, $is_active)
     {
         include 'connection-pdo.php';
+
+        // check duplicate name
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_room_type
+            WHERE room_type_name = :room_type_name AND room_type_id != :room_type_id
+        ";
+
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
+        $checkStmt->bindParam(':room_type_id', $data['room_type_id']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_room_type
             SET room_type_name = :room_type_name,
-                room_description = :room_description
+                room_description = :room_description,
+                is_active = :is_active
             WHERE room_type_id = :room_type_id
         ";
 
@@ -96,11 +136,15 @@ class Room_Types
         $stmt->bindParam(':room_type_name', $room_type_name);
         $stmt->bindParam(':room_description', $room_description);
         $stmt->bindParam(':room_type_id', $room_type_id);
+        $stmt->bindParam('is_active', $is_active);
 
 
         $success = $stmt->execute();
 
-        echo json_encode(['success' => $success, 'message' => $success ? 'Updated successfully' : 'Failed to update']);
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
+        ]);
     }
 }
 
@@ -143,9 +187,11 @@ switch ($operation) {
         $roomType->addRoomType($data);
         break;
     case 'updateRoomType':
-        $room_type_name = $data['room_type_name'];
-        $room_description = $data['room_description'];
-        $room_type_id = $data['room_type_id'];
-        $roomType->updateRoomType($room_type_name, $room_description, $room_type_id);
+        $roomType->updateRoomType(
+            $data['room_type_name'],
+            $data['room_description'],
+            $data['room_type_id'],
+            $data['is_active']
+        );
         break;
 }
