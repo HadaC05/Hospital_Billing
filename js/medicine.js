@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addMedicineModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editMedicineModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteMedicineModal'));
 
     // Form elements
     const addForm = document.getElementById('addMedicineForm');
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Button event listeners
     document.getElementById('saveMedicineBtn').addEventListener('click', saveMedicine);
     document.getElementById('updateMedicineBtn').addEventListener('click', updateMedicine);
-    document.getElementById('confirmDeleteMedicineBtn').addEventListener('click', deleteMedicine);
 
     // Load medicine types
     async function loadMedicineTypes() {
@@ -125,9 +123,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td>
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editMedicine(${med.med_id})" title="Edit">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteMedicine(${med.med_id}, '${med.med_name}')" title="Delete">
-                                    <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
@@ -282,51 +277,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({
                 title: 'Failed',
                 text: 'Failed to update medicine',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Confirm delete medicine
-    window.confirmDeleteMedicine = function (medId, medName) {
-        document.getElementById('delete_med_id').value = medId;
-        document.getElementById('deleteMedicineName').textContent = medName;
-        deleteModal.show();
-    };
-
-    // Delete medicine
-    async function deleteMedicine() {
-        const medId = document.getElementById('delete_med_id').value;
-
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-medicines.php`, {
-                operation: 'deleteMedicine',
-                json: JSON.stringify({
-                    med_id: parseInt(medId)
-                })
-            });
-
-            const data = response.data;
-            if (data.success) {
-                Swal.fire({
-                    title: 'Success',
-                    text: 'Medicine deleted successfully!',
-                    icon: 'success'
-                });
-                deleteModal.hide();
-                await loadMedicines();
-            } else {
-                Swal.fire({
-                    title: 'Failed',
-                    text: 'Failed to delete medicine',
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error deleting medicine:', error);
-            Swal.fire({
-                title: 'Failed',
-                text: 'Failed to delete medicine',
                 icon: 'error'
             });
         }
