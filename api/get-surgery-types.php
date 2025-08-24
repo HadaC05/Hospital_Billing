@@ -66,9 +66,27 @@ class Surgery_Types
     {
         include 'connection-pdo.php';
 
+        // Check duplicate
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_surgery_type
+            WHERE surgery_type_name = :surgery_type_name
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
-            INSERT INTO tbl_surgery_type (surgery_type_name, description)
-            VALUES (:surgery_type_name, :description)
+            INSERT INTO tbl_surgery_type (surgery_type_name, description, is_active)
+            VALUES (:surgery_type_name, :description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -83,21 +101,43 @@ class Surgery_Types
     }
 
     // function to update existing surgery type
-    function updateSurgeryType($surgery_type_name, $surgery_type_id, $description)
+    function updateSurgeryType($surgery_type_name, $surgery_type_id, $description, $is_active)
     {
         include 'connection-pdo.php';
+
+        // Check duplicate
+        $checkSql = "
+            SELECT COUNT(*)
+            FROM tbl_surgery_type
+            WHERE surgery_type_name = :surgery_type_name
+            AND surgery_type_id != :surgery_type_id
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $checkStmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_surgery_type
             SET surgery_type_name = :surgery_type_name,
-                description = :description
+                description = :description,
+                is_active = :is_active
             WHERE surgery_type_id = :surgery_type_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam('surgery_type_name', $surgery_type_name);
-        $stmt->bindParam('description', $description);
-        $stmt->bindParam('surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':surgery_type_name', $surgery_type_name);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
@@ -150,5 +190,11 @@ switch ($operation) {
         $surgery_type_name = $data['surgery_type_name'];
         $surgery_type_id = $data['surgery_type_id'];
         $description = $data['description'];
-        $surgType->updateSurgeryType($surgery_type_name, $surgery_type_id, $description);
+        $is_active = $data['is_active'];
+        $surgType->updateSurgeryType(
+            $surgery_type_name,
+            $surgery_type_id,
+            $description,
+            $is_active
+        );
 }
