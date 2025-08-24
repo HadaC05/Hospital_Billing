@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 09, 2025 at 08:30 AM
+-- Generation Time: Aug 24, 2025 at 09:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -177,6 +177,16 @@ CREATE TABLE `patients` (
   `em_contact_address` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `patients`
+--
+
+INSERT INTO `patients` (`patient_id`, `patient_fname`, `patient_lname`, `patient_mname`, `birthdate`, `address`, `mobile_number`, `email`, `em_contact_name`, `em_contact_number`, `em_contact_address`) VALUES
+(2, 'john', 'philip', 'baloro', '1980-05-08', 'vcastro', '096666522', 'aa@gmail.com', 'aa', 'a', 'a'),
+(3, 'rona', 'obs', 'ss', '2025-08-22', 'fgfhg', '461613132332', 'dfgd@gmail.com', 'ghjg', '464616161', 'hfghfghvjv'),
+(4, 'hannah', 'cubillan', 'dap', '2001-01-27', 'cdo', '09111111111', 'user@mail.com', 'mama', '09111111112', 'cdo'),
+(6, 'cyrus', 'tadoy', 'mid', '2000-01-01', 'cdo', '09111111111', 'email@gmail.com', 'mama', '09111111112', 'cdo');
+
 -- --------------------------------------------------------
 
 --
@@ -192,6 +202,16 @@ CREATE TABLE `patient_admission` (
   `admission_reason` varchar(100) NOT NULL,
   `status` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_admission`
+--
+
+INSERT INTO `patient_admission` (`admission_id`, `patient_id`, `admitted_by`, `admission_date`, `discharge_date`, `admission_reason`, `status`) VALUES
+(1, 2, 1, '2025-08-22', '2025-08-28', 'aa', 'Discharged'),
+(2, 3, 1, '2025-08-22', '2025-08-22', 'jhjh', 'Active'),
+(3, 4, 11, '2025-08-22', '2025-08-23', 'hhh', 'Active'),
+(4, 6, 11, '2025-08-23', '2025-08-29', 'reason', 'Active');
 
 -- --------------------------------------------------------
 
@@ -314,7 +334,13 @@ INSERT INTO `tbl_labtest` (`labtest_id`, `test_name`, `labtest_category_id`, `un
 (13, 'Dengue NS1', 6, 950.00, 1),
 (14, 'Chest X-ray (PA View)', 7, 550.00, 1),
 (15, 'Ultrasound (Whole Abdomen)', 7, 1800.00, 1),
-(16, '2D Echo with Doppler', 7, 3200.00, 1);
+(16, '2D Echo with Doppler', 7, 3211.00, 1),
+(17, 'Sample labtest1', 1, 300.00, 0),
+(18, 'sam', 5, 100.00, 1),
+(19, 'sample', 5, 1000.00, 0),
+(20, 'sample labtest', 5, 1000.00, 0),
+(21, 'lab test 1', 3, 1000.00, 1),
+(22, 'test', 10, 1000.00, 0);
 
 -- --------------------------------------------------------
 
@@ -325,21 +351,36 @@ INSERT INTO `tbl_labtest` (`labtest_id`, `test_name`, `labtest_category_id`, `un
 CREATE TABLE `tbl_labtest_category` (
   `labtest_category_id` int(11) NOT NULL,
   `labtest_category_name` varchar(100) NOT NULL,
-  `labtest_category_desc` text NOT NULL
+  `labtest_category_desc` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_labtest_category`
 --
 
-INSERT INTO `tbl_labtest_category` (`labtest_category_id`, `labtest_category_name`, `labtest_category_desc`) VALUES
-(1, 'Hematology', 'Tests related to blood and blood-forming organs'),
-(2, 'Urinalysis', 'Tests on urine for diagnosis of kidney and urinary tract disorders'),
-(3, 'Immunology', 'Detection of antibodies, immune disorders, infections'),
-(4, 'Microbiology', 'Culture and sensitivity tests for infection detection'),
-(5, 'Biochemistry', 'Blood chemistry for liver, kidney, and metabolic function'),
-(6, 'Serology', 'Blood serum tests for disease detection'),
-(7, 'Imaging', 'Diagnostic radiology and scans');
+INSERT INTO `tbl_labtest_category` (`labtest_category_id`, `labtest_category_name`, `labtest_category_desc`, `is_active`) VALUES
+(1, 'Hematology', 'Tests related to blood and blood-forming organs', 1),
+(2, 'Urinalysis', 'Tests on urine for diagnosis of kidney and urinary tract disorders', 1),
+(3, 'Immunology', 'Detection of antibodies, immune disorders, infections', 1),
+(4, 'Microbiology', 'Culture and sensitivity tests for infection detection', 1),
+(5, 'Biochemistry', 'Blood chemistry for liver, kidney, and metabolic function', 1),
+(6, 'Serology', 'Blood serum tests for disease detection', 1),
+(7, 'Imaging', 'Diagnostic radiology and scans', 1),
+(8, 'test', 'test', 1),
+(9, 'Toxicology', 'Drug screening, poisoning, and toxic substance detection', 1),
+(10, 'Allergy Testing', 'Evaluation of allergic reactions via IgE or allergen-specific tests', 1),
+(11, 'Histopathology', 'Microscopic examination of tissue samples from biopsy or surgery', 1),
+(12, 'Cytology', 'Examination of cells for abnormalities, such as Pap smear', 1),
+(13, 'Virology', 'Detection and quantification of viral infections', 1),
+(14, 'Genetic Testing', 'Analysis of genetic material for inherited or chromosomal disorders', 1),
+(15, 'labtests name', 'description', 1),
+(16, 'Endocrinology', 'Tests for hormone levels and endocrine gland function', 1),
+(17, 'Arterial Blood Gas Analysis', 'Measures oxygen, carbon dioxide, and acid-base status in the blood', 1),
+(18, 'testest', 'desc', 1),
+(19, 'ample', 'test', 0),
+(20, 'sample', 'sample', 1),
+(21, 'samsam', 'descr', 1);
 
 -- --------------------------------------------------------
 
@@ -403,9 +444,14 @@ INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `
 (7, 6.50, 'Cetirizine', 5, 'tablet', 1, 0),
 (8, 25.00, 'Povidone Iodine', 6, 'bottle (60mL)', 1, 0),
 (9, 15.00, 'Salbutamol', 7, 'nebulizer dose', 1, 0),
-(10, 11.00, 'Acyclovir', 8, 'tablet', 1, 30),
+(10, 12.00, 'Acyclovir', 8, 'tablet', 1, 35),
 (11, 5.00, 'Metformin', 3, 'tablet', 1, 50),
-(12, 5.00, 'Omeprazole', 4, 'tablet', 1, 25);
+(12, 5.00, 'Omeprazole', 4, 'tablet', 1, 25),
+(13, 25.00, 'test22', 1, 'tablet', 1, 25),
+(14, 10.00, 'test', 2, 'tablet', 1, 10),
+(15, 10.00, 'sample', 7, 'tablet', 1, 10),
+(16, 10.00, 'sample2', 4, 'tablet', 1, 10),
+(17, 11.00, 'sample3', 1, 'mg', 1, 11);
 
 -- --------------------------------------------------------
 
@@ -416,22 +462,52 @@ INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `
 CREATE TABLE `tbl_medicine_type` (
   `med_type_id` int(11) NOT NULL,
   `med_type_name` varchar(100) NOT NULL,
-  `description` varchar(100) NOT NULL
+  `description` varchar(100) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_medicine_type`
 --
 
-INSERT INTO `tbl_medicine_type` (`med_type_id`, `med_type_name`, `description`) VALUES
-(1, 'Antibiotic', 'Used to treat bacterial infections'),
-(2, 'Analgesic', 'Used to relieve pain'),
-(3, 'Antipyretic', 'Reduces fever'),
-(4, 'Antacid', 'Neutralizes stomach acid'),
-(5, 'Antihistamine', 'Used for allergy relief'),
-(6, 'Antiseptic', 'Prevents wound infections'),
-(7, 'Bronchodilator', 'Opens airways for easier breathing'),
-(8, 'Antiviral', 'Treats viral infections');
+INSERT INTO `tbl_medicine_type` (`med_type_id`, `med_type_name`, `description`, `is_active`) VALUES
+(1, 'Antibiotic', 'Used to treat bacterial infections', 1),
+(2, 'Analgesic', 'Used to relieve pain', 1),
+(3, 'Antipyretic', 'Reduces fever', 1),
+(4, 'Antacid', 'Neutralizes stomach acid', 1),
+(5, 'Antihistamine', 'Used for allergy relief', 1),
+(6, 'Antiseptic', 'Prevents wound infections', 1),
+(7, 'Bronchodilator', 'Opens airways for easier breathing', 1),
+(8, 'Antiviral', 'Treats viral infections', 1),
+(9, 'test', 'desc', 1),
+(10, 'IV Fluids', 'Sterile intravenous solutions for hydration and electrolyte balance', 1),
+(11, 'Antidiabetics', 'Medicines for controlling blood sugar levels in diabetic patients', 1),
+(12, 'Anticoagulants', 'Drugs that prevent or reduce blood clotting', 1),
+(13, 'Antidepressants', 'Medicines used to treat depression and mood disorders', 1),
+(14, 'Corticosteroids', 'Medicines that reduce inflammation and immune response', 1),
+(15, 'Anticonvulsants', 'Drugs that help prevent and control seizures', 1),
+(16, 'Vitamins & Supplements', 'Essential nutrients and supplements for health', 1),
+(17, 'Topical Preparations', 'Creams, ointments, gels applied to the skin for local effect', 1),
+(18, 'Antimalarials', 'Drugs for the prevention and treatment of malaria', 1),
+(19, 'Chemotherapy Agents', 'Medicines used in cancer treatment', 1),
+(20, 'Sedatives & Anxiolytics', 'Medicines for sedation and anxiety relief', 1),
+(21, 'Vaccines', 'Biological preparations providing immunity against diseases', 1),
+(22, 'Antifungals', 'Medicines used to treat fungal infections', 1),
+(23, 'Antivirals', 'Drugs for treating viral infections', 1),
+(24, 'Antipsychotics', 'Medicines used to manage psychosis, including schizophrenia and bipolar disorder', 1),
+(25, 'Antiemetics', 'Drugs that help prevent or treat nausea and vomiting', 1),
+(26, 'Anthelmintics', 'Medicines that treat worm and parasite infections', 1),
+(27, 'Immunosuppressants', 'Medicines that reduce immune system activity, often used in organ transplant patients', 1),
+(28, 'Ophthalmic Preparations', 'Eye drops and ointments for eye conditions', 1),
+(29, 'Otic Preparations', 'Ear drops and medicines for treating ear infections', 1),
+(30, 'Dermatologicals', 'Medicines specifically used for skin conditions', 1),
+(31, 'Nutritional Formulas', 'Medical nutrition and feeding supplements', 1),
+(32, 'Respiratory Drugs', 'Other non-bronchodilator respiratory medicines like mucolytics and expectorants', 1),
+(33, 'Gastrointestinal Drugs', 'Laxatives, antidiarrheals, and motility agents', 1),
+(34, 'Hormones', 'Endocrine-related drugs like insulin, thyroid hormone, estrogen', 1),
+(35, 'Reproductive Health Drugs', 'Contraceptives, fertility treatments, pregnancy-related drugs', 1),
+(36, 'Emergency Drugs', 'Critical drugs used in ER and ICU, such as epinephrine, atropine', 1),
+(37, 'Anesthetics', 'Local and general anesthetic agents used during procedures', 1);
 
 -- --------------------------------------------------------
 
@@ -461,7 +537,10 @@ INSERT INTO `tbl_room` (`room_id`, `room_number`, `room_type_id`, `daily_rate`, 
 (6, '302', 3, 1000.00, 6, 1),
 (7, '401', 4, 9000.00, 1, 1),
 (8, '402', 4, 9000.00, 1, 1),
-(9, 'ER1', 5, 1500.00, 1, 1);
+(9, 'ER1', 5, 1500.00, 1, 1),
+(10, 'test3', 2, 1000.00, 2, 1),
+(11, 'sample', 5, 1000.00, 2, 1),
+(12, 'sample2', 5, 1000.00, 1, 0);
 
 -- --------------------------------------------------------
 
@@ -513,7 +592,8 @@ INSERT INTO `tbl_room_type` (`room_type_id`, `room_type_name`, `room_description
 (2, 'Semi-Private Room', 'Two patients per room, partitioned', 1),
 (3, 'Ward', 'Multiple patients sharing a room', 1),
 (4, 'ICU', 'Intensive Care Unit for critical patients', 1),
-(5, 'Emergency Holding', 'Temporary room while awaiting full admission', 1);
+(5, 'Emergency Holding', 'Temporary room while awaiting full admissions', 1),
+(6, 'test', 'test', 0);
 
 -- --------------------------------------------------------
 
@@ -569,7 +649,10 @@ INSERT INTO `tbl_surgery` (`surgery_id`, `surgery_name`, `surgery_type_id`, `sur
 (9, 'Hysterectomy', 6, 90000.00, 1),
 (10, 'Prostate Surgery', 7, 85000.00, 1),
 (11, 'Rhinoplasty', 8, 60000.00, 1),
-(12, 'Hernia Repair', 1, 15000.00, 1);
+(12, 'Hernia Repair', 1, 15000.00, 1),
+(13, 'test4', 3, 10000.00, 0),
+(15, 'test', 3, 10000.00, 1),
+(16, 'test2', 3, 10000.00, 1);
 
 -- --------------------------------------------------------
 
@@ -595,22 +678,29 @@ CREATE TABLE `tbl_surgery_procedure` (
 CREATE TABLE `tbl_surgery_type` (
   `surgery_type_id` int(11) NOT NULL,
   `surgery_type_name` varchar(100) NOT NULL,
-  `description` text NOT NULL
+  `description` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_surgery_type`
 --
 
-INSERT INTO `tbl_surgery_type` (`surgery_type_id`, `surgery_type_name`, `description`) VALUES
-(1, 'General Surgery', 'Procedures involving abdominal organs and soft tissue'),
-(2, 'Orthopedic Surgery', 'Procedures involving bones, joints, and ligaments'),
-(3, 'Cardiac Surgery', 'Heart-related surgical procedures'),
-(4, 'Neurosurgery', 'Surgical treatment of brain and nervous system disorders'),
-(5, 'ENT Surgery', 'Surgery of the ear, nose, and throat'),
-(6, 'OB-GYN Surgery', 'Gynecological and obstetric surgical procedures'),
-(7, 'Urologic Surgery', 'Procedures involving urinary tract and male reproductive organs'),
-(8, 'Plastic Surgery', 'Reconstructive or cosmetic surgical procedures');
+INSERT INTO `tbl_surgery_type` (`surgery_type_id`, `surgery_type_name`, `description`, `is_active`) VALUES
+(1, 'General Surgery', 'Procedures involving abdominal organs and soft tissue', 1),
+(2, 'Orthopedic Surgery', 'Procedures involving bones, joints, and ligaments', 1),
+(3, 'Cardiac Surgery', 'Heart-related surgical procedures', 1),
+(4, 'Neurosurgery', 'Surgical treatment of brain and nervous system disorders', 1),
+(5, 'ENT Surgery', 'Surgery of the ear, nose, and throat', 1),
+(6, 'OB-GYN Surgery', 'Gynecological and obstetric surgical procedures', 1),
+(7, 'Urologic Surgery', 'Procedures involving urinary tract and male reproductive organs', 1),
+(8, 'Plastic Surgery', 'Reconstructive or cosmetic surgical procedures', 1),
+(9, 'Pediatric Surgery', 'Surgeries specifically performed on infants and children', 1),
+(10, 'Vascular Surgery', 'Surgeries involving arteries, veins, and lymphatic circulation', 1),
+(11, 'Maxillofacial Surgery', 'Surgeries of the face, jaw, and mouth, often dental-related', 1),
+(12, 'Oncologic Surgery', 'Surgeries for cancer diagnosis, staging, and treatment', 1),
+(13, 'Transplant Surgery', 'Organ transplant operations such as kidney or liver transplant', 1),
+(14, 'Emergency / Trauma Surgery', 'Surgeries for trauma patients including internal bleeding and wound repair', 1);
 
 -- --------------------------------------------------------
 
@@ -622,27 +712,30 @@ CREATE TABLE `tbl_treatment` (
   `treatment_id` int(11) NOT NULL,
   `treatment_name` varchar(100) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `treatment_category_id` int(11) NOT NULL
+  `treatment_category_id` int(11) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_treatment`
 --
 
-INSERT INTO `tbl_treatment` (`treatment_id`, `treatment_name`, `unit_price`, `treatment_category_id`) VALUES
-(1, 'Physical Therapy Session', 600.00, 1),
-(2, 'Hot Pack Therapy', 200.00, 1),
-(3, 'Ultrasound Therapy', 350.00, 1),
-(4, 'Occupational Therapy Evaluation', 800.00, 2),
-(5, 'Hand Function Training', 500.00, 2),
-(6, 'Nebulization', 250.00, 3),
-(7, 'Oxygen Therapy (30 mins)', 300.00, 3),
-(8, 'Wound Cleaning', 300.00, 4),
-(9, 'Dressing Change', 200.00, 4),
-(10, 'Hemodialysis (Per Session)', 4000.00, 5),
-(11, 'Peritoneal Dialysis', 4500.00, 5),
-(12, 'Individual Counseling', 800.00, 6),
-(13, 'Psychiatric Evaluation', 1200.00, 6);
+INSERT INTO `tbl_treatment` (`treatment_id`, `treatment_name`, `unit_price`, `treatment_category_id`, `is_active`) VALUES
+(1, 'Physical Therapy Session', 600.00, 1, 1),
+(2, 'Hot Pack Therapy', 200.00, 1, 1),
+(3, 'Ultrasound Therapy', 350.00, 1, 1),
+(4, 'Occupational Therapy Evaluation', 800.00, 2, 1),
+(5, 'Hand Function Training', 500.00, 2, 1),
+(6, 'Nebulization', 250.00, 3, 1),
+(7, 'Oxygen Therapy (30 mins)', 300.00, 3, 1),
+(8, 'Wound Cleaning', 300.00, 4, 1),
+(9, 'Dressing Change', 200.00, 4, 1),
+(10, 'Hemodialysis (Per Session)', 4000.00, 5, 1),
+(11, 'Peritoneal Dialysis', 4500.00, 5, 1),
+(12, 'Individual Counseling', 800.00, 6, 1),
+(13, 'Psychiatric Evaluation', 1200.00, 6, 1),
+(14, 'sampple treatment', 10000.00, 6, 1),
+(15, 'test', 100.00, 7, 1);
 
 -- --------------------------------------------------------
 
@@ -653,20 +746,22 @@ INSERT INTO `tbl_treatment` (`treatment_id`, `treatment_name`, `unit_price`, `tr
 CREATE TABLE `tbl_treatment_category` (
   `treatment_category_id` int(11) NOT NULL,
   `category_name` varchar(100) NOT NULL,
-  `description` text NOT NULL
+  `description` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbl_treatment_category`
 --
 
-INSERT INTO `tbl_treatment_category` (`treatment_category_id`, `category_name`, `description`) VALUES
-(1, 'Physical Therapy', 'Restores mobility and function through exercise and manual therapy'),
-(2, 'Occupational Therapy', 'Improves daily living and work skills through rehabilitation'),
-(3, 'Respiratory Therapy', 'Treats breathing issues and lung function'),
-(4, 'Wound Care', 'Cleaning, dressing, and managing wounds'),
-(5, 'Dialysis', 'Blood filtration for kidney failure'),
-(6, 'Counseling', 'Mental health support and therapy sessions');
+INSERT INTO `tbl_treatment_category` (`treatment_category_id`, `category_name`, `description`, `is_active`) VALUES
+(1, 'Physical Therapy', 'Restores mobility and function through exercise and manual therapy', 1),
+(2, 'Occupational Therapy', 'Improves daily living and work skills through rehabilitation', 1),
+(3, 'Respiratory Therapy', 'Treats breathing issues and lung function', 1),
+(4, 'Wound Care', 'Cleaning, dressing, and managing wounds', 1),
+(5, 'Dialysis', 'Blood filtration for kidney failure', 1),
+(6, 'Counseling', 'Mental health support and therapy sessions', 1),
+(7, 'test', 'test', 1);
 
 -- --------------------------------------------------------
 
@@ -717,7 +812,9 @@ INSERT INTO `users` (`user_id`, `first_name`, `middle_name`, `last_name`, `usern
 (8, 'Cashier', '', '', 'cashier1', 'cashier123', 'cashier@email.com', '', 8),
 (9, 'Billing Staff', '', '', 'biller1', 'biller123', 'biller@email.com', '', 9),
 (10, 'Insurance Officer', '', '', 'insurance1', 'insurance123', 'insurance@email.com', '', 10),
-(11, 'Receptionist', '', '', 'receptionist1', 'receptionist123', 'receptionist@email.com', '', 11);
+(11, 'ER/Nurse-in-Charge', 'mid', 'last', 'er1', 'er123', 'er@email.com', '', 11),
+(12, 'user', 'test', 'test', 'test', '$2y$10$VbbfMDcMaSvWNVcNstwJHeFv5QX91470NZNz1SnTLz6', 'test', '', 2),
+(13, 'user', 'user', 'user', 'user1', '$2y$10$.oghmPHNldFjYh9/cxKu.euB2rBXHGqb11j0jjCgzfb', 'user@email.com', '', 4);
 
 -- --------------------------------------------------------
 
@@ -762,7 +859,13 @@ INSERT INTO `user_permission` (`permission_id`, `name`, `label`, `description`) 
 (10, 'manage_surgeries', 'Manage Surgeries', 'Add or update surgical procedures and pricing'),
 (11, 'manage_treatments', 'Manage Treatments', 'Define treatment types and categories'),
 (12, 'view_patient_records', 'View Patient Records', 'View patient personal and medical data'),
-(13, 'approve_insurance', 'Approve Insurance Claims', 'Review and approve submitted insurance claims');
+(13, 'approve_insurance', 'Approve Insurance Claims', 'Review and approve submitted insurance claims'),
+(14, 'manage_room_types', 'Mange Room Types', 'Create or modify room type details'),
+(15, 'manage_surgery_types', 'Mange Surgery Types', 'Create or modify surgery type details'),
+(18, 'manage_treatment_types', 'Mange Treatment Types', 'Create or modify treatment type details'),
+(19, 'manage_labtest_types', 'Mange Labtest Types', 'Create or modify labtest type details'),
+(20, 'manage_medicine_types', 'Mange Medicine Types', 'Create or modify medicine type details'),
+(21, 'admin_dashboard', 'Administrator Dashboard', 'Display admin related statistics');
 
 -- --------------------------------------------------------
 
@@ -813,7 +916,6 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 1, 1),
 (1, 2, 1),
 (1, 3, 1),
-(1, 4, 1),
 (1, 5, 1),
 (1, 6, 1),
 (1, 7, 1),
@@ -823,6 +925,12 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 11, 1),
 (1, 12, 1),
 (1, 13, 1),
+(1, 14, 1),
+(1, 15, 1),
+(1, 18, 1),
+(1, 19, 1),
+(1, 20, 1),
+(1, 21, 1),
 (2, 4, 1),
 (2, 12, 1),
 (3, 4, 1),
@@ -832,15 +940,15 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (4, 12, 1),
 (5, 9, 1),
 (6, 8, 1),
-(6, 3, 1),
 (7, 11, 1),
 (8, 6, 1),
 (8, 7, 1),
 (9, 6, 1),
 (9, 7, 1),
 (10, 13, 1),
-(11, 4, 1),
-(11, 5, 1);
+(11, 5, 1),
+(11, 12, 1),
+(11, 21, 1);
 
 --
 -- Indexes for dumped tables
@@ -1177,13 +1285,13 @@ ALTER TABLE `insurance_provider`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `patient_admission`
 --
 ALTER TABLE `patient_admission`
-  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `patient_labtest`
@@ -1219,13 +1327,13 @@ ALTER TABLE `tbl_doctor_fee`
 -- AUTO_INCREMENT for table `tbl_labtest`
 --
 ALTER TABLE `tbl_labtest`
-  MODIFY `labtest_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `labtest_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `tbl_labtest_category`
 --
 ALTER TABLE `tbl_labtest_category`
-  MODIFY `labtest_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `labtest_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `tbl_labtest_item`
@@ -1243,19 +1351,19 @@ ALTER TABLE `tbl_medication_item`
 -- AUTO_INCREMENT for table `tbl_medicine`
 --
 ALTER TABLE `tbl_medicine`
-  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine_type`
 --
 ALTER TABLE `tbl_medicine_type`
-  MODIFY `med_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `med_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `tbl_room`
 --
 ALTER TABLE `tbl_room`
-  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `tbl_room_assignment`
@@ -1273,7 +1381,7 @@ ALTER TABLE `tbl_room_stay`
 -- AUTO_INCREMENT for table `tbl_room_type`
 --
 ALTER TABLE `tbl_room_type`
-  MODIFY `room_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `room_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tbl_service_type`
@@ -1285,7 +1393,7 @@ ALTER TABLE `tbl_service_type`
 -- AUTO_INCREMENT for table `tbl_surgery`
 --
 ALTER TABLE `tbl_surgery`
-  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `tbl_surgery_procedure`
@@ -1297,19 +1405,19 @@ ALTER TABLE `tbl_surgery_procedure`
 -- AUTO_INCREMENT for table `tbl_surgery_type`
 --
 ALTER TABLE `tbl_surgery_type`
-  MODIFY `surgery_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `surgery_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment`
 --
 ALTER TABLE `tbl_treatment`
-  MODIFY `treatment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `treatment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment_category`
 --
 ALTER TABLE `tbl_treatment_category`
-  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment_session`
@@ -1321,7 +1429,7 @@ ALTER TABLE `tbl_treatment_session`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `user_log`
@@ -1333,7 +1441,7 @@ ALTER TABLE `user_log`
 -- AUTO_INCREMENT for table `user_permission`
 --
 ALTER TABLE `user_permission`
-  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `user_roles`
