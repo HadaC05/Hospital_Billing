@@ -10,15 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // DOM elements
+    // Type management functionality
     const tableBody = document.getElementById('labtest-type-list');
-    const typeForm = document.getElementById('addLabtestTypeForm');
-    const updateForm = document.getElementById('editLabtestTypeForm');
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
-
     let testTypes = [];
     let filteredTypes = [];
+
+    // search and filter elements
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
@@ -30,6 +29,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadLabtestTypes(1, itemsPerPage);
         }
     });
+
+    // Modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addLabtestTypeModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editLabtestTypeModal'));
+
+    // Form elements
+    const typeForm = document.getElementById('addLabtestTypeForm');
+    const updateForm = document.getElementById('editLabtestTypeForm');
+
+    // Button event listeners
+    document.getElementById('saveTypeBtn').addEventListener('click', saveType);
+    document.getElementById('updateTypeBtn').addEventListener('click', updateType);
 
     // Load labtest types
     async function loadLabtestTypes(page = 1, itemsPerPage = 10, search = '') {
@@ -52,9 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const data = response.data;
+
             if (data.success && Array.isArray(data.types)) {
                 testTypes = data.types;
                 filteredTypes = [...testTypes];
+
                 renderTable(filteredTypes, data.pagination);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
@@ -94,13 +107,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${testType.labtest_category_desc}</td>
                     <td><span class="${statusBadge}">${isActive}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${testType.labtest_category_id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editType(${testType.labtest_category_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
 
+        // Update pagination controls
         if (paginationData) {
             pagination.calculatePagination(
                 paginationData.totalItems,
@@ -135,121 +151,135 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Add form
-    if (typeForm) {
-        typeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function saveType(e) {
+        e.preventDefault();
 
-            const data = {
-                labtest_category_name: document.getElementById('labtest_category_name').value.trim(),
-                labtest_category_desc: document.getElementById('labtest_category_desc').value.trim()
-            };
+        const typeName = document.getElementById('labtest_category_name').value.trim();
+        const typeDesc = document.getElementById('labtest_category_desc').value.trim();
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-labtest-types.php`, {
-                    operation: 'addType',
-                    json: JSON.stringify(data)
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all require fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-labtest-types.php`, {
+                operation: 'addType',
+                json: JSON.stringify({
+                    labtest_category_name: typeName,
+                    labtest_category_desc: typeDesc,
+                    is_active: 1
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Lab test type added successfully!',
+                    icon: 'success',
                 });
-
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Lab test type added successfully!',
-                        icon: 'success'
-                    });
-
-                    // Reset form and reload data
-                    typeForm.reset();
-                    await loadLabtestTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addLabtestTypeModal'));
-                    modal.hide();
-                } else {
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to add lab test type.',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+                addModal.hide();
+                typeForm.reset();
+                await loadLabtestTypes();
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error adding lab test type.',
+                    text: data.message || 'Failed to add lab test type.',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error adding type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error adding lab test type.',
+                icon: 'error'
+            });
+        }
     }
 
-    // Edit button click handler
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const testId = e.target.dataset.id;
-            const testType = testTypes.find(lt => lt.labtest_category_id == testId);
-
-            if (testType) {
-                document.getElementById('edit_labtest_category_id').value = testType.labtest_category_id;
-                document.getElementById('edit_labtest_category_name').value = testType.labtest_category_name;
-                document.getElementById('edit_labtest_category_desc').value = testType.labtest_category_desc;
-                document.getElementById('edit_is_active').value = testType.is_active;
-
-                const modal = new bootstrap.Modal(document.getElementById('editLabtestTypeModal'));
-                modal.show();
-            }
+    // Edit type
+    window.editType = async function (typeId) {
+        const type = testTypes.find(lt => lt.labtest_category_id == typeId);
+        if (!type) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Lab test type not found',
+                icon: 'warning'
+            });
+            return;
         }
-    });
 
-    // Edit form
-    if (updateForm) {
-        updateForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Populate edit form
+        document.getElementById('edit_labtest_category_id').value = type.labtest_category_id;
+        document.getElementById('edit_labtest_category_name').value = type.labtest_category_name;
+        document.getElementById('edit_labtest_category_desc').value = type.labtest_category_desc;
+        document.getElementById('edit_is_active').value = type.is_active;
 
-            const data = {
-                labtest_category_id: document.getElementById('edit_labtest_category_id').value,
-                labtest_category_name: document.getElementById('edit_labtest_category_name').value.trim(),
-                labtest_category_desc: document.getElementById('edit_labtest_category_desc').value.trim(),
-                is_active: document.getElementById('edit_is_active').value
-            };
+        editModal.show();
+    }
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-labtest-types.php`, {
-                    operation: 'updateType',
-                    json: JSON.stringify(data)
+    // Update Type
+    async function updateType(e) {
+        e.preventDefault();
+
+        const typeId = document.getElementById('edit_labtest_category_id').value;
+        const typeName = document.getElementById('edit_labtest_category_name').value.trim();
+        const typeDesc = document.getElementById('edit_labtest_category_desc').value.trim();
+        const isActive = document.getElementById('edit_is_active').value;
+
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-labtest-types.php`, {
+                operation: 'updateType',
+                json: JSON.stringify({
+                    labtest_category_id: parseInt(typeId),
+                    labtest_category_name: typeName,
+                    labtest_category_desc: typeDesc,
+                    is_active: parseInt(isActive)
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Type updated successfully',
+                    icon: 'success'
                 });
 
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Labtest type updated successfully',
-                        icon: 'success'
-                    });
+                editModal.hide();
+                await loadLabtestTypes();
 
-                    // Reload data
-                    await loadLabtestTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editLabtestTypeModal'));
-                    modal.hide();
-                } else {
-
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to update lab test type',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error updating lab test type.',
+                    text: data.message || 'Failed to update type',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error updating type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error updating lab test type.',
+                icon: 'error'
+            });
+        }
+
     }
 
     // Search input event listener

@@ -68,7 +68,9 @@ class Labtest_Types
 
         // check duplicate name
         $checkSql = "
-            SELECT COUNT(*) FROM tbl_labtest_category WHERE labtest_category_name = :labtest_category_name
+            SELECT COUNT(*) 
+            FROM tbl_labtest_category 
+            WHERE labtest_category_name = :labtest_category_name
         ";
         $checkStmt = $conn->prepare($checkSql);
         $checkStmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
@@ -104,11 +106,14 @@ class Labtest_Types
         include 'connection-pdo.php';
 
         // check duplicate
-        $checkSql = "SELECT COUNT(*) FROM tbl_labtest_category WHERE labtest_category_name = :labtest_category_name AND labtest_category_id != :labtest_category_id";
+        $checkSql = "
+        SELECT COUNT(*) 
+        FROM tbl_labtest_category 
+        WHERE labtest_category_name = :labtest_category_name AND labtest_category_id != :labtest_category_id";
 
         $checkStmt = $conn->prepare($checkSql);
         $checkStmt->bindParam(':labtest_category_name', $labtest_category_name);
-        $checkStmt->bindParam('labtest_category_id', $labtest_category_id);
+        $checkStmt->bindParam(':labtest_category_id', $labtest_category_id);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -135,7 +140,10 @@ class Labtest_Types
 
         $success = $stmt->execute();
 
-        echo json_encode(['success' => $success, 'message' => $success ? 'Updated successfully' : 'Failed to update']);
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
+        ]);
     }
 }
 
@@ -145,6 +153,7 @@ if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
 
+    // get pagination parameters
     $page = $_GET['page'] ?? 1;
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
@@ -178,10 +187,11 @@ switch ($operation) {
         $labtestType->addType($data);
         break;
     case 'updateType':
-        $labtest_category_id = $data['labtest_category_id'];
-        $labtest_category_name = $data['labtest_category_name'];
-        $labtest_category_desc = $data['labtest_category_desc'];
-        $is_active = $data['is_active'];
-        $labtestType->updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc, $is_active);
+        $labtestType->updateType(
+            $data['labtest_category_name'],
+            $data['labtest_category_id'],
+            $data['labtest_category_desc'],
+            $data['is_active']
+        );
         break;
 }
