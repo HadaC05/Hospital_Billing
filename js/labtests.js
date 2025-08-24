@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to add lab test',
+                    text: data.message || 'Failed to add lab test',
                     icon: 'error'
                 });
             }
