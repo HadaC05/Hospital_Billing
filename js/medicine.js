@@ -131,7 +131,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 // Update pagination controls
-                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.calculatePagination(
+                    paginationData.totalItems,
+                    paginationData.currentPage,
+                    paginationData.itemsPerPage);
                 pagination.generatePaginationControls('pagination-container');
             } else {
                 tableBody.innerHTML = `<tr><td colspan="7">${data.message || 'No data found'}</td></tr>`;
@@ -144,6 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Create new medicine
     async function saveMedicine() {
+
         const medName = document.getElementById('med_name').value.trim();
         const typeId = document.getElementById('med_type_id').value;
         const unitPrice = document.getElementById('unit_price').value;
@@ -193,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error adding medicine:', error);
             Swal.fire({
                 title: 'Failed',
-                text: 'Failed to add medicine',
+                text: 'Error adding medicine',
                 icon: 'error'
             });
         }
@@ -268,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to update medicine',
+                    text: data.message || 'Failed to update medicine',
                     icon: 'error'
                 });
             }
@@ -276,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error updating medicine:', error);
             Swal.fire({
                 title: 'Failed',
-                text: 'Failed to update medicine',
+                text: 'Error updating medicine',
                 icon: 'error'
             });
         }
