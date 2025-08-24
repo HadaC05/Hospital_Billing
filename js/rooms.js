@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableBody = document.getElementById('room-list');
     let rooms = [];
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadRooms(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadRooms(1, itemsPerPage);
+        }
+    });
+
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addRoomModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
@@ -60,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load room list
-    async function loadRooms() {
+    async function loadRooms(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Room table body not found');
             return;
@@ -70,16 +81,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-rooms.php`, {
-                params: { operation: 'getRooms' }
+                params: {
+                    operation: 'getRooms',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
+                }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.rooms)) {
                 rooms = data.rooms;
+                const paginationData = data.pagination;
+
 
                 if (rooms.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="6">No rooms found</td></tr>';
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
+                    }
                     return;
                 }
 
@@ -105,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     tableBody.innerHTML += row;
                 });
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
                 tableBody.innerHTML = `<tr><td colspan="6">${data.message || 'No data found'}</td></tr>`;
             }

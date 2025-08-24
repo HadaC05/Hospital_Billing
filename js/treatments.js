@@ -16,6 +16,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableBody = document.getElementById('treatment-list');
     let treatments = [];
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadTreatments(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadTreatments(1, itemsPerPage);
+        }
+    });
+
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addTreatmentModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editTreatmentModal'));
@@ -61,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load treatments
-    async function loadTreatments() {
+    async function loadTreatments(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Treatment table body not found');
             return;
@@ -71,16 +82,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                params: { operation: 'getTreatments' }
+                params: {
+                    operation: 'getTreatments',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
+                }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.treatments)) {
                 treatments = data.treatments;
+                const paginationData = data.pagination;
+
 
                 if (treatments.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
+                    }
                     return;
                 }
 
@@ -105,6 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     tableBody.innerHTML += row;
                 });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
                 tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
             }

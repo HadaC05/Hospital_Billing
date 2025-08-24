@@ -53,7 +53,7 @@ class Surgeries
             FROM tbl_surgery s
             JOIN tbl_surgery_type st ON s.surgery_type_id = st.surgery_type_id
             $whereClause
-            ORDER BY s.surgery_name ASC,
+            ORDER BY s.surgery_name ASC
             LIMIT :limit OFFSET :offset
         ";
 

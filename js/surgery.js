@@ -16,6 +16,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableBody = document.getElementById('surgery-list');
     let surgeries = [];
 
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadSurgeries(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadSurgeries(1, itemsPerPage);
+        }
+    });
+
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addSurgeryModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
@@ -61,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load Surgery List
-    async function loadSurgeries() {
+    async function loadSurgeries(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Surgery table body not found');
             return;
@@ -71,16 +82,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-surgeries.php`, {
-                params: { operation: 'getSurgeries' }
+                params: {
+                    operation: 'getSurgeries',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
+                }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.surgeries)) {
                 surgeries = data.surgeries;
+                const paginationData = data.pagination;
+
 
                 if (surgeries.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="4"> No surgeries found. </td></tr>';
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
+                    }
                     return;
                 }
 
@@ -105,6 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     tableBody.innerHTML += row;
                 });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
                 tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
