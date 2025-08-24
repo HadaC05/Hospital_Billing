@@ -71,6 +71,7 @@
                                 <tr>
                                     <th>Type Name</th>
                                     <th>Description</th>
+                                    <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -91,19 +92,25 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <input type="text" class="form-control mb-2" id="labtest_category_name"
-                                placeholder="Labtest Type Name" required>
-                            <input type="text" class="form-control mb-2" id="labtest_category_desc"
-                                placeholder="Description" required>
+                            <div class="mb-3">
+                                <label for="labtest_category_name">Lab Test Type Name</label>
+                                <input type="text" class="form-control mb-2" id="labtest_category_name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="labtest_category_desc">Description</label>
+                                <textarea class="form-control mb-2" id="labtest_category_desc" rows="3"
+                                    required></textarea>
+                            </div>
                         </div>
                         <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                             <button type="submit" class="btn btn-primary">Add</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- // modal for editing ;abtest -->
+            <!-- // modal for editing labtest -->
             <div class="modal fade" id="editLabtestTypeModal" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -121,6 +128,13 @@
                                 <div class="mb-3">
                                     <label for="edit_labtest_category_desc">Description</label>
                                     <input type="text" id="edit_labtest_category_desc" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_is_active" class="form-label">Status</label>
+                                    <select id="edit_is_active" class="form-select" required>
+                                        <option value="1">Active</option>
+                                        <option value="0">Inactive</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="modal-footer">

@@ -66,9 +66,25 @@ class Labtest_Types
     {
         include 'connection-pdo.php';
 
+        // check duplicate name
+        $checkSql = "
+            SELECT COUNT(*) FROM tbl_labtest_category WHERE labtest_category_name = :labtest_category_name
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
-            INSERT INTO tbl_labtest_category (labtest_category_name, labtest_category_desc)
-            VALUES (:labtest_category_name, :labtest_category_desc)
+            INSERT INTO tbl_labtest_category (labtest_category_name, labtest_category_desc, is_active)
+            VALUES (:labtest_category_name, :labtest_category_desc, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -83,14 +99,31 @@ class Labtest_Types
     }
 
     // update existing type 
-    function updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc)
+    function updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc, $is_active)
     {
         include 'connection-pdo.php';
+
+        // check duplicate
+        $checkSql = "SELECT COUNT(*) FROM tbl_labtest_category WHERE labtest_category_name = :labtest_category_name AND labtest_category_id != :labtest_category_id";
+
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':labtest_category_name', $labtest_category_name);
+        $checkStmt->bindParam('labtest_category_id', $labtest_category_id);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Another type with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_labtest_category
             SET labtest_category_name = :labtest_category_name,
-                labtest_category_desc = :labtest_category_desc
+                labtest_category_desc = :labtest_category_desc,
+                is_active = :is_active
             WHERE labtest_category_id = :labtest_category_id
         ";
 
@@ -98,6 +131,7 @@ class Labtest_Types
         $stmt->bindParam(':labtest_category_name', $labtest_category_name);
         $stmt->bindParam(':labtest_category_id', $labtest_category_id);
         $stmt->bindParam(':labtest_category_desc', $labtest_category_desc);
+        $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
@@ -147,6 +181,7 @@ switch ($operation) {
         $labtest_category_id = $data['labtest_category_id'];
         $labtest_category_name = $data['labtest_category_name'];
         $labtest_category_desc = $data['labtest_category_desc'];
-        $labtestType->updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc);
+        $is_active = $data['is_active'];
+        $labtestType->updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc, $is_active);
         break;
 }

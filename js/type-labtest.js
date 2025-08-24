@@ -85,13 +85,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tableBody.innerHTML = '';
         typesToRender.forEach(testType => {
+            const isActive = testType.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = testType.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
             const row = `
                 <tr>
                     <td>${testType.labtest_category_name}</td>
                     <td>${testType.labtest_category_desc}</td>
+                    <td><span class="${statusBadge}">${isActive}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-warning edit-btn" data-id="${testType.labtest_category_id}">Edit</button>
+                        <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${testType.labtest_category_id}"><i class="fas fa-edit"></i></button>
                     </td>
                 </tr>
             `;
@@ -190,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('edit_labtest_category_id').value = testType.labtest_category_id;
                 document.getElementById('edit_labtest_category_name').value = testType.labtest_category_name;
                 document.getElementById('edit_labtest_category_desc').value = testType.labtest_category_desc;
+                document.getElementById('edit_is_active').value = testType.is_active;
 
                 const modal = new bootstrap.Modal(document.getElementById('editLabtestTypeModal'));
                 modal.show();
@@ -205,7 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = {
                 labtest_category_id: document.getElementById('edit_labtest_category_id').value,
                 labtest_category_name: document.getElementById('edit_labtest_category_name').value.trim(),
-                labtest_category_desc: document.getElementById('edit_labtest_category_desc').value.trim()
+                labtest_category_desc: document.getElementById('edit_labtest_category_desc').value.trim(),
+                is_active: document.getElementById('edit_is_active').value
             };
 
             try {
@@ -229,6 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editLabtestTypeModal'));
                     modal.hide();
                 } else {
+
                     Swal.fire({
                         title: 'Failed',
                         text: 'Failed to update lab test type',
