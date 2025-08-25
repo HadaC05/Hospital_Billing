@@ -14,23 +14,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Room management functionality
     const tableBody = document.getElementById('room-list');
     let rooms = [];
-    let currentItemsPerPage = 10;
-
-    // Optional search/filter controls
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
-        itemsPerPage: currentItemsPerPage,
+        itemsPerPage: 10,
         onPageChange: (page) => {
-            const term = (searchInput?.value || '').trim();
-            loadRooms(page, currentItemsPerPage, term);
+            loadRooms(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            currentItemsPerPage = itemsPerPage;
-            const term = (searchInput?.value || '').trim();
-            loadRooms(1, currentItemsPerPage, term);
+            loadRooms(1, itemsPerPage);
         }
     });
 
@@ -103,24 +95,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 rooms = data.rooms;
                 const paginationData = data.pagination;
 
-                // Optional client-side filter
-                let list = rooms;
-                const term = (searchInput?.value || '').toLowerCase().trim();
-                const filter = (filterSelect?.value || 'all');
-                if (filterSelect && filter !== 'all' && term) {
-                    list = rooms.filter(room => {
-                        const byNumber = (room.room_number || '').toLowerCase().includes(term);
-                        const byType = (room.room_type_name || '').toLowerCase().includes(term);
-                        const statusText = room.is_available == 1 ? 'available' : 'not available';
-                        const byStatus = statusText.includes(term);
-                        if (filter === 'number') return byNumber;
-                        if (filter === 'type') return byType;
-                        if (filter === 'status') return byStatus;
-                        return byNumber || byType || byStatus;
-                    });
-                }
 
-                if (list.length === 0) {
+                if (rooms.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="6">No rooms found</td></tr>';
                     const paginationContainer = document.getElementById('pagination-container');
                     if (paginationContainer) {
@@ -131,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 tableBody.innerHTML = '';
 
-                list.forEach(room => {
+                rooms.forEach(room => {
                     const availability = room.is_available == 1 ? 'Available' : 'Not Available';
                     const statusBadge = room.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
@@ -297,21 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Wire search & filter events
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim();
-            loadRooms(1, currentItemsPerPage, term);
-        });
-    }
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            const term = (searchInput?.value || '').trim();
-            loadRooms(1, currentItemsPerPage, term);
-        });
-    }
-
     // Initialize
     await loadRoomTypes();
-    await loadRooms(1, currentItemsPerPage, (searchInput?.value || '').trim());
+    await loadRooms();
 });

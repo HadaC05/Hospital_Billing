@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // type management functionality
     const tableBody = document.getElementById('room-type-list');
-    let roomTypes = [];
+    let allTypes = [];
     let filteredTypes = [];
 
     // form elements
@@ -29,35 +29,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // search and filter
     const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
+    const statusFilter = document.getElementById('statusFilter');
+    const sortBy = document.getElementById('sortBy');
 
     // initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadRoomTypes(page);
+            renderCurrentPage(page);
         },
         onItemsPerPaageChange: (itemsPerPage) => {
-            loadRoomTypes(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
     // Load room types
-    async function loadRoomTypes(page = 1, itemsPerPage = 10, search = '') {
+    async function loadRoomTypes() {
         if (!tableBody) {
             console.error('Room types table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="3">Loading room types...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Loading room types...</td></tr>';
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-room-types.php`, {
                 params: {
                     operation: 'getTypes',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search,
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: '',
                     json: JSON.stringify({})
                 }
             });
@@ -65,16 +66,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                roomTypes = data.types;
-                filteredTypes = [...roomTypes];
+                allTypes = data.types;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
 
-                renderTable(filteredTypes, data.pagination);
             } else {
-                tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
             console.error('Failed to load room types: ', error);
-            tableBody.innerHTML = '<tr><td colspan="3">Failed to load room types.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">Failed to load room types.</td></tr>';
         }
     }
 
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (typesToRender.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="3">No room type found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">No room type found</td></tr>';
 
             const paginationContainer = document.getElementById('pagination-container');
             if (paginationContainer) {
@@ -126,26 +127,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Filter room types based on search and filter criteria
-    function filterRoomTypes() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const filterType = filterSelect.value;
+    function applyFiltersAndSort() {
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+        const statusValue = (statusFilter?.value || 'all');
+        const sortValue = (sortBy?.value || 'name-asc');
 
-        filteredTypes = roomTypes.filter(type => {
+        filteredTypes = allTypes.filter(type => {
             const matchesSearch = searchTerm === '' ||
-                type.room_type_name.toLowerCase().includes(searchTerm) ||
-                type.room_description.toLowerCase().includes(searchTerm);
+                String(type.room_type_name || '').toLowerCase().includes(searchTerm) ||
+                String(type.room_description || '').toLowerCase().includes(searchTerm);
 
-            let matchesFilter = true;
-            if (filterType === 'name') {
-                matchesFilter = type.room_type_name.toLowerCase().includes(searchTerm);
-            } else if (filterType === 'description') {
-                matchesFilter = type.room_description.toLowerCase().includes(searchTerm);
-            }
+            const isActive = Number(type.is_active) === 1;
+            const matchesStatus = statusValue === 'all' ||
+                (statusValue === 'active' && isActive) ||
+                (statusValue === 'inactive' && !isActive);
 
-            return matchesSearch && matchesFilter;
+            return matchesSearch && matchesStatus;
         });
 
-        renderTable(filteredTypes);
+        // Sort by name asc/desc
+        filteredTypes.sort((a, b) => {
+            const nameA = String(a.room_type_name || '').toLowerCase();
+            const nameB = String(b.room_type_name || '').toLowerCase();
+            if (nameA < nameB) return sortValue === 'name-asc' ? -1 : 1;
+            if (nameA > nameB) return sortValue === 'name-asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Render current page from filteredTypes
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredTypes, page, itemsPerPage);
+        renderTable(data, pageData);
     }
 
     // Add room type
@@ -207,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit button click handler
     window.editType = async function (typeId) {
-        const type = roomTypes.find(rt => rt.room_type_id == typeId);
+        const type = allTypes.find(rt => rt.room_type_id == typeId);
         if (!type) {
             Swal.fire({
                 title: 'Warning',
@@ -283,14 +296,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Search input event listener
+    // Event listeners for controls
     if (searchInput) {
-        searchInput.addEventListener('input', filterRoomTypes);
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
     }
 
-    // Filter select event listener
-    if (filterSelect) {
-        filterSelect.addEventListener('change', filterRoomTypes);
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
     }
 
     // Initial load

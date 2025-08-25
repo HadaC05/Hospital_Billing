@@ -11,26 +11,131 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function renderTable(items, paginationData = null) {
+        if (!tableBody) return;
+
+        if (!items || items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7">No medicines found</td></tr>';
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        items.forEach(med => {
+            const isActive = med.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = med.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+            const row = `
+                <tr>
+                    <td>${med.med_name}</td>
+                    <td>${med.med_type_name}</td>
+                    <td>₱${parseFloat(med.unit_price).toFixed(2)}</td>
+                    <td>${med.stock_quantity}</td>
+                    <td>${med.unit_name}</td>
+                    <td><span class="${statusBadge}">${isActive}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editMedicine(${med.med_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
+    }
+
+    function applyFiltersAndSort() {
+        const term = (searchInput?.value || '').toLowerCase().trim();
+        const typeVal = typeFilter?.value || 'all';
+        const unitVal = unitFilter?.value || 'all';
+        const statusVal = statusFilter?.value || 'all';
+        const sortVal = sortBy?.value || 'name-asc';
+
+        filteredMedicines = allMedicines.filter(m => {
+            const matchesSearch = term === '' ||
+                String(m.med_name || '').toLowerCase().includes(term) ||
+                String(m.med_type_name || '').toLowerCase().includes(term) ||
+                String(m.unit_name || '').toLowerCase().includes(term);
+
+            const matchesType = typeVal === 'all' || String(m.med_type_id) === String(typeVal);
+            const matchesUnit = unitVal === 'all' || String(m.unit_id) === String(unitVal);
+            const isActive = Number(m.is_active) === 1;
+            const matchesStatus = statusVal === 'all' ||
+                (statusVal === 'active' && isActive) ||
+                (statusVal === 'inactive' && !isActive);
+
+            return matchesSearch && matchesType && matchesUnit && matchesStatus;
+        });
+
+        filteredMedicines.sort((a, b) => {
+            switch (sortVal) {
+                case 'name-asc':
+                case 'name-desc': {
+                    const A = String(a.med_name || '').toLowerCase();
+                    const B = String(b.med_name || '').toLowerCase();
+                    if (A < B) return sortVal === 'name-asc' ? -1 : 1;
+                    if (A > B) return sortVal === 'name-asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'type-asc':
+                case 'type-desc': {
+                    const A = String(a.med_type_name || '').toLowerCase();
+                    const B = String(b.med_type_name || '').toLowerCase();
+                    if (A < B) return sortVal === 'type-asc' ? -1 : 1;
+                    if (A > B) return sortVal === 'type-asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'stock-asc':
+                case 'stock-desc': {
+                    const A = Number(a.stock_quantity) || 0;
+                    const B = Number(b.stock_quantity) || 0;
+                    return sortVal === 'stock-asc' ? (A - B) : (B - A);
+                }
+                case 'price-asc':
+                case 'price-desc': {
+                    const A = Number(a.unit_price) || 0;
+                    const B = Number(b.unit_price) || 0;
+                    return sortVal === 'price-asc' ? (A - B) : (B - A);
+                }
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredMedicines, page, itemsPerPage);
+        renderTable(data, pageData);
+    }
     // Medicine management functionality
     const tableBody = document.getElementById('medicine-list');
-    let medicines = [];
-    let currentItemsPerPage = 10;
+    let allMedicines = [];
+    let filteredMedicines = [];
 
-    // Optional search/filter controls
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
+    // Controls
+    const searchInput = document.getElementById('medSearchInput');
+    const typeFilter = document.getElementById('medTypeFilter');
+    const unitFilter = document.getElementById('medUnitFilter');
+    const statusFilter = document.getElementById('medStatusFilter');
+    const sortBy = document.getElementById('medSortBy');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
-        itemsPerPage: currentItemsPerPage,
+        itemsPerPage: 10,
         onPageChange: (page) => {
-            const term = (searchInput?.value || '').trim();
-            loadMedicines(page, currentItemsPerPage, term);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            currentItemsPerPage = itemsPerPage;
-            const term = (searchInput?.value || '').trim();
-            loadMedicines(1, currentItemsPerPage, term);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
@@ -63,24 +168,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Populate all category dropdowns
                 const addTypeSelect = document.getElementById('med_type_id');
                 const editTypeSelect = document.getElementById('edit_med_type_id');
+                const filterTypeSelect = document.getElementById('medTypeFilter');
 
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + options;
             } else {
 
                 const addTypeSelect = document.getElementById('med_type_id');
                 const editTypeSelect = document.getElementById('edit_med_type_id');
+                const filterTypeSelect = document.getElementById('medTypeFilter');
 
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">No types available</option>`;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">No types available</option>`;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>`;
             }
         } catch (error) {
             console.error('Failed to load medicine types', error);
         }
     }
 
-    // Load medicine list
-    async function loadMedicines(page = 1, itemsPerPage = 10, search = '') {
+    // Load Medicine Units
+    async function loadMedicineUnits() {
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
+                params: { operation: 'getUnits' }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.units)) {
+                const options = data.units.map(unit => {
+                    return `<option value="${unit.unit_id}">${unit.unit_name}</option>`;
+                }).join('');
+
+                // Populate all unit dropdowns
+                const addUnitSelect = document.getElementById('unit_id');
+                const editUnitSelect = document.getElementById('edit_unit_id');
+                const filterUnitSelect = document.getElementById('medUnitFilter');
+
+                if (addUnitSelect) addUnitSelect.innerHTML = `<option value="">Select Unit</option>` + options;
+                if (editUnitSelect) editUnitSelect.innerHTML = `<option value="">Select Unit</option>` + options;
+                if (filterUnitSelect) filterUnitSelect.innerHTML = `<option value="all">All Units</option>` + options;
+            } else {
+
+                const addUnitSelect = document.getElementById('unit_id');
+                const editUnitSelect = document.getElementById('edit_unit_id');
+                const filterUnitSelect = document.getElementById('medUnitFilter');
+
+                if (addUnitSelect) addUnitSelect.innerHTML = `<option value="">No unit available</option>`;
+                if (editUnitSelect) editUnitSelect.innerHTML = `<option value="">No unit available</option>`;
+                if (filterUnitSelect) filterUnitSelect.innerHTML = `<option value="all">All Units</option>`;
+            }
+        } catch (error) {
+            console.error('Failed to load medicine units', error);
+        }
+    }
+
+    // Load all medicines once for full-list search
+    async function loadAllMedicines() {
         if (!tableBody) {
             console.error('Medicine table body not found');
             return;
@@ -92,75 +238,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
                 params: {
                     operation: 'getMedicines',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: ''
                 }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.medicines)) {
-                medicines = data.medicines;
-                const paginationData = data.pagination;
-
-                if (medicines.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7">No medicines found</td></tr>';
-                    // Clear pagination controls
-                    const paginationContainer = document.getElementById('pagination-container');
-                    if (paginationContainer) {
-                        paginationContainer.innerHTML = '';
-                    }
-                    return;
-                }
-
-                // Optional client-side filter
-                let list = medicines;
-                const term = (searchInput?.value || '').toLowerCase().trim();
-                const filter = (filterSelect?.value || 'all');
-                if (filterSelect && filter !== 'all' && term) {
-                    list = medicines.filter(med => {
-                        const byName = (med.med_name || '').toLowerCase().includes(term);
-                        const byType = (med.med_type_name || '').toLowerCase().includes(term);
-                        const statusText = med.is_active == 1 ? 'active' : 'inactive';
-                        const byStatus = statusText.includes(term);
-                        if (filter === 'name') return byName;
-                        if (filter === 'type') return byType;
-                        if (filter === 'status') return byStatus;
-                        return byName || byType || byStatus;
-                    });
-                }
-
-                tableBody.innerHTML = '';
-
-                list.forEach(med => {
-                    const isActive = med.is_active == 1 ? 'Active' : 'Inactive';
-                    const statusBadge = med.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
-
-                    const row = `
-                        <tr>
-                            <td>${med.med_name}</td>
-                            <td>${med.med_type_name}</td>
-                            <td>₱${parseFloat(med.unit_price).toFixed(2)}</td>
-                            <td>${med.stock_quantity}</td>
-                            <td>${med.med_unit}</td>
-                            <td><span class="${statusBadge}">${isActive}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editMedicine(${med.med_id})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-                // Update pagination controls
-                pagination.calculatePagination(
-                    paginationData.totalItems,
-                    paginationData.currentPage,
-                    paginationData.itemsPerPage);
-                pagination.generatePaginationControls('pagination-container');
+                allMedicines = data.medicines;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="7">${data.message || 'No data found'}</td></tr>`;
             }
@@ -177,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeId = document.getElementById('med_type_id').value;
         const unitPrice = document.getElementById('unit_price').value;
         const stockQty = document.getElementById('stock_quantity').value;
-        const medUnit = document.getElementById('med_unit').value.trim();
+        const medUnit = document.getElementById('unit_id').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
             Swal.fire({
@@ -196,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     med_type_id: typeId,
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    med_unit: medUnit,
+                    unit_id: medUnit,
                     is_active: 1
                 })
             });
@@ -230,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit medicine
     window.editMedicine = async function (medId) {
-        const med = medicines.find(m => m.med_id == medId);
+        const med = allMedicines.find(m => m.med_id == medId);
         if (!med) {
             Swal.fire({
                 title: "Warning",
@@ -246,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit_med_type_id').value = med.med_type_id;
         document.getElementById('edit_unit_price').value = med.unit_price;
         document.getElementById('edit_stock_quantity').value = med.stock_quantity;
-        document.getElementById('edit_med_unit').value = med.med_unit;
+        document.getElementById('edit_unit_id').value = med.unit_id;
         document.getElementById('edit_is_active').value = med.is_active;
 
         editModal.show();
@@ -259,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeId = document.getElementById('edit_med_type_id').value;
         const unitPrice = document.getElementById('edit_unit_price').value;
         const stockQty = document.getElementById('edit_stock_quantity').value;
-        const medUnit = document.getElementById('edit_med_unit').value.trim();
+        const medUnit = document.getElementById('edit_unit_id').value;
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
@@ -280,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     med_type_id: typeId,
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    med_unit: medUnit,
+                    unit_id: medUnit,
                     is_active: parseInt(isActive)
                 })
             });
@@ -293,7 +382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 editModal.hide();
-                await loadMedicines();
+                await loadAllMedicines();
             } else {
                 Swal.fire({
                     title: 'Failed',
@@ -311,21 +400,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Wire search & filter events
+    // Initialize the module
+    await loadMedicineTypes();
+    await loadMedicineUnits();
+    // Wire control events
     if (searchInput) {
         searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim();
-            loadMedicines(1, currentItemsPerPage, term);
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
         });
     }
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            const term = (searchInput?.value || '').trim();
-            loadMedicines(1, currentItemsPerPage, term);
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (unitFilter) {
+        unitFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
         });
     }
 
-    // Initialize the module
-    await loadMedicineTypes();
-    await loadMedicines(1, currentItemsPerPage, (searchInput?.value || '').trim());
+    await loadAllMedicines();
 });

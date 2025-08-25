@@ -15,21 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Treatment management functionality
     const tableBody = document.getElementById('treatment-list');
     let treatments = [];
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
-    let currentItemsPerPage = 10;
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
-        itemsPerPage: currentItemsPerPage,
+        itemsPerPage: 10,
         onPageChange: (page) => {
-            const search = searchInput ? searchInput.value.trim() : '';
-            loadTreatments(page, currentItemsPerPage, search);
+            loadTreatments(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            currentItemsPerPage = itemsPerPage;
-            const search = searchInput ? searchInput.value.trim() : '';
-            loadTreatments(1, currentItemsPerPage, search);
+            loadTreatments(1, itemsPerPage);
         }
     });
 
@@ -77,20 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Wire search and filter controls
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim();
-            loadTreatments(1, currentItemsPerPage, term);
-        });
-    }
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            const term = searchInput ? searchInput.value.trim() : '';
-            loadTreatments(1, currentItemsPerPage, term);
-        });
-    }
-
     // Load treatments
     async function loadTreatments(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
@@ -116,19 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 treatments = data.treatments;
                 const paginationData = data.pagination;
 
-                // Optional client-side filtering based on selected field
-                const searchTerm = (search || '').toLowerCase();
-                let list = treatments;
-                if (filterSelect && filterSelect.value !== 'all' && searchTerm) {
-                    list = treatments.filter(t => {
-                        if (filterSelect.value === 'name') return (t.treatment_name || '').toLowerCase().includes(searchTerm);
-                        if (filterSelect.value === 'category') return (t.treatment_category || '').toLowerCase().includes(searchTerm);
-                        if (filterSelect.value === 'status') return ((t.is_active == 1 ? 'active' : 'inactive')).includes(searchTerm);
-                        return true;
-                    });
-                }
 
-                if (list.length === 0) {
+                if (treatments.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
                     const paginationContainer = document.getElementById('pagination-container');
                     if (paginationContainer) {
@@ -139,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 tableBody.innerHTML = '';
 
-                list.forEach(t => {
+                treatments.forEach(t => {
                     const status = t.is_active == 1 ? 'Active' : 'Inactive';
                     const statusBadge = t.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
@@ -178,7 +147,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryId = document.getElementById('treatment_category_id').value;
 
         if (!treatmentName || !unitPrice || !categoryId) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -195,16 +168,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Treatment added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Treatment added successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadTreatments();
             } else {
-                alert(data.message || 'Failed to add treatment.');
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to add treatment.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding treatment:', error);
-            alert('Failed to add treatment. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to add treatment. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -212,7 +197,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editTreatment = async function (treatmentId) {
         const treatment = treatments.find(t => t.treatment_id == treatmentId);
         if (!treatment) {
-            alert('Treatment not found.');
+            Swal.fire({
+                title: 'Not found',
+                text: 'Treatment not found.',
+                icon: 'info'
+            });
             return;
         }
 
@@ -234,7 +223,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!treatmentName || !unitPrice || !categoryId) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -252,20 +245,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Treatment updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Treatment updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadTreatments();
             } else {
-                alert(data.message || 'Failed to update treatment.');
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to update treatment.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating treatment:', error);
-            alert('Failed to update treatment. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update treatment. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
     // Initialize
     await loadTreatmentCategories();
-    const initialSearch = searchInput ? searchInput.value.trim() : '';
-    await loadTreatments(1, currentItemsPerPage, initialSearch);
+    await loadTreatments();
 });

@@ -55,44 +55,7 @@ class Patients
                 p.email,
                 p.em_contact_name,
                 p.em_contact_number,
-                p.em_contact_address,
-                (
-                    SELECT pa.admission_id
-                    FROM patient_admission pa
-                    WHERE pa.patient_id = p.patient_id
-                    ORDER BY pa.admission_date DESC
-                    LIMIT 1
-                ) AS latest_admission_id,
-                (
-                    SELECT r.room_number
-                    FROM tbl_room_assignment ra
-                    JOIN tbl_room_stay rs ON rs.room_assignment_id = ra.room_assignment_id
-                    JOIN tbl_room r ON r.room_id = rs.room_id
-                    WHERE ra.admission_id = (
-                        SELECT pa2.admission_id
-                        FROM patient_admission pa2
-                        WHERE pa2.patient_id = p.patient_id
-                        ORDER BY pa2.admission_date DESC
-                        LIMIT 1
-                    )
-                    ORDER BY rs.room_stay_id DESC
-                    LIMIT 1
-                ) AS current_room_number,
-                (
-                    SELECT r2.room_type_id
-                    FROM tbl_room_assignment ra2
-                    JOIN tbl_room_stay rs2 ON rs2.room_assignment_id = ra2.room_assignment_id
-                    JOIN tbl_room r2 ON r2.room_id = rs2.room_id
-                    WHERE ra2.admission_id = (
-                        SELECT pa3.admission_id
-                        FROM patient_admission pa3
-                        WHERE pa3.patient_id = p.patient_id
-                        ORDER BY pa3.admission_date DESC
-                        LIMIT 1
-                    )
-                    ORDER BY rs2.room_stay_id DESC
-                    LIMIT 1
-                ) AS current_room_type_id
+                p.em_contact_address
             FROM patients p
             $whereClause
             ORDER BY p.patient_lname ASC

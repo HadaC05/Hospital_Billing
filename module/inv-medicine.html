@@ -43,16 +43,46 @@
             <!-- Medicine Table -->
             <div class="card">
                 <div class="card-body">
-                    <div class="row g-2 align-items-center mb-3">
-                        <div class="col-sm-8 col-md-9">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search medicines...">
+                    <!-- Search and Controls -->
+                    <div class="row mb-3">
+                        <div class="col-md-4 mt-2 mt-md-0">
+                            <label for="medSearchInput" class="form-label">Search</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" id="medSearchInput" class="form-control" placeholder="Search by name, type or unit...">
+                            </div>
                         </div>
-                        <div class="col-sm-4 col-md-3">
-                            <select id="filterSelect" class="form-select">
-                                <option value="all">Filter: All fields</option>
-                                <option value="name">Name</option>
-                                <option value="type">Type</option>
-                                <option value="status">Status</option>
+                        <div class="col-md-2 mt-2 mt-md-0">
+                            <label for="medTypeFilter" class="form-label">Type</label>
+                            <select id="medTypeFilter" class="form-select">
+                                <option value="all">All Types</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mt-2 mt-md-0">
+                            <label for="medUnitFilter" class="form-label">Unit</label>
+                            <select id="medUnitFilter" class="form-select">
+                                <option value="all">All Units</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mt-2 mt-md-0">
+                            <label for="medStatusFilter" class="form-label">Status</label>
+                            <select id="medStatusFilter" class="form-select">
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mt-2 mt-md-0">
+                            <label for="medSortBy" class="form-label">Sort By</label>
+                            <select id="medSortBy" class="form-select">
+                                <option value="name-asc">Name: A → Z</option>
+                                <option value="name-desc">Name: Z → A</option>
+                                <option value="type-asc">Type: A → Z</option>
+                                <option value="type-desc">Type: Z → A</option>
+                                <option value="stock-asc">Stock: Low → High</option>
+                                <option value="stock-desc">Stock: High → Low</option>
+                                <option value="price-asc">Price: Low → High</option>
+                                <option value="price-desc">Price: High → Low</option>
                             </select>
                         </div>
                     </div>
@@ -108,8 +138,8 @@
                                 <input type="number" class="form-control" id="stock_quantity" required>
                             </div>
                             <div class="mb-3">
-                                <label for="med_unit" class="form-label">Unit</label>
-                                <input type="text" class="form-control" id="med_unit" required>
+                                <label for="unit_id" class="form-label">Unit</label>
+                                <select id="unit_id" class="form-select" required></select>
                             </div>
                         </form>
                     </div>
@@ -149,8 +179,8 @@
                                 <input type="number" id="edit_stock_quantity" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label for="edit_med_unit" class="form-label">Unit</label>
-                                <input type="text" id="edit_med_unit" class="form-control" required>
+                                <label for="edit_unit_id" class="form-label">Unit</label>
+                                <select id="edit_unit_id" class="form-select" required></select>
                             </div>
                             <div class="mb-3">
                                 <label for="edit_is_active" class="form-label">Status</label>

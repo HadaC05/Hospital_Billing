@@ -237,12 +237,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const modal = new bootstrap.Modal(document.getElementById('viewAdmissionModal'));
                     modal.show();
                 } else {
-                    alert('Error: ' + response.data.message);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error: ' + response.data.message,
+                        icon: 'error'
+                    });
                 }
             })
             .catch(function (error) {
                 console.error('Error:', error);
-                alert('An error occurred while loading admission details.');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred while loading admission details.',
+                    icon: 'error'
+                });
             });
     }
 

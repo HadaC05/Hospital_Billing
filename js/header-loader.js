@@ -1,12 +1,14 @@
 console.log('header-loader.js loaded');
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Wait for sidebar to be loaded first
-    await waitForSidebar();
+    // Load header immediately so hamburger and logout appear fast
     await loadHeader();
+    // Try to bind hamburger now and also when sidebar arrives
+    bindHamburgerWithRetry();
     updateModuleName();
 });
 
+// Kept for backward compatibility but no longer used to block header
 async function waitForSidebar() {
     return new Promise((resolve) => {
         const checkSidebar = () => {
@@ -28,46 +30,87 @@ async function loadHeader() {
 
     try {
         const headerResponse = await axios.get('../components/header.html');
-        if (!headerResponse?.data) return;
-
-        headerPlaceholder.innerHTML = headerResponse.data;
-
-        // Apply actual header height to CSS variable so content/side offsets are correct
-        const headerEl = document.querySelector('#header-placeholder > header');
-        const setHeaderHeightVar = () => {
-            if (!headerEl) return;
-            const h = headerEl.offsetHeight;
-            document.documentElement.style.setProperty('--header-height', `${h}px`);
-        };
-        setHeaderHeightVar();
-        window.addEventListener('resize', setHeaderHeightVar);
-
-        // Set up hamburger button functionality (click-to-hide/show)
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const sidebarElement = document.getElementById('sidebar');
-        const pageContainer = document.getElementById('page-container');
-
-        // Restore hidden state to match sidebar.js
-        const isHidden = localStorage.getItem('sidebarHidden') === 'true';
-        if (isHidden && sidebarElement) {
-            sidebarElement.classList.add('hidden');
-            if (pageContainer) pageContainer.classList.add('sidebar-hidden');
+        if (!headerResponse?.data) {
+            injectFallbackHeader(headerPlaceholder);
+        } else {
+            headerPlaceholder.innerHTML = headerResponse.data;
         }
 
-        if (hamburgerBtn && sidebarElement) {
-            hamburgerBtn.addEventListener('click', () => {
-                const nowHidden = !sidebarElement.classList.contains('hidden');
-                sidebarElement.classList.toggle('hidden', nowHidden);
-                if (pageContainer) pageContainer.classList.toggle('sidebar-hidden', nowHidden);
-                localStorage.setItem('sidebarHidden', String(nowHidden));
-            });
+        // Sync sidebar offset with actual header height
+        const headerEl = headerPlaceholder.querySelector('header');
+        if (headerEl) {
+            const setHeaderVar = () => {
+                const h = headerEl.offsetHeight;
+                document.documentElement.style.setProperty('--header-height', `${h}px`);
+            };
+            setHeaderVar();
+            // Update on resize in case header height changes responsively
+            window.addEventListener('resize', setHeaderVar);
         }
+
+        // Try initial hamburger bind (sidebar may not be present yet)
+        tryBindHamburger();
 
         // Set up logout button functionality
         await setupLogoutButton();
     } catch (err) {
         console.error('Failed to load header: ', err);
+        injectFallbackHeader(headerPlaceholder);
     }
+}
+
+function injectFallbackHeader(headerPlaceholder) {
+    if (!headerPlaceholder) return;
+    headerPlaceholder.innerHTML = `
+    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
+        <button id="hamburger-btn" class="btn btn-outline-primary me-3"><i class="fas fa-bars"></i></button>
+        <h4 class="m-0"><i class="fas fa-user-tag me-2 medical-icon"></i><span id="module-name">Module Name</span></h4>
+        <div class="ms-auto d-flex align-items-center">
+            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i>Hospital</span>
+            <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="fas fa-sign-out-alt me-1"></i> Logout</button>
+        </div>
+    </header>`;
+    tryBindHamburger();
+    setupLogoutButton();
+}
+
+function tryBindHamburger() {
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebarElement = document.getElementById('sidebar');
+    const pageContainer = document.getElementById('page-container');
+    if (hamburgerBtn && sidebarElement) {
+        // Avoid duplicate listeners
+        if (!hamburgerBtn.__bound) {
+            hamburgerBtn.addEventListener('click', () => {
+                const collapsed = !sidebarElement.classList.contains('collapsed');
+                sidebarElement.classList.toggle('collapsed', collapsed);
+                if (pageContainer) pageContainer.classList.toggle('sidebar-collapsed', collapsed);
+                localStorage.setItem('sidebarCollapsed', collapsed);
+            });
+            hamburgerBtn.__bound = true;
+        }
+
+        // Restore sidebar state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebarElement.classList.add('collapsed');
+            if (pageContainer) pageContainer.classList.add('sidebar-collapsed');
+        }
+        return true;
+    }
+    return false;
+}
+
+function bindHamburgerWithRetry() {
+    if (tryBindHamburger()) return;
+    // Retry until sidebar appears or timeout
+    let attempts = 0;
+    const maxAttempts = 60; // ~3s at 50ms
+    const iv = setInterval(() => {
+        attempts++;
+        if (tryBindHamburger() || attempts >= maxAttempts) {
+            clearInterval(iv);
+        }
+    }, 50);
 }
 
 async function setupLogoutButton() {
@@ -83,7 +126,11 @@ async function setupLogoutButton() {
             window.location.href = '../index.html';
         } catch (error) {
             console.error('Logout failed: ', error);
-            alert('Logout failed. Please try again.');
+            Swal.fire({
+                title: 'Logout Failed',
+                text: 'Logout failed. Please try again.',
+                icon: 'error'
+            });
         }
     });
 }

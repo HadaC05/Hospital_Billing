@@ -114,20 +114,14 @@ class Admissions
                 return;
             }
 
-            // Find latest/current room for this admission, if any
-            $roomSql = "
-                SELECT rs.room_id
-                FROM tbl_room_stay rs
-                JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
-                WHERE ra.admission_id = :admission_id
-                ORDER BY rs.room_stay_id DESC
-                LIMIT 1
-            ";
-            $rstmt = $conn->prepare($roomSql);
-            $rstmt->bindParam(':admission_id', $admissionId);
-            $rstmt->execute();
-            $roomRow = $rstmt->fetch(PDO::FETCH_ASSOC);
-            $details['current_room_id'] = $roomRow ? $roomRow['room_id'] : null;
+            // Fetch assigned doctor (if any)
+            $docStmt = $conn->prepare("SELECT doctor_id FROM tbl_doctor_fee WHERE admission_id = :admission_id LIMIT 1");
+            $docStmt->bindParam(':admission_id', $admissionId);
+            $docStmt->execute();
+            $docRow = $docStmt->fetch(PDO::FETCH_ASSOC);
+            if ($docRow) {
+                $details['doctor_id'] = (int)$docRow['doctor_id'];
+            }
 
             echo json_encode(['status' => 'success', 'data' => $details]);
         } catch (PDOException $e) {
@@ -168,7 +162,19 @@ class Admissions
             $stmt->execute();
             $patientId = $conn->lastInsertId();
 
-            // Then, insert admission record
+            // Validate current session user for admitted_by
+            $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+            $chk = $conn->prepare("SELECT user_id FROM users WHERE user_id = :uid LIMIT 1");
+            $chk->bindValue(':uid', $userId, PDO::PARAM_INT);
+            $chk->execute();
+            $validUser = $chk->fetch(PDO::FETCH_ASSOC);
+            if (!$validUser) {
+                $conn->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Your session user is invalid. Please log in again.']);
+                return;
+            }
+
+            // Prepare insert admission record
             $stmt = $conn->prepare(
                 "INSERT INTO patient_admission 
                  (patient_id, admitted_by, admission_date, discharge_date, admission_reason, status) 
@@ -176,51 +182,37 @@ class Admissions
                  (:patient_id, :admitted_by, :admission_date, :discharge_date, :admission_reason, :status)"
             );
 
-            $userId = $_SESSION['user_id'];
+            $stmt->bindValue(':patient_id', (int)$patientId, PDO::PARAM_INT);
+            $stmt->bindValue(':admitted_by', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':admission_date', $data['admission_date']);
 
-            $stmt->bindParam(':patient_id', $patientId);
-            $stmt->bindParam(':admitted_by', $userId);
-            $stmt->bindParam(':admission_date', $data['admission_date']);
-            // Default discharge_date to admission_date if not provided
-            $dischargeDate = isset($data['discharge_date']) && $data['discharge_date'] ? $data['discharge_date'] : $data['admission_date'];
-            $stmt->bindParam(':discharge_date', $dischargeDate);
-            $stmt->bindParam(':admission_reason', $data['admission_reason']);
-            $stmt->bindParam(':status', $data['status']);
+            // allow NULL discharge_date
+            if (empty($data['discharge_date'])) {
+                $stmt->bindValue(':discharge_date', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':discharge_date', $data['discharge_date']);
+            }
+
+            $stmt->bindValue(':admission_reason', $data['admission_reason']);
+            $stmt->bindValue(':status', $data['status']);
 
             $stmt->execute();
+
+            // Get the new admission id
             $admissionId = $conn->lastInsertId();
 
-            // If room_id provided, create room assignment and initial stay; mark room as unavailable
-            if (isset($data['room_id']) && !empty($data['room_id'])) {
-                $roomId = (int)$data['room_id'];
+            // If doctor_id is provided, link to tbl_doctor_fee
+            if (!empty($data['doctor_id'])) {
+                $doctorId = (int)$data['doctor_id'];
+                // Remove existing links for safety then insert
+                $del = $conn->prepare("DELETE FROM tbl_doctor_fee WHERE admission_id = :admission_id");
+                $del->bindParam(':admission_id', $admissionId);
+                $del->execute();
 
-                // Create room assignment
-                $raSql = "INSERT INTO tbl_room_assignment (admission_id, record_date) VALUES (:admission_id, :record_date)";
-                $raStmt = $conn->prepare($raSql);
-                $raStmt->bindParam(':admission_id', $admissionId);
-                $raStmt->bindParam(':record_date', $data['admission_date']);
-                $raStmt->execute();
-                $roomAssignmentId = $conn->lastInsertId();
-
-                // Create initial room stay
-                $rsSql = "
-                    INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, end_date, charge, assigned_by)
-                    VALUES (:room_assignment_id, :room_id, :start_date, :end_date, :charge, :assigned_by)
-                ";
-                $rsStmt = $conn->prepare($rsSql);
-                $zero = 0.00;
-                $rsStmt->bindParam(':room_assignment_id', $roomAssignmentId);
-                $rsStmt->bindParam(':room_id', $roomId);
-                $rsStmt->bindParam(':start_date', $data['admission_date']);
-                $rsStmt->bindParam(':end_date', $dischargeDate);
-                $rsStmt->bindParam(':charge', $zero);
-                $rsStmt->bindParam(':assigned_by', $userId);
-                $rsStmt->execute();
-
-                // Mark room unavailable
-                $updRoom = $conn->prepare("UPDATE tbl_room SET is_available = 0 WHERE room_id = :room_id");
-                $updRoom->bindParam(':room_id', $roomId);
-                $updRoom->execute();
+                $ins = $conn->prepare("INSERT INTO tbl_doctor_fee (admission_id, doctor_id, fee_amount) VALUES (:admission_id, :doctor_id, 0)");
+                $ins->bindParam(':admission_id', $admissionId);
+                $ins->bindParam(':doctor_id', $doctorId);
+                $ins->execute();
             }
 
             // Commit transaction
@@ -291,42 +283,21 @@ class Admissions
 
             $stmt->execute();
 
-            // If room_id provided, append a room stay and mark room unavailable
-            if (isset($data['room_id']) && !empty($data['room_id'])) {
-                $userId = $_SESSION['user_id'];
-                $roomId = (int)$data['room_id'];
+            // Update assigned doctor if provided
+            if (isset($data['doctor_id'])) {
+                $admissionId = (int)$data['admission_id'];
+                $doctorId = (int)$data['doctor_id'];
+                // Remove existing links for this admission then insert if doctorId > 0
+                $del = $conn->prepare("DELETE FROM tbl_doctor_fee WHERE admission_id = :admission_id");
+                $del->bindParam(':admission_id', $admissionId);
+                $del->execute();
 
-                // Ensure a room_assignment exists for this admission
-                $raFind = $conn->prepare("SELECT room_assignment_id FROM tbl_room_assignment WHERE admission_id = :admission_id LIMIT 1");
-                $raFind->bindParam(':admission_id', $data['admission_id']);
-                $raFind->execute();
-                $ra = $raFind->fetch(PDO::FETCH_ASSOC);
-
-                if ($ra) {
-                    $roomAssignmentId = $ra['room_assignment_id'];
-                } else {
-                    $raIns = $conn->prepare("INSERT INTO tbl_room_assignment (admission_id, record_date) VALUES (:admission_id, :record_date)");
-                    $raIns->bindParam(':admission_id', $data['admission_id']);
-                    $raIns->bindParam(':record_date', $data['admission_date']);
-                    $raIns->execute();
-                    $roomAssignmentId = $conn->lastInsertId();
+                if ($doctorId > 0) {
+                    $ins = $conn->prepare("INSERT INTO tbl_doctor_fee (admission_id, doctor_id, fee_amount) VALUES (:admission_id, :doctor_id, 0)");
+                    $ins->bindParam(':admission_id', $admissionId);
+                    $ins->bindParam(':doctor_id', $doctorId);
+                    $ins->execute();
                 }
-
-                // Insert a new room stay
-                $rsIns = $conn->prepare("INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, end_date, charge, assigned_by) VALUES (:room_assignment_id, :room_id, :start_date, :end_date, :charge, :assigned_by)");
-                $zero = 0.00;
-                $rsIns->bindParam(':room_assignment_id', $roomAssignmentId);
-                $rsIns->bindParam(':room_id', $roomId);
-                $rsIns->bindParam(':start_date', $data['admission_date']);
-                $rsIns->bindParam(':end_date', $data['discharge_date']);
-                $rsIns->bindParam(':charge', $zero);
-                $rsIns->bindParam(':assigned_by', $userId);
-                $rsIns->execute();
-
-                // Mark room unavailable
-                $updRoom = $conn->prepare("UPDATE tbl_room SET is_available = 0 WHERE room_id = :room_id");
-                $updRoom->bindParam(':room_id', $roomId);
-                $updRoom->execute();
             }
 
             // Commit transaction

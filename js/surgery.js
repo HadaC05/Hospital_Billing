@@ -15,23 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Surgery management functionality
     const tableBody = document.getElementById('surgery-list');
     let surgeries = [];
-    let currentItemsPerPage = 10;
-
-    // Search/filter inputs (optional, if present in the page)
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
-        itemsPerPage: currentItemsPerPage,
+        itemsPerPage: 10,
         onPageChange: (page) => {
-            const term = (searchInput?.value || '').trim();
-            loadSurgeries(page, currentItemsPerPage, term);
+            loadSurgeries(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            currentItemsPerPage = itemsPerPage;
-            const term = (searchInput?.value || '').trim();
-            loadSurgeries(1, currentItemsPerPage, term);
+            loadSurgeries(1, itemsPerPage);
         }
     });
 
@@ -104,24 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 surgeries = data.surgeries;
                 const paginationData = data.pagination;
 
-                // Optional client-side filter by field
-                let list = surgeries;
-                const term = (searchInput?.value || '').toLowerCase().trim();
-                const filter = (filterSelect?.value || 'all');
-                if (filterSelect && filter !== 'all' && term) {
-                    list = surgeries.filter(surg => {
-                        const byName = (surg.surgery_name || '').toLowerCase().includes(term);
-                        const byType = (surg.surgery_type_name || '').toLowerCase().includes(term);
-                        const statusText = surg.is_available == 1 ? 'active' : 'inactive';
-                        const byStatus = statusText.includes(term);
-                        if (filter === 'name') return byName;
-                        if (filter === 'type') return byType;
-                        if (filter === 'status') return byStatus;
-                        return byName || byType || byStatus;
-                    });
-                }
 
-                if (list.length === 0) {
+                if (surgeries.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="4"> No surgeries found. </td></tr>';
                     const paginationContainer = document.getElementById('pagination-container');
                     if (paginationContainer) {
@@ -132,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 tableBody.innerHTML = '';
 
-                list.forEach(surg => {
+                surgeries.forEach(surg => {
                     const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
                     const statusBadge = surg.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
@@ -296,21 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Wire search & filter events
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim();
-            loadSurgeries(1, currentItemsPerPage, term);
-        });
-    }
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            const term = (searchInput?.value || '').trim();
-            loadSurgeries(1, currentItemsPerPage, term);
-        });
-    }
-
     await loadSurgeryTypes();
-    await loadSurgeries(1, currentItemsPerPage, (searchInput?.value || '').trim());
+    await loadSurgeries();
 
 });

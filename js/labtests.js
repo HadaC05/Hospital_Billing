@@ -15,23 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Labtest management functionality
     const tableBody = document.getElementById('labtest-list');
     let labtests = [];
-    let currentItemsPerPage = 10;
-
-    // Optional search/filter controls
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
-        itemsPerPage: currentItemsPerPage,
+        itemsPerPage: 10,
         onPageChange: (page) => {
-            const term = (searchInput?.value || '').trim();
-            loadLabtest(page, currentItemsPerPage, term);
+            loadLabtest(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            currentItemsPerPage = itemsPerPage;
-            const term = (searchInput?.value || '').trim();
-            loadLabtest(1, currentItemsPerPage, term);
+            loadLabtest(1, itemsPerPage);
         }
     });
 
@@ -119,26 +111,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
-                // Optional client-side filter
-                let list = labtests;
-                const term = (searchInput?.value || '').toLowerCase().trim();
-                const filter = (filterSelect?.value || 'all');
-                if (filterSelect && filter !== 'all' && term) {
-                    list = labtests.filter(test => {
-                        const byName = (test.test_name || '').toLowerCase().includes(term);
-                        const byCategory = (test.labtest_category_name || '').toLowerCase().includes(term);
-                        const statusText = test.is_active == 1 ? 'active' : 'inactive';
-                        const byStatus = statusText.includes(term);
-                        if (filter === 'name') return byName;
-                        if (filter === 'category') return byCategory;
-                        if (filter === 'status') return byStatus;
-                        return byName || byCategory || byStatus;
-                    });
-                }
-
                 tableBody.innerHTML = '';
 
-                list.forEach(test => {
+                labtests.forEach(test => {
                     const isActive = test.is_active == 1 ? 'Active' : 'Inactive';
                     const statusBadge = test.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
@@ -353,21 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Wire search & filter events
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const term = searchInput.value.trim();
-            loadLabtest(1, currentItemsPerPage, term);
-        });
-    }
-    if (filterSelect) {
-        filterSelect.addEventListener('change', () => {
-            const term = (searchInput?.value || '').trim();
-            loadLabtest(1, currentItemsPerPage, term);
-        });
-    }
-
     // Initialize the module
     await loadLabtestTypes();
-    await loadLabtest(1, currentItemsPerPage, (searchInput?.value || '').trim());
+    await loadLabtest();
 });

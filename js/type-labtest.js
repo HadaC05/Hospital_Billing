@@ -12,21 +12,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Type management functionality
     const tableBody = document.getElementById('labtest-type-list');
-    let testTypes = [];
+    let allTypes = [];
     let filteredTypes = [];
 
     // search and filter elements
     const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
+    const statusFilter = document.getElementById('statusFilter');
+    const sortBy = document.getElementById('sortBy');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadLabtestTypes(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadLabtestTypes(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
@@ -42,22 +43,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveTypeBtn').addEventListener('click', saveType);
     document.getElementById('updateTypeBtn').addEventListener('click', updateType);
 
-    // Load labtest types
-    async function loadLabtestTypes(page = 1, itemsPerPage = 10, search = '') {
+    // Fetch all labtest types once (bypass server-side pagination)
+    async function loadAllLabtestTypes() {
         if (!tableBody) {
             console.error('Table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="3">Loading labtest types...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Loading labtest types...</td></tr>';
 
         try {
+            // Request a very large page size to retrieve all records
             const response = await axios.get(`${baseApiUrl}/get-labtest-types.php`, {
                 params: {
                     operation: 'getTypes',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search,
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: '',
                     json: JSON.stringify({})
                 }
             });
@@ -65,16 +67,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                testTypes = data.types;
-                filteredTypes = [...testTypes];
-
-                renderTable(filteredTypes, data.pagination);
+                allTypes = data.types;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
-                tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading labtest types: ', error);
-            tableBody.innerHTML = '<tr><td colspan="3">Failed to load labtest types</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">Failed to load labtest types</td></tr>';
         }
     }
 
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (typesToRender.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="3">No labtest types found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">No labtest types found</td></tr>';
 
             const paginationContainer = document.getElementById('pagination-container');
             if (paginationContainer) {
@@ -127,27 +128,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Filter labtest types based on search and filter criteria
-    function filterLabtestTypes() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const filterType = filterSelect.value;
+    // Apply search, status filter, and sort
+    function applyFiltersAndSort() {
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+        const statusValue = (statusFilter?.value || 'all');
+        const sortValue = (sortBy?.value || 'name-asc');
 
-        filteredTypes = testTypes.filter(type => {
+        // Filter by search and status
+        filteredTypes = allTypes.filter(type => {
             const matchesSearch = searchTerm === '' ||
-                type.labtest_category_name.toLowerCase().includes(searchTerm) ||
-                type.labtest_category_desc.toLowerCase().includes(searchTerm);
+                String(type.labtest_category_name || '').toLowerCase().includes(searchTerm) ||
+                String(type.labtest_category_desc || '').toLowerCase().includes(searchTerm);
 
-            let matchesFilter = true;
-            if (filterType === 'name') {
-                matchesFilter = type.labtest_category_name.toLowerCase().includes(searchTerm);
-            } else if (filterType === 'description') {
-                matchesFilter = type.labtest_category_desc.toLowerCase().includes(searchTerm);
-            }
+            const isActive = Number(type.is_active) === 1;
+            const matchesStatus = statusValue === 'all' ||
+                (statusValue === 'active' && isActive) ||
+                (statusValue === 'inactive' && !isActive);
 
-            return matchesSearch && matchesFilter;
+            return matchesSearch && matchesStatus;
         });
 
-        renderTable(filteredTypes);
+        // Sort by name asc/desc
+        filteredTypes.sort((a, b) => {
+            const nameA = String(a.labtest_category_name || '').toLowerCase();
+            const nameB = String(b.labtest_category_name || '').toLowerCase();
+            if (nameA < nameB) return sortValue === 'name-asc' ? -1 : 1;
+            if (nameA > nameB) return sortValue === 'name-asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Render current page from filteredTypes
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredTypes, page, itemsPerPage);
+        renderTable(data, pageData);
     }
 
     // Add form
@@ -185,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 addModal.hide();
                 typeForm.reset();
-                await loadLabtestTypes();
+                await loadAllLabtestTypes();
             } else {
                 Swal.fire({
                     title: 'Failed',
@@ -205,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit type
     window.editType = async function (typeId) {
-        const type = testTypes.find(lt => lt.labtest_category_id == typeId);
+        const type = allTypes.find(lt => lt.labtest_category_id == typeId);
         if (!type) {
             Swal.fire({
                 title: 'Warning',
@@ -262,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 editModal.hide();
-                await loadLabtestTypes();
+                await loadAllLabtestTypes();
 
             } else {
                 Swal.fire({
@@ -282,16 +296,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     }
 
-    // Search input event listener
+    // Event listeners for controls
     if (searchInput) {
-        searchInput.addEventListener('input', filterLabtestTypes);
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
     }
 
-    // Filter select event listener
-    if (filterSelect) {
-        filterSelect.addEventListener('change', filterLabtestTypes);
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
     }
 
     // Initial load
-    await loadLabtestTypes();
+    await loadAllLabtestTypes();
 });

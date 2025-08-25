@@ -3,7 +3,7 @@
 require_once __DIR__ . '/require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
@@ -14,6 +14,36 @@ class UserManager
     public function __construct($conn)
     {
         $this->conn = $conn;
+    }
+
+    /**
+     * Get all doctors (users whose role name contains 'doctor')
+     */
+    function getDoctors($params = [])
+    {
+        try {
+            $search = isset($params['search']) ? $params['search'] : '';
+            $where = "WHERE LOWER(r.role_name) LIKE '%doctor%'";
+            $binds = [];
+            if (!empty($search)) {
+                $where .= " AND (u.first_name LIKE :s OR u.last_name LIKE :s OR u.username LIKE :s)";
+                $binds[':s'] = "%$search%";
+            }
+
+            $sql = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name,
+                           u.email, u.mobile_number, u.role_id, r.role_name
+                    FROM users u
+                    JOIN user_roles r ON u.role_id = r.role_id
+                    $where
+                    ORDER BY u.last_name, u.first_name";
+            $stmt = $this->conn->prepare($sql);
+            foreach ($binds as $k => $v) { $stmt->bindValue($k, $v); }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'doctors' => $rows]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -35,8 +65,8 @@ class UserManager
             $searchParams = [];
 
             if (!empty($search)) {
-                $whereClause = "WHERE ud.first_name LIKE :search 
-                               OR ud.last_name LIKE :search 
+                $whereClause = "WHERE u.first_name LIKE :search 
+                               OR u.last_name LIKE :search 
                                OR u.username LIKE :search 
                                OR u.email LIKE :search 
                                OR r.role_name LIKE :search";
@@ -46,7 +76,6 @@ class UserManager
             // Get total count
             $countQuery = "SELECT COUNT(*) as total FROM users u 
                           JOIN user_roles r ON u.role_id = r.role_id 
-                          LEFT JOIN user_doctor ud ON ud.user_id = u.user_id
                           $whereClause";
             $countStmt = $this->conn->prepare($countQuery);
             if (!empty($searchParams)) {
@@ -57,21 +86,12 @@ class UserManager
             $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Get paginated data
-            $query = "SELECT 
-                        u.user_id, 
-                        u.username, 
-                        COALESCE(ud.first_name, '') AS first_name, 
-                        COALESCE(ud.middle_name, '') AS middle_name, 
-                        COALESCE(ud.last_name, '') AS last_name, 
-                        u.email, 
-                        u.mobile_number, 
-                        u.role_id, 
-                        r.role_name 
+            $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
+                        u.email, u.mobile_number, u.role_id, r.role_name 
                         FROM users u 
                         JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor ud ON ud.user_id = u.user_id
                         $whereClause
-                        ORDER BY ud.last_name, ud.first_name
+                        ORDER BY u.last_name, u.first_name
                         LIMIT :limit OFFSET :offset";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
@@ -117,19 +137,10 @@ class UserManager
     function getUserById($userId)
     {
         try {
-            $query = "SELECT 
-                        u.user_id, 
-                        u.username, 
-                        COALESCE(ud.first_name, '') AS first_name, 
-                        COALESCE(ud.middle_name, '') AS middle_name, 
-                        COALESCE(ud.last_name, '') AS last_name, 
-                        u.email, 
-                        u.mobile_number, 
-                        u.role_id, 
-                        r.role_name 
+            $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
+                        u.email, u.mobile_number, u.role_id, r.role_name 
                         FROM users u 
                         JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor ud ON ud.user_id = u.user_id
                         WHERE u.user_id = :user_id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $userId);
@@ -161,7 +172,6 @@ class UserManager
     function addUser($userData)
     {
         try {
-            $this->conn->beginTransaction();
             // Check if username already exists
             $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username";
             $checkStmt = $this->conn->prepare($checkQuery);
@@ -177,49 +187,28 @@ class UserManager
             }
 
 
-            // Insert new user (users table has no name fields)
-            $query = "INSERT INTO users (username, password, email, mobile_number, role_id) 
-                        VALUES (:username, :password, :email, :mobile_number, :role_id)";
+            // Insert new user
+            $query = "INSERT INTO users (username, password, first_name, middle_name, last_name, 
+                        email, mobile_number, role_id) 
+                        VALUES (:username, :password, :first_name, :middle_name, :last_name, 
+                        :email, :mobile_number, :role_id)";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
             $stmt->bindParam(':password', $userData['password']);
+            $stmt->bindParam(':first_name', $userData['first_name']);
+            $stmt->bindParam(':middle_name', $userData['middle_name']);
+            $stmt->bindParam(':last_name', $userData['last_name']);
             $stmt->bindParam(':email', $userData['email']);
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
 
             $stmt->execute();
-
-            // Maintain name details for Doctor role (role_id == 2)
-            $newUserId = $this->conn->lastInsertId();
-            $roleId = isset($userData['role_id']) ? (int)$userData['role_id'] : null;
-            $firstName = $userData['first_name'] ?? '';
-            $lastName = $userData['last_name'] ?? '';
-            $middleName = $userData['middle_name'] ?? '';
-
-            if ($roleId === 2 && (!empty($firstName) || !empty($lastName) || !empty($middleName))) {
-                // Insert a doctor profile for this user
-                $docInsert = "INSERT INTO user_doctor (user_id, first_name, middle_name, last_name, specialty_id) 
-                              VALUES (:user_id, :first_name, :middle_name, :last_name, :specialty_id)";
-                $docStmt = $this->conn->prepare($docInsert);
-                $spec = 1; // default specialty if not provided
-                $docStmt->bindParam(':user_id', $newUserId, PDO::PARAM_INT);
-                $docStmt->bindParam(':first_name', $firstName);
-                $docStmt->bindParam(':middle_name', $middleName);
-                $docStmt->bindParam(':last_name', $lastName);
-                $docStmt->bindParam(':specialty_id', $spec, PDO::PARAM_INT);
-                $docStmt->execute();
-            }
-
-            $this->conn->commit();
             echo json_encode([
                 'success' => true,
                 'message' => 'User added successfully'
             ]);
         } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
@@ -248,9 +237,12 @@ class UserManager
                 return;
             }
 
-            // Start building the update query (users table has no name fields)
+            // Start building the update query
             $query = "UPDATE users SET 
                         username = :username, 
+                        first_name = :first_name, 
+                        middle_name = :middle_name, 
+                        last_name = :last_name, 
                         email = :email, 
                         mobile_number = :mobile_number, 
                         role_id = :role_id";
@@ -262,9 +254,11 @@ class UserManager
 
             $query .= " WHERE user_id = :user_id";
 
-            $this->conn->beginTransaction();
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
+            $stmt->bindParam(':first_name', $userData['first_name']);
+            $stmt->bindParam(':middle_name', $userData['middle_name']);
+            $stmt->bindParam(':last_name', $userData['last_name']);
             $stmt->bindParam(':email', $userData['email']);
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
@@ -276,58 +270,11 @@ class UserManager
             }
 
             $stmt->execute();
-
-            // Maintain name details depending on role
-            $roleId = isset($userData['role_id']) ? (int)$userData['role_id'] : null;
-            $userId = (int)$userData['user_id'];
-            $firstName = $userData['first_name'] ?? '';
-            $lastName = $userData['last_name'] ?? '';
-            $middleName = $userData['middle_name'] ?? '';
-
-            if ($roleId === 2) {
-                // Upsert into user_doctor
-                // If a record exists, update; else insert
-                $checkDoc = $this->conn->prepare("SELECT doctor_id FROM user_doctor WHERE user_id = :user_id");
-                $checkDoc->bindParam(':user_id', $userId, PDO::PARAM_INT);
-                $checkDoc->execute();
-                $doc = $checkDoc->fetch(PDO::FETCH_ASSOC);
-
-                if ($doc) {
-                    $updateDoc = $this->conn->prepare("UPDATE user_doctor 
-                        SET first_name = :first_name, middle_name = :middle_name, last_name = :last_name 
-                        WHERE user_id = :user_id");
-                    $updateDoc->bindParam(':first_name', $firstName);
-                    $updateDoc->bindParam(':middle_name', $middleName);
-                    $updateDoc->bindParam(':last_name', $lastName);
-                    $updateDoc->bindParam(':user_id', $userId, PDO::PARAM_INT);
-                    $updateDoc->execute();
-                } else {
-                    $insertDoc = $this->conn->prepare("INSERT INTO user_doctor (user_id, first_name, middle_name, last_name, specialty_id) 
-                        VALUES (:user_id, :first_name, :middle_name, :last_name, :specialty_id)");
-                    $spec = 1;
-                    $insertDoc->bindParam(':user_id', $userId, PDO::PARAM_INT);
-                    $insertDoc->bindParam(':first_name', $firstName);
-                    $insertDoc->bindParam(':middle_name', $middleName);
-                    $insertDoc->bindParam(':last_name', $lastName);
-                    $insertDoc->bindParam(':specialty_id', $spec, PDO::PARAM_INT);
-                    $insertDoc->execute();
-                }
-            } else {
-                // If not Doctor anymore, remove doctor profile if exists
-                $delDoc = $this->conn->prepare("DELETE FROM user_doctor WHERE user_id = :user_id");
-                $delDoc->bindParam(':user_id', $userId, PDO::PARAM_INT);
-                $delDoc->execute();
-            }
-
-            $this->conn->commit();
             echo json_encode([
                 'success' => true,
                 'message' => 'User updated successfully'
             ]);
         } catch (PDOException $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollBack();
-            }
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
@@ -465,6 +412,10 @@ switch ($operation) {
     case 'deleteUser':
         $user_id = $data['user_id'] ?? null;
         $userManager->deleteUser($user_id);
+        break;
+    case 'getDoctors':
+        $params = [ 'search' => $search ];
+        $userManager->getDoctors($params);
         break;
     default:
         echo json_encode([

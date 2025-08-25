@@ -24,70 +24,80 @@ class Medicines
         if (!empty($search)) {
             $whereClause = "WHERE m.med_name LIKE :search 
                             OR mt.med_type_name LIKE :search 
-                            OR m.med_unit LIKE :search";
+                            OR mu.unit_name LIKE :search";
             $searchParams[':search'] = "%$search%";
         }
 
-        // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_medicine m 
-                        JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
-                        $whereClause";
-        $countStmt = $conn->prepare($countSql);
-        if (!empty($searchParams)) {
-            $countStmt->execute($searchParams);
-        } else {
-            $countStmt->execute();
-        }
-        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-        // Get paginated data
-        $sql = "
-            SELECT 
-                m.med_id,
-                m.med_name,
-                m.med_type_id,
-                mt.med_type_name,
-                m.unit_price,
-                m.stock_quantity,
-                m.med_unit,
-                m.is_active
-            FROM tbl_medicine m
-            JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
-            $whereClause
-            ORDER BY m.med_name ASC
-            LIMIT :limit OFFSET :offset
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-
-        if (!empty($searchParams)) {
-            foreach ($searchParams as $key => $value) {
-                $stmt->bindValue($key, $value);
+        try {
+            // Get total count
+            $countSql = "SELECT COUNT(*) as total FROM tbl_medicine m 
+                            LEFT JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
+                            LEFT JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
+                            $whereClause";
+            $countStmt = $conn->prepare($countSql);
+            if (!empty($searchParams)) {
+                $countStmt->execute($searchParams);
+            } else {
+                $countStmt->execute();
             }
+            $totalCount = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Get paginated data
+            $sql = "
+                SELECT 
+                    m.med_id,
+                    m.med_name,
+                    m.med_type_id,
+                    mt.med_type_name,
+                    m.unit_price,
+                    m.stock_quantity,
+                    m.unit_id,
+                    mu.unit_name,
+                    m.is_active
+                FROM tbl_medicine m
+                LEFT JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
+                LEFT JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
+                $whereClause
+                ORDER BY m.med_name ASC
+                LIMIT :limit OFFSET :offset
+            ";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+            if (!empty($searchParams)) {
+                foreach ($searchParams as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+
+            $stmt->execute();
+            $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculate pagination info
+            $totalPages = $itemsPerPage > 0 ? (int)ceil($totalCount / $itemsPerPage) : 1;
+            $startIndex = $offset + 1;
+            $endIndex = min($offset + $itemsPerPage, $totalCount);
+
+            echo json_encode([
+                'success' => true,
+                'medicines' => $medicines,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'itemsPerPage' => $itemsPerPage,
+                    'totalItems' => $totalCount,
+                    'totalPages' => $totalPages,
+                    'startIndex' => $startIndex,
+                    'endIndex' => $endIndex
+                ]
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch medicines: ' . $e->getMessage()
+            ]);
         }
-
-        $stmt->execute();
-        $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Calculate pagination info
-        $totalPages = ceil($totalCount / $itemsPerPage);
-        $startIndex = $offset + 1;
-        $endIndex = min($offset + $itemsPerPage, $totalCount);
-
-        echo json_encode([
-            'success' => true,
-            'medicines' => $medicines,
-            'pagination' => [
-                'currentPage' => $page,
-                'itemsPerPage' => $itemsPerPage,
-                'totalItems' => $totalCount,
-                'totalPages' => $totalPages,
-                'startIndex' => $startIndex,
-                'endIndex' => $endIndex
-            ]
-        ]);
     }
 
     function addMedicine($data)
@@ -109,8 +119,8 @@ class Medicines
         }
 
         $sql = "
-            INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, med_unit, is_active)
-            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, 1)
+            INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, unit_id, is_active)
+            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :unit_id, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -118,7 +128,7 @@ class Medicines
         $stmt->bindParam(':med_type_id', $data['med_type_id']);
         $stmt->bindParam(':unit_price', $data['unit_price']);
         $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
-        $stmt->bindParam(':med_unit', $data['med_unit']);
+        $stmt->bindParam(':unit_id', $data['unit_id']);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Medicine added']);
@@ -132,7 +142,7 @@ class Medicines
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT med_type_id, med_type_name, description
+            SELECT *
             FROM tbl_medicine_type
             ORDER BY med_type_name ASC
         ";
@@ -146,7 +156,26 @@ class Medicines
         ]);
     }
 
-    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
+    function getUnits()
+    {
+        include 'connection-pdo.php';
+
+        $sql = '
+            SELECT *
+            FROM tbl_medicine_unit
+            ORDER BY unit_name ASC
+        ';
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+
+        echo json_encode([
+            'success' => true,
+            'units' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+        ]);
+    }
+
+    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $unit_id, $is_active)
     {
         include 'connection-pdo.php';
 
@@ -171,7 +200,7 @@ class Medicines
                 med_type_id = :med_type_id,
                 unit_price = :unit_price,
                 stock_quantity = :stock_quantity,
-                med_unit = :med_unit,
+                unit_id = :unit_id,
                 is_active = :is_active
             WHERE med_id = :med_id
         ";
@@ -181,7 +210,7 @@ class Medicines
         $stmt->bindParam(':med_type_id', $med_type_id);
         $stmt->bindParam(':unit_price', $unit_price);
         $stmt->bindParam(':stock_quantity', $stock_quantity);
-        $stmt->bindParam(':med_unit', $med_unit);
+        $stmt->bindParam(':unit_id', $unit_id);
         $stmt->bindParam(':is_active', $is_active);
         $stmt->bindParam(':med_id', $med_id);
 
@@ -236,6 +265,9 @@ switch ($operation) {
     case 'getTypes':
         $med->getTypes();
         break;
+    case 'getUnits':
+        $med->getUnits();
+        break;
     case 'updateMedicine':
         $med->updateMedicine(
             $data['med_id'],
@@ -243,7 +275,7 @@ switch ($operation) {
             $data['med_type_id'],
             $data['unit_price'],
             $data['stock_quantity'],
-            $data['med_unit'],
+            $data['unit_id'],
             $data['is_active']
         );
         break;

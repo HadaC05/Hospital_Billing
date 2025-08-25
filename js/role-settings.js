@@ -30,11 +30,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 displayRoles(data.roles);
             } else {
-                alert('Failed to load roles: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load roles: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading roles:', error);
-            alert('Failed to load roles. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load roles. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -98,11 +106,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 displayPermissions(roleId, data.permissions, data.role_name);
             } else {
-                alert('Failed to load permissions: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load permissions: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading permissions:', error);
-            alert('Failed to load permissions. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load permissions. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -177,11 +193,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Add event listener to save button
                 document.getElementById('save-permissions-btn').addEventListener('click', savePermissions);
             } else {
-                alert('Failed to load all permissions: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load all permissions: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading all permissions:', error);
-            alert('Failed to load all permissions. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load all permissions. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -205,13 +229,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Permissions updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Permissions updated successfully!',
+                    icon: 'success'
+                });
             } else {
-                alert('Failed to update permissions: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to update permissions: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating permissions:', error);
-            alert('Failed to update permissions. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update permissions. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -221,7 +257,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const accessLevel = document.getElementById('accessLevel').value;
 
         if (!roleName || !accessLevel) {
-            alert('Please fill in all fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -236,16 +276,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Role added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Role added successfully!',
+                    icon: 'success'
+                });
                 document.getElementById('addRoleForm').reset();
                 bootstrap.Modal.getInstance(document.getElementById('addRoleModal')).hide();
                 loadRoles();
             } else {
-                alert('Failed to add role: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to add role: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding role:', error);
-            alert('Failed to add role. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to add role. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -256,7 +308,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const accessLevel = document.getElementById('editAccessLevel').value;
 
         if (!roleName || !accessLevel) {
-            alert('Please fill in all fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -272,15 +328,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Role updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Role updated successfully!',
+                    icon: 'success'
+                });
                 bootstrap.Modal.getInstance(document.getElementById('editRoleModal')).hide();
                 loadRoles();
             } else {
-                alert('Failed to update role: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to update role: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating role:', error);
-            alert('Failed to update role. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update role. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -296,15 +364,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Role deleted successfully!');
+                Swal.fire({
+                    title: 'Deleted',
+                    text: 'Role deleted successfully!',
+                    icon: 'success'
+                });
                 bootstrap.Modal.getInstance(document.getElementById('deleteRoleModal')).hide();
                 loadRoles();
             } else {
-                alert('Failed to delete role: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to delete role: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error deleting role:', error);
-            alert('Failed to delete role. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to delete role. Please try again.',
+                icon: 'error'
+            });
         }
     }
 });
