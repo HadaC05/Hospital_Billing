@@ -72,17 +72,22 @@
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
-                        <div class="col-md-2 mt-2 mt-md-0">
-                            <label for="medSortBy" class="form-label">Sort By</label>
-                            <select id="medSortBy" class="form-select">
-                                <option value="name-asc">Name: A → Z</option>
-                                <option value="name-desc">Name: Z → A</option>
-                                <option value="type-asc">Type: A → Z</option>
-                                <option value="type-desc">Type: Z → A</option>
-                                <option value="stock-asc">Stock: Low → High</option>
-                                <option value="stock-desc">Stock: High → Low</option>
-                                <option value="price-asc">Price: Low → High</option>
-                                <option value="price-desc">Price: High → Low</option>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 mt-2 mt-md-0">
+                            <label for="medSortField" class="form-label">Sort Field</label>
+                            <select id="medSortField" class="form-select">
+                                <option value="name">Name</option>
+                                <option value="type">Type</option>
+                                <option value="stock">Stock</option>
+                                <option value="price">Price</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mt-2 mt-md-0">
+                            <label for="medSortOrder" class="form-label">Order</label>
+                            <select id="medSortOrder" class="form-select">
+                                <option value="asc">Ascending</option>
+                                <option value="desc">Descending</option>
                             </select>
                         </div>
                     </div>
