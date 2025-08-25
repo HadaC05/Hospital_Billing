@@ -71,6 +71,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Load Medicine Units
+    async function loadMedicineUnits() {
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-medicines.php`, {
+                params: { operation: 'getUnits' }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.units)) {
+                const options = data.units.map(unit => {
+                    return `<option value="${unit.unit_id}">${unit.unit_name}</option>`;
+                }).join('');
+
+                // Populate all unit dropdowns
+                const addUnitSelect = document.getElementById('unit_id');
+                const editUnitSelect = document.getElementById('edit_unit_id');
+
+                if (addUnitSelect) addUnitSelect.innerHTML = `<option value="">Select Unit</option>` + options;
+                if (editUnitSelect) editUnitSelect.innerHTML = `<option value="">Select Unit</option>` + options;
+            } else {
+
+                const addUnitSelect = document.getElementById('unit_id');
+                const editUnitSelect = document.getElementById('edit_unit_id');
+
+                if (addUnitSelect) addUnitSelect.innerHTML = `<option value="">No unit available</option>`;
+                if (editUnitSelect) editUnitSelect.innerHTML = `<option value="">No unit available</option>`;
+            }
+        } catch (error) {
+            console.error('Failed to load medicine units', error);
+        }
+    }
+
     // Load medicine list
     async function loadMedicines(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
@@ -118,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <td>${med.med_type_name}</td>
                             <td>₱${parseFloat(med.unit_price).toFixed(2)}</td>
                             <td>${med.stock_quantity}</td>
-                            <td>${med.med_unit}</td>
+                            <td>${med.unit_name}</td>
                             <td><span class="${statusBadge}">${isActive}</span></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick="editMedicine(${med.med_id})" title="Edit">
@@ -152,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeId = document.getElementById('med_type_id').value;
         const unitPrice = document.getElementById('unit_price').value;
         const stockQty = document.getElementById('stock_quantity').value;
-        const medUnit = document.getElementById('med_unit').value.trim();
+        const medUnit = document.getElementById('unit_id').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
             Swal.fire({
@@ -171,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     med_type_id: typeId,
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    med_unit: medUnit,
+                    unit_id: medUnit,
                     is_active: 1
                 })
             });
@@ -221,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit_med_type_id').value = med.med_type_id;
         document.getElementById('edit_unit_price').value = med.unit_price;
         document.getElementById('edit_stock_quantity').value = med.stock_quantity;
-        document.getElementById('edit_med_unit').value = med.med_unit;
+        document.getElementById('edit_unit_id').value = med.unit_id;
         document.getElementById('edit_is_active').value = med.is_active;
 
         editModal.show();
@@ -234,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeId = document.getElementById('edit_med_type_id').value;
         const unitPrice = document.getElementById('edit_unit_price').value;
         const stockQty = document.getElementById('edit_stock_quantity').value;
-        const medUnit = document.getElementById('edit_med_unit').value.trim();
+        const medUnit = document.getElementById('edit_unit_id').value;
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!medName || !typeId || !unitPrice || !stockQty || !medUnit) {
@@ -255,7 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     med_type_id: typeId,
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    med_unit: medUnit,
+                    unit_id: medUnit,
                     is_active: parseInt(isActive)
                 })
             });
@@ -288,5 +321,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize the module
     await loadMedicineTypes();
+    await loadMedicineUnits();
     await loadMedicines();
 });
