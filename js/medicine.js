@@ -157,18 +157,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                const options = data.types.map(type => {
+                const allTypes = data.types;
+                const activeTypes = allTypes.filter(t => Number(t.is_active) === 1);
+
+                const activeOptions = activeTypes.map(type => {
                     return `<option value="${type.med_type_id}">${type.med_type_name}</option>`;
                 }).join('');
 
-                // Populate all category dropdowns
+                const allOptions = allTypes.map(type => {
+                    return `<option value="${type.med_type_id}">${type.med_type_name}</option>`;
+                }).join('');
+
+                // Populate add/edit with ACTIVE types only
                 const addTypeSelect = document.getElementById('med_type_id');
                 const editTypeSelect = document.getElementById('edit_med_type_id');
+                // Populate filter with ALL types for list filtering
                 const filterTypeSelect = document.getElementById('medTypeFilter');
 
-                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + options;
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
             } else {
 
                 const addTypeSelect = document.getElementById('med_type_id');
