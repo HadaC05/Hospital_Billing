@@ -1,20 +1,51 @@
 <?php
 
-// require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 class Medicines
 {
-    function getMedicines()
+    function getMedicines($params = [])
     {
         include 'connection-pdo.php';
 
+        // Get pagination parameters
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        $search = isset($params['search']) ? $params['search'] : '';
+
+        // Calculate offset
+        $offset = ($page - 1) * $itemsPerPage;
+
+        // Build WHERE clause for search
+        $whereClause = '';
+        $searchParams = [];
+
+        if (!empty($search)) {
+            $whereClause = "WHERE m.med_name LIKE :search 
+                            OR mt.med_type_name LIKE :search 
+                            OR m.med_unit LIKE :search";
+            $searchParams[':search'] = "%$search%";
+        }
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM tbl_medicine m 
+                        JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
+                        $whereClause";
+        $countStmt = $conn->prepare($countSql);
+        if (!empty($searchParams)) {
+            $countStmt->execute($searchParams);
+        } else {
+            $countStmt->execute();
+        }
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
         $sql = "
             SELECT 
                 m.med_id,
                 m.med_name,
+                m.med_type_id,
                 mt.med_type_name,
                 m.unit_price,
                 m.stock_quantity,
@@ -22,28 +53,64 @@ class Medicines
                 m.is_active
             FROM tbl_medicine m
             JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
+            $whereClause
             ORDER BY m.med_name ASC
+            LIMIT :limit OFFSET :offset
         ";
 
         $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        if (!empty($searchParams)) {
+            foreach ($searchParams as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+        }
+
         $stmt->execute();
         $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $response = [
-            'success' => true,
-            'medicines' => $medicines
-        ];
+        // Calculate pagination info
+        $totalPages = ceil($totalCount / $itemsPerPage);
+        $startIndex = $offset + 1;
+        $endIndex = min($offset + $itemsPerPage, $totalCount);
 
-        echo json_encode($response);
+        echo json_encode([
+            'success' => true,
+            'medicines' => $medicines,
+            'pagination' => [
+                'currentPage' => $page,
+                'itemsPerPage' => $itemsPerPage,
+                'totalItems' => $totalCount,
+                'totalPages' => $totalPages,
+                'startIndex' => $startIndex,
+                'endIndex' => $endIndex
+            ]
+        ]);
     }
 
     function addMedicine($data)
     {
         include 'connection-pdo.php';
 
+        // Check duplicate name
+        $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':med_name', $data['med_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A medicine with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
             INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, med_unit, is_active)
-            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, :is_active)
+            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -52,7 +119,6 @@ class Medicines
         $stmt->bindParam(':unit_price', $data['unit_price']);
         $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
         $stmt->bindParam(':med_unit', $data['med_unit']);
-        $stmt->bindParam(':is_active', $data['is_active']);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Medicine added']);
@@ -74,17 +140,30 @@ class Medicines
         $stmt = $conn->prepare($sql);
         $stmt->execute();
 
-        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         echo json_encode([
             'success' => true,
-            'types' => $types
+            'types' => $stmt->fetchAll(PDO::FETCH_ASSOC)
         ]);
     }
 
     function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
     {
         include 'connection-pdo.php';
+
+        // Check duplicate name (exclude current record)
+        $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name AND med_id != :med_id";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':med_name', $med_name);
+        $checkStmt->bindParam(':med_id', $med_id);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Another medicine with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_medicine
@@ -120,12 +199,22 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
+
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
 }
 
 $data = json_decode($json, true);
@@ -134,7 +223,12 @@ $med = new Medicines();
 
 switch ($operation) {
     case 'getMedicines':
-        $med->getMedicines();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $med->getMedicines($params);
         break;
     case 'addMedicine':
         $med->addMedicine($data);
@@ -143,13 +237,14 @@ switch ($operation) {
         $med->getTypes();
         break;
     case 'updateMedicine':
-        $med_id = $data['med_id'];
-        $med_name = $data['med_name'];
-        $med_type_id = $data['med_type_id'];
-        $unit_price = $data['unit_price'];
-        $stock_quantity = $data['stock_quantity'];
-        $med_unit = $data['med_unit'];
-        $is_active = $data['is_active'];
-        $med->updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active);
+        $med->updateMedicine(
+            $data['med_id'],
+            $data['med_name'],
+            $data['med_type_id'],
+            $data['unit_price'],
+            $data['stock_quantity'],
+            $data['med_unit'],
+            $data['is_active']
+        );
         break;
 }

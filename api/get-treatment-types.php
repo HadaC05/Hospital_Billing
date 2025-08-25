@@ -5,9 +5,9 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Surgery_Types
+class Treatment_Types
 {
-    // function to display list of surgery types
+    // get types
     function getTypes($params = [])
     {
         include 'connection-pdo.php';
@@ -21,7 +21,7 @@ class Surgery_Types
         $offset = ($page - 1) * $itemsPerPage;
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_surgery_type";
+        $countSql = "SELECT COUNT(*) as total FROM tbl_treatment_category";
         $countStmt = $conn->prepare($countSql);
 
         $countStmt->execute();
@@ -29,9 +29,9 @@ class Surgery_Types
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         $sql = "
-            SELECT * 
-            FROM tbl_surgery_type
-            ORDER BY surgery_type_name ASC
+            SELECT *
+            FROM tbl_treatment_category
+            ORDER BY category_name ASC
             LIMIT :limit OFFSET :offset
         ";
 
@@ -61,19 +61,19 @@ class Surgery_Types
         ]);
     }
 
-    // function to add new surgery type
-    function addSurgeryType($data)
+    // add new type
+    function addType($data)
     {
         include 'connection-pdo.php';
 
-        // Check duplicate
+        // check duplicate name
         $checkSql = "
-            SELECT COUNT(*)
-            FROM tbl_surgery_type
-            WHERE surgery_type_name = :surgery_type_name
+            SELECT COUNT(*) 
+            FROM tbl_treatment_category 
+            WHERE category_name = :category_name
         ";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $checkStmt->bindParam(':category_name', $data['category_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -85,36 +85,37 @@ class Surgery_Types
         }
 
         $sql = "
-            INSERT INTO tbl_surgery_type (surgery_type_name, description, is_active)
-            VALUES (:surgery_type_name, :description, 1)
+            INSERT INTO tbl_treatment_category (category_name, description, is_active)
+            VALUES (:category_name, :description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $stmt->bindParam(':category_name', $data['category_name']);
         $stmt->bindParam(':description', $data['description']);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Surgery type added']);
+            echo json_encode(['success' => true, 'message' => 'Treatmetn type added']);
         } else {
-            echo json_encode(['success' => true, 'message' => 'Insert failed']);
+            echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
-    // function to update existing surgery type
-    function updateSurgeryType($surgery_type_name, $surgery_type_id, $description, $is_active)
+    // update existing type 
+    function updateType($category_name, $description, $treatment_category_id, $is_active)
     {
         include 'connection-pdo.php';
 
-        // Check duplicate
+        // check duplicate name
         $checkSql = "
-            SELECT COUNT(*)
-            FROM tbl_surgery_type
-            WHERE surgery_type_name = :surgery_type_name
-            AND surgery_type_id != :surgery_type_id
+            SELECT COUNT(*) 
+            FROM tbl_treatment_category 
+            WHERE category_name = :category_name
+            AND treatment_category_id != :treatment_category_id
         ";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
-        $checkStmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
+        $checkStmt->bindParam(':category_name', $data['category_name']);
+        $checkStmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
+
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -126,24 +127,24 @@ class Surgery_Types
         }
 
         $sql = "
-            UPDATE tbl_surgery_type
-            SET surgery_type_name = :surgery_type_name,
+            UPDATE tbl_treatment_category
+            SET category_name = :category_name,
                 description = :description,
                 is_active = :is_active
-            WHERE surgery_type_id = :surgery_type_id
+            WHERE treatment_category_id = :treatment_category_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':surgery_type_name', $surgery_type_name);
+        $stmt->bindParam(':category_name', $category_name);
         $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':treatment_category_id', $treatment_category_id);
         $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
         echo json_encode([
             'success' => $success,
-            'message' => $success ? 'Updated successfully' : 'Failed to update'
+            'message' => $success ? 'Updated succesfully' : 'Failed to update'
         ]);
     }
 }
@@ -158,7 +159,7 @@ if ($method === 'GET') {
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
-    $body = file_get_contents("php://input");
+    $body = file_get_contents('php://input');
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
@@ -172,7 +173,7 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
-$surgType = new Surgery_Types();
+$treatmentType = new Treatment_Types();
 
 switch ($operation) {
     case 'getTypes':
@@ -181,20 +182,21 @@ switch ($operation) {
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $surgType->getTypes($params);
+        $treatmentType->getTypes($params);
         break;
-    case 'addSurgeryType':
-        $surgType->addSurgeryType($data);
+    case 'addType':
+        $treatmentType->addType($data);
         break;
-    case 'updateSurgeryType':
-        $surgery_type_name = $data['surgery_type_name'];
-        $surgery_type_id = $data['surgery_type_id'];
+    case 'updateType':
+        $treatment_category_id = $data['treatment_category_id'];
+        $category_name = $data['category_name'];
         $description = $data['description'];
         $is_active = $data['is_active'];
-        $surgType->updateSurgeryType(
-            $surgery_type_name,
-            $surgery_type_id,
+        $treatmentType->updateType(
+            $category_name,
             $description,
+            $treatment_category_id,
             $is_active
         );
+        break;
 }

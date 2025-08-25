@@ -7,34 +7,64 @@ body {
     font-family: Arial, sans-serif;
 }
 
-header {
-    z-index: 1000;
-    position: sticky;
-    top: 0;
+:root {
+    --header-height: 56px; /* adjust if your header is taller */
 }
+
+/* Fixed header on top (only the injected top header) */
+#header-placeholder > header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 900; /* keep below modal/backdrop */
+}
+
 /* Main layout */
 #page-container {
     display: flex;
     flex-grow: 1;
+    position: relative; /* contain absolutely-positioned hidden sidebar */
+    padding-top: var(--header-height); /* keep content below fixed header */
 }
 
 /* Sidebar */
-.sidebar {
-    width: 250px;
-    background-color: #343a40;
-    color: white;
-    transition: width 0.3s ease;
-    overflow: hidden;
+.sidebar { /* Let theme override colors; keep layout only */
+    width: 280px;
+    flex: 0 0 280px; /* reserve width in flex layout */
     display: flex;
     flex-direction: column;
-    position: relative;
-    height: 100%;
+    position: sticky; /* keep visible on scroll */
+    top: var(--header-height); /* stay below fixed header */
+    height: calc(100vh - var(--header-height)); /* fit viewport under header */
+    overflow-y: auto; /* scroll inside sidebar when content is long */
+    overflow-x: hidden;
     z-index: 1000;
+    transition: width 0.25s ease, flex-basis 0.25s ease;
+}
+
+/* Ensure Bootstrap modal is above header */
+.modal-backdrop { z-index: 1100 !important; }
+.modal { z-index: 1110 !important; }
+
+/* Click-to-hide behavior: fully off-canvas when hidden */
+.sidebar.hidden {
+    width: 0 !important;
+    flex-basis: 0 !important;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute; /* remove from flex layout to avoid taking space */
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    visibility: hidden; /* ensure no painted sliver */
 }
 
 /* Sidebar links */
-#sidebar-links a {
-    color: white;
+#sidebar-links a { /* colors from theme */
     text-decoration: none;
     padding: 1rem;
     display: block;
@@ -48,29 +78,51 @@ header {
     visibility: visible;
 }
 
-#sidebar-links a:hover {
-    background-color: #495057;
-}
-
-/* Collapse behavior */
+/* Collapse behavior: keep a 60px icon rail */
 .sidebar.collapsed {
-    width: 60px; /* Enough to show hamburger + logout button */
-    margin-left: -250px;
+    width: 60px;
+    flex-basis: 60px;
 }
 
-.sidebar.collapsed #sidebar-links a {
-    opacity: 0;
-    transform: translateX(-15px);
-    visibility: hidden;
-    transition: 
-        opacity 0.1s ease,
-        transform 0.1s ease,
-        visibility 0.1s ease;
+/* Links layout in collapsed state */
+.sidebar.collapsed #sidebar-links a,
+.sidebar.collapsed .accordion-body a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 0;
+}
+
+/* Show icons, hide labels */
+.sidebar.collapsed #sidebar-links a .label,
+.sidebar.collapsed .accordion-body a .label {
+    display: none !important;
+}
+
+.sidebar.collapsed #sidebar-links a i,
+.sidebar.collapsed .accordion-body a i {
+    margin: 0 !important;
+    font-size: 1.1rem;
 }
 
 /* Logout button */
 #logout-btn {
     width: 100%;
+}
+
+/* Header logout button */
+header #logout-btn {
+    width: auto;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+header #logout-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
 }
 
 /* Logout Button Container */
@@ -107,11 +159,22 @@ header {
 .content {
     margin-left: 0;
     transition: all 0.3s;
-    width: calc(100% - 250px);
+    width: calc(100% - 280px); /* match sidebar width by default */
+    padding-top: 0.5rem; /* avoid overlap under fixed header due to margin-collapsing */
 }
 
 .content.expanded {
     margin-left: 0;
+    width: 100%;
+}
+
+/* Prevent the first element from collapsing its top margin under the fixed header */
+.content > :first-child {
+    margin-top: 0;
+}
+
+/* When sidebar is hidden, content should use full width */
+#page-container.sidebar-hidden .content {
     width: 100%;
 }
 

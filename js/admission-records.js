@@ -5,252 +5,136 @@ document.addEventListener('DOMContentLoaded', async () => {
     const baseApiUrl = '../api';
     // Get user from localStorage or create a temporary one for testing
     let user = JSON.parse(localStorage.getItem('user'));
-    
+
+    // For testing purposes - create a temporary user if none exists
     if (!user) {
-        console.error('No user data found. Redirecting to login.');
-        window.location.href = '../index.html';
-        return;
+        console.warn('No user found in localStorage. Creating temporary user for testing.');
+        // Uncomment the line below to redirect to login in production
+        // window.location.href = '../index.html';
+        // return;
     }
-
-    // Check if user has permission to view admissions
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
-        });
-
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('view_admissions')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../components/dashboard.html';
-            return;
-        }
-        
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../components/dashboard.html';
-        return;
-    }
-
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
-
-        // Set user name in sidebar
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = user.full_name || user.username;
-        }
-
-        // Render navigation modules based on permissions
-        if (window.userPermissions) {
-            renderModules(window.userPermissions);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
-
-    // Sidebar modules renderer
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' }
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Clear existing links
-        if (sidebarLinks) sidebarLinks.innerHTML = '';
-        if (accordionBody) accordionBody.innerHTML = '';
-
-        // Add standalone navigation links
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
-                // Highlight current page
-                if (link === 'admission-records.html') {
-                    a.classList.add('bg-primary', 'bg-opacity-25');
-                }
-                
-                if (sidebarLinks) {
-                    sidebarLinks.appendChild(a);
-                }
-            }
-        });
-
-        // Add inventory modules to accordion
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
-                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
-                
-                // Add hover effects
-                a.addEventListener('mouseenter', () => {
-                    a.classList.add('bg-light');
-                });
-                a.addEventListener('mouseleave', () => {
-                    if (!a.classList.contains('bg-primary')) {
-                        a.classList.remove('bg-light');
-                    }
-                });
-                
-                if (accordionBody) {
-                    accordionBody.appendChild(a);
-                }
-                inventoryShown = true;
-            }
-        });
-
-        // Show/hide inventory accordion based on permissions
-        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
-        if (inventoryAccordion) {
-            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
-        }
-    }
-
     // Local API URL for relative paths
     const localApiUrl = '../api/';
-    
+
     // Get elements
     const admissionList = document.getElementById('admission-list');
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
     const printBtn = document.getElementById('printBtn');
     const printDetailBtn = document.getElementById('printDetailBtn');
-    
+
     // Load admissions on page load
     loadAdmissions();
-    
+
     // Add event listeners for search and filter
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
             filterAdmissions();
         });
     }
-    
+
     if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
+        statusFilter.addEventListener('change', function () {
             filterAdmissions();
         });
     }
-    
+
     // Print button event listener
     if (printBtn) {
-        printBtn.addEventListener('click', function() {
+        printBtn.addEventListener('click', function () {
             printAdmissionList();
         });
     }
-    
+
     // Print detail button event listener
     if (printDetailBtn) {
-        printDetailBtn.addEventListener('click', function() {
+        printDetailBtn.addEventListener('click', function () {
             printAdmissionDetail();
         });
     }
-    
+
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => {
+            loadAdmissions(page);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            loadAdmissions(1, itemsPerPage);
+        }
+    });
+
     // Function to load all admissions
-    function loadAdmissions() {
+    function loadAdmissions(page = 1, itemsPerPage = 10, search = '') {
         axios.post(localApiUrl + 'get-admissions.php', {
-            operation: 'getAdmissions'
+            operation: 'getAdmissions',
+            page: page,
+            itemsPerPage: itemsPerPage,
+            search: search
         })
-        .then(function(response) {
-            if (response.data.status === 'success') {
-                // Store admissions in a global variable for filtering
-                window.allAdmissions = response.data.data;
-                displayAdmissions(window.allAdmissions);
-            } else {
-                console.error('Error:', response.data.message);
-            }
-        })
-        .catch(function(error) {
-            console.error('Error:', error);
-        });
+            .then(function (response) {
+                if (response.data.status === 'success') {
+                    // Store admissions in a global variable for filtering
+                    window.allAdmissions = response.data.data;
+                    displayAdmissions(window.allAdmissions);
+
+                    // Update pagination controls
+                    if (response.data.pagination) {
+                        pagination.calculatePagination(response.data.pagination.totalItems, response.data.pagination.currentPage, response.data.pagination.itemsPerPage);
+                        pagination.generatePaginationControls('pagination-container');
+                    }
+                } else {
+                    console.error('Error:', response.data.message);
+                }
+            })
+            .catch(function (error) {
+                console.error('Error:', error);
+            });
     }
-    
+
     // Function to display admissions in the table
     function displayAdmissions(admissions) {
         if (!admissionList) return;
-        
+
         admissionList.innerHTML = '';
-        
+
         if (admissions.length === 0) {
             admissionList.innerHTML = '<tr><td colspan="8" class="text-center">No admissions found</td></tr>';
             return;
         }
-        
-        admissions.forEach(function(admission) {
+
+        admissions.forEach(function (admission) {
             const row = document.createElement('tr');
-            
+
             // Format dates
             const admissionDate = new Date(admission.admission_date).toLocaleDateString();
             const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-            
-            // Determine status
-            const status = admission.discharge_date ? 'Discharged' : 'Active';
-            const statusBadge = admission.discharge_date ? 
-                '<span class="status-badge inactive">Discharged</span>' : 
-                '<span class="status-badge active">Active</span>';
-            
+
+            // Get status from the database field
+            const status = admission.status || (admission.discharge_date ? 'Discharged' : 'Active');
+            let statusClass = 'text-primary';
+
+            // Set status class based on status value
+            switch (status) {
+                case 'Discharged':
+                    statusClass = 'text-success';
+                    break;
+                case 'Active':
+                    statusClass = 'text-primary';
+                    break;
+                case 'Pending':
+                    statusClass = 'text-warning';
+                    break;
+                case 'Critical':
+                    statusClass = 'text-danger';
+                    break;
+                case 'Stable':
+                    statusClass = 'text-info';
+                    break;
+                default:
+                    statusClass = 'text-primary';
+            }
+
             row.innerHTML = `
                 <td>${admission.patient_id}</td>
                 <td>${admission.patient_lname}, ${admission.patient_fname} ${admission.patient_mname || ''}</td>
@@ -258,52 +142,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>${admissionDate}</td>
                 <td>${dischargeDate}</td>
                 <td>${truncateText(admission.admission_reason, 50)}</td>
-                <td>${statusBadge}</td>
+                <td class="${statusClass}">${status}</td>
                 <td>
                     <button class="btn btn-sm btn-info view-btn" data-id="${admission.admission_id}" data-patient-id="${admission.patient_id}">View</button>
                 </td>
             `;
-            
+
             admissionList.appendChild(row);
         });
-        
+
         // Add event listeners to view buttons
-        document.querySelectorAll('.view-btn').forEach(function(button) {
-            button.addEventListener('click', function() {
+        document.querySelectorAll('.view-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
                 const admissionId = this.getAttribute('data-id');
                 const patientId = this.getAttribute('data-patient-id');
                 viewAdmissionDetails(admissionId, patientId);
             });
         });
     }
-    
+
     // Function to filter admissions based on search input and status filter
     function filterAdmissions() {
         if (!window.allAdmissions) return;
-        
+
         const searchTerm = searchInput.value.toLowerCase();
         const statusValue = statusFilter.value;
-        
-        const filteredAdmissions = window.allAdmissions.filter(function(admission) {
+
+        const filteredAdmissions = window.allAdmissions.filter(function (admission) {
             // Filter by search term
             const nameMatch = `${admission.patient_fname} ${admission.patient_mname || ''} ${admission.patient_lname}`.toLowerCase().includes(searchTerm);
             const dateMatch = admission.admission_date.includes(searchTerm);
             const searchMatch = nameMatch || dateMatch;
-            
+
             // Filter by status
             let statusMatch = true;
             if (statusValue === 'active') {
-                statusMatch = !admission.discharge_date;
+                statusMatch = admission.status === 'Active';
             } else if (statusValue === 'discharged') {
-                statusMatch = !!admission.discharge_date;
+                statusMatch = admission.status === 'Discharged';
+            } else if (statusValue === 'pending') {
+                statusMatch = admission.status === 'Pending';
+            } else if (statusValue === 'critical') {
+                statusMatch = admission.status === 'Critical';
+            } else if (statusValue === 'stable') {
+                statusMatch = admission.status === 'Stable';
             }
-            
+
             return searchMatch && statusMatch;
         });
-        
+
         displayAdmissions(filteredAdmissions);
     }
-    
+
     // Function to view admission details
     function viewAdmissionDetails(admissionId, patientId) {
         axios.post(localApiUrl + 'get-admissions.php', {
@@ -311,56 +201,56 @@ document.addEventListener('DOMContentLoaded', async () => {
             admission_id: admissionId,
             patient_id: patientId
         })
-        .then(function(response) {
-            if (response.data.status === 'success') {
-                const data = response.data.data;
-                
-                // Format dates
-                const birthdate = new Date(data.birthdate).toLocaleDateString();
-                const admissionDate = new Date(data.admission_date).toLocaleDateString();
-                const dischargeDate = data.discharge_date ? new Date(data.discharge_date).toLocaleDateString() : 'Not discharged';
-                const status = data.discharge_date ? 'Discharged' : 'Active';
-                
-                // Set modal values
-                document.getElementById('view_patient_id').textContent = data.patient_id;
-                document.getElementById('view_patient_name').textContent = `${data.patient_lname}, ${data.patient_fname} ${data.patient_mname || ''}`;
-                document.getElementById('view_birthdate').textContent = birthdate;
-                document.getElementById('view_address').textContent = data.address;
-                document.getElementById('view_mobile_number').textContent = data.mobile_number;
-                document.getElementById('view_email').textContent = data.email || 'N/A';
-                
-                document.getElementById('view_em_contact_name').textContent = data.em_contact_name;
-                document.getElementById('view_em_contact_number').textContent = data.em_contact_number;
-                document.getElementById('view_em_contact_address').textContent = data.em_contact_address;
-                
-                document.getElementById('view_admission_id').textContent = data.admission_id;
-                document.getElementById('view_admission_date').textContent = admissionDate;
-                document.getElementById('view_discharge_date').textContent = dischargeDate;
-                document.getElementById('view_status').textContent = status;
-                document.getElementById('view_admitted_by').textContent = data.admitted_by || 'N/A';
-                document.getElementById('view_admission_reason').textContent = data.admission_reason;
-                
-                // Store current admission details for printing
-                window.currentAdmissionDetail = data;
-                
-                // Open modal
-                const modal = new bootstrap.Modal(document.getElementById('viewAdmissionModal'));
-                modal.show();
-            } else {
-                alert('Error: ' + response.data.message);
-            }
-        })
-        .catch(function(error) {
-            console.error('Error:', error);
-            alert('An error occurred while loading admission details.');
-        });
+            .then(function (response) {
+                if (response.data.status === 'success') {
+                    const data = response.data.data;
+
+                    // Format dates
+                    const birthdate = new Date(data.birthdate).toLocaleDateString();
+                    const admissionDate = new Date(data.admission_date).toLocaleDateString();
+                    const dischargeDate = data.discharge_date ? new Date(data.discharge_date).toLocaleDateString() : 'Not discharged';
+                    const status = data.status || (data.discharge_date ? 'Discharged' : 'Active');
+
+                    // Set modal values
+                    document.getElementById('view_patient_id').textContent = data.patient_id;
+                    document.getElementById('view_patient_name').textContent = `${data.patient_lname}, ${data.patient_fname} ${data.patient_mname || ''}`;
+                    document.getElementById('view_birthdate').textContent = birthdate;
+                    document.getElementById('view_address').textContent = data.address;
+                    document.getElementById('view_mobile_number').textContent = data.mobile_number;
+                    document.getElementById('view_email').textContent = data.email || 'N/A';
+
+                    document.getElementById('view_em_contact_name').textContent = data.em_contact_name;
+                    document.getElementById('view_em_contact_number').textContent = data.em_contact_number;
+                    document.getElementById('view_em_contact_address').textContent = data.em_contact_address;
+
+                    document.getElementById('view_admission_id').textContent = data.admission_id;
+                    document.getElementById('view_admission_date').textContent = admissionDate;
+                    document.getElementById('view_discharge_date').textContent = dischargeDate;
+                    document.getElementById('view_status').textContent = status;
+                    document.getElementById('view_admitted_by').textContent = data.admitted_by || 'N/A';
+                    document.getElementById('view_admission_reason').textContent = data.admission_reason;
+
+                    // Store current admission details for printing
+                    window.currentAdmissionDetail = data;
+
+                    // Open modal
+                    const modal = new bootstrap.Modal(document.getElementById('viewAdmissionModal'));
+                    modal.show();
+                } else {
+                    alert('Error: ' + response.data.message);
+                }
+            })
+            .catch(function (error) {
+                console.error('Error:', error);
+                alert('An error occurred while loading admission details.');
+            });
     }
-    
+
     // Function to print admission list
     function printAdmissionList() {
         // Get current filtered admissions
         const currentAdmissions = [];
-        document.querySelectorAll('#admission-list tr').forEach(function(row) {
+        document.querySelectorAll('#admission-list tr').forEach(function (row) {
             const columns = row.querySelectorAll('td');
             if (columns.length > 0) {
                 currentAdmissions.push({
@@ -374,10 +264,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         });
-        
+
         // Set print date
         document.getElementById('print_date').textContent = new Date().toLocaleString();
-        
+
         // Create print table
         const printTable = document.getElementById('print_table');
         printTable.innerHTML = `
@@ -404,31 +294,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `).join('')}
             </tbody>
         `;
-        
+
         // Print the div
         const printContent = document.getElementById('printView').innerHTML;
         const originalContent = document.body.innerHTML;
-        
+
         document.body.innerHTML = printContent;
         window.print();
         document.body.innerHTML = originalContent;
-        
+
         // Reload the page to restore event listeners
         location.reload();
     }
-    
+
     // Function to print admission detail
     function printAdmissionDetail() {
         if (!window.currentAdmissionDetail) return;
-        
+
         const data = window.currentAdmissionDetail;
-        
+
         // Format dates
         const birthdate = new Date(data.birthdate).toLocaleDateString();
         const admissionDate = new Date(data.admission_date).toLocaleDateString();
         const dischargeDate = data.discharge_date ? new Date(data.discharge_date).toLocaleDateString() : 'Not discharged';
-        const status = data.discharge_date ? 'Discharged' : 'Active';
-        
+        const status = data.status || (data.discharge_date ? 'Discharged' : 'Active');
+
         // Create print content
         const printContent = `
             <div class="container mt-4">
@@ -515,23 +405,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
         `;
-        
+
         const originalContent = document.body.innerHTML;
-        
+
         document.body.innerHTML = printContent;
         window.print();
         document.body.innerHTML = originalContent;
-        
+
         // Reload the page to restore event listeners
         location.reload();
     }
-    
+
     // Helper function to truncate text
     function truncateText(text, maxLength) {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
     }
-    
+
     // Check for permissions and render modules
     try {
         // Set welcome message regardless of permissions
@@ -539,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (welcomeMessage) {
             welcomeMessage.textContent = `Welcome, ${user.full_name}`;
         }
-        
+
         // Try to get permissions, but don't block functionality if it fails
         try {
             const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {

@@ -12,24 +12,20 @@
         crossorigin="anonymous">
     <link rel="stylesheet" href="../css/hospital-theme.css">
     <link rel="stylesheet" href="../css/dashboard.css">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../js/sidebar.js" defer></script>
+    <script src="../js/header-loader.js" defer></script>
+    <script src="../js/pagination-utility.js" defer></script>
     <script src="../js/admission-records.js" defer></script>
     <script src="../js/theme-loader.js" defer></script>
 </head>
 
 <body class="d-flex flex-column vh-100">
-    <!-- Topbar with hamburger -->
-    <header class="d-flex align-items-center p-2 border-bottom bg-white shadow-sm">
-        <button id="hamburger-btn" class="btn btn-outline-primary me-3">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h4 class="m-0"><i class="fas fa-procedures me-2 medical-icon"></i>Admission Records</h4>
-        <div class="ms-auto d-flex align-items-center">
-            <span class="badge bg-primary me-2"><i class="fas fa-hospital me-1"></i> Hospital Billing System</span>
-        </div>
-    </header>
+    <!-- Header -->
+    <div id="header-placeholder"></div>
+
 
     <!-- Sidebar -->
     <div id="page-container" class="d-flex flex-grow-1">
@@ -40,16 +36,20 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2>Patient Admission Records</h2>
                 <div class="d-flex">
-                    <input type="text" id="searchInput" class="form-control me-2" placeholder="Search by name or date...">
+                    <input type="text" id="searchInput" class="form-control me-2"
+                        placeholder="Search by name or date...">
                     <select id="statusFilter" class="form-select me-2">
                         <option value="all">All Status</option>
                         <option value="active">Active</option>
                         <option value="discharged">Discharged</option>
+                        <option value="pending">Pending</option>
+                        <option value="critical">Critical</option>
+                        <option value="stable">Stable</option>
                     </select>
                     <button id="printBtn" class="btn btn-secondary">Print</button>
                 </div>
             </div>
-            
+
             <div id="admission-container">
                 <table class="table table-bordered table-striped">
                     <thead class="table-dark">
@@ -67,6 +67,8 @@
                     <tbody id="admission-list"></tbody>
                 </table>
             </div>
+            <!-- Pagination Container -->
+            <div id="pagination-container" class="mt-3"></div>
 
             <!-- View Admission Details Modal -->
             <div class="modal fade" id="viewAdmissionModal" tabindex="-1">
@@ -123,7 +125,7 @@
                                             <td id="view_em_contact_address"></td>
                                         </tr>
                                     </table>
-                                    
+
                                     <h6 class="mt-3">Admission Details</h6>
                                     <table class="table table-bordered">
                                         <tr>

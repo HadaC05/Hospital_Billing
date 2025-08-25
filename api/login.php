@@ -15,13 +15,13 @@ class Users
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT user_id, username, password, first_name, last_name, role_id
+            SELECT user_id, username, password, role_id
             FROM users
             WHERE username = :username
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":username", $username); //kung unsay sulod sa variable maoy ipuli sa placeholder 
+        $stmt->bindParam(":username", $username);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -43,7 +43,6 @@ class Users
                 'user_id' => $user['user_id'],
                 'username' => $user['username'],
                 'role' => $role['role_name'],
-                'full_name' => $user['first_name'] . ' ' . $user['last_name'],
                 'message' => 'Login successful'
             ];
         } else {

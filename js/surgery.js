@@ -1,6 +1,7 @@
 console.log('surgery.js is working');
+console.log('is this currently working');
 
-const baseApiUrl = '../api';
+const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -11,169 +12,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Check if user has permission to manage surgeries
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
-        });
-
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('manage_surgeries')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../components/dashboard.html';
-            return;
-        }
-        
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../components/dashboard.html';
-        return;
-    }
-
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
-
-        // Set user name in sidebar
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = user.full_name || user.username;
-        }
-
-        // Render navigation modules based on permissions
-        if (window.userPermissions) {
-            renderModules(window.userPermissions);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
-
-    // Function to render sidebar modules
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Clear existing links
-        if (sidebarLinks) sidebarLinks.innerHTML = '';
-        if (accordionBody) accordionBody.innerHTML = '';
-
-        // Add standalone navigation links
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
-                if (sidebarLinks) {
-                    sidebarLinks.appendChild(a);
-                }
-            }
-        });
-
-        // Add inventory modules to accordion
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
-                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
-                
-                // Highlight current page
-                if (link === 'inv-surgery.html') {
-                    a.classList.add('bg-primary', 'bg-opacity-25');
-                }
-                
-                // Add hover effects
-                a.addEventListener('mouseenter', () => {
-                    a.classList.add('bg-light');
-                });
-                a.addEventListener('mouseleave', () => {
-                    if (!a.classList.contains('bg-primary')) {
-                        a.classList.remove('bg-light');
-                    }
-                });
-                
-                if (accordionBody) {
-                    accordionBody.appendChild(a);
-                }
-                inventoryShown = true;
-            }
-        });
-
-        // Show/hide inventory accordion based on permissions
-        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
-        if (inventoryAccordion) {
-            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
-        }
-    }
-
     // Surgery management functionality
     const tableBody = document.getElementById('surgery-list');
-    const typeSelect = document.getElementById('surgery_type_id');
-    const surgForm = document.getElementById('addSurgeryForm');
-    const editForm = document.getElementById('editSurgeryForm');
-    const editTypeSelect = document.getElementById('edit_surgery_type_id');
-
     let surgeries = [];
-    let filteredSurgeries = [];
+    let currentItemsPerPage = 10;
+
+    // Search/filter inputs (optional, if present in the page)
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
+
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: currentItemsPerPage,
+        onPageChange: (page) => {
+            const term = (searchInput?.value || '').trim();
+            loadSurgeries(page, currentItemsPerPage, term);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            currentItemsPerPage = itemsPerPage;
+            const term = (searchInput?.value || '').trim();
+            loadSurgeries(1, currentItemsPerPage, term);
+        }
+    });
+
+    // Modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addSurgeryModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
+
+    // Form elements
+    const addForm = document.getElementById('addSurgeryForm');
+    const editForm = document.getElementById('editSurgeryForm');
+
+    // button event listeners
+    document.getElementById('saveSurgeryBtn').addEventListener('click', saveSurgery);
+    document.getElementById('updateSurgeryBtn').addEventListener('click', updateSurgery);
 
     // Load Surgery Types
     async function loadSurgeryTypes() {
@@ -189,16 +61,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return `<option value="${type.surgery_type_id}">${type.surgery_type_name}</option>`;
                 }).join('');
 
-                if (typeSelect) typeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                
-                // Populate filter dropdown
-                const filterTypeSelect = document.getElementById('filterSurgeryType');
-                if (filterTypeSelect) {
-                    filterTypeSelect.innerHTML = `<option value="">All Types</option>` + options;
-                }
+                // populate dropdowns
+                const addTypeSelect = document.getElementById('surgery_type_id');
+                const editTypeSelect = document.getElementById('edit_surgery_type_id');
+
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value = "">Select Type</option>` + options;
             } else {
-                typeSelect.innerHTML = '<option value="">No types available</option>';
+                const addTypeSelect = document.getElementById('surgery_type_id');
+                const editTypeSelect = document.getElementById('edit_surgery_type_id');
+
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">No types available</option>`;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">No types available</option>`;
             }
         } catch (error) {
             console.error('Failed to load surgery types: ', error);
@@ -206,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Load Surgery List
-    async function loadSurgeries() {
+    async function loadSurgeries(page = 1, itemsPerPage = 10, search = '') {
         if (!tableBody) {
             console.error('Surgery table body not found');
             return;
@@ -218,7 +92,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-surgeries.php`, {
                 params: {
                     operation: 'getSurgeries',
-                    json: JSON.stringify({})
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
                 }
             });
 
@@ -226,10 +102,61 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (data.success && Array.isArray(data.surgeries)) {
                 surgeries = data.surgeries;
-                filteredSurgeries = surgeries;
-                renderSurgeryTable();
+                const paginationData = data.pagination;
+
+                // Optional client-side filter by field
+                let list = surgeries;
+                const term = (searchInput?.value || '').toLowerCase().trim();
+                const filter = (filterSelect?.value || 'all');
+                if (filterSelect && filter !== 'all' && term) {
+                    list = surgeries.filter(surg => {
+                        const byName = (surg.surgery_name || '').toLowerCase().includes(term);
+                        const byType = (surg.surgery_type_name || '').toLowerCase().includes(term);
+                        const statusText = surg.is_available == 1 ? 'active' : 'inactive';
+                        const byStatus = statusText.includes(term);
+                        if (filter === 'name') return byName;
+                        if (filter === 'type') return byType;
+                        if (filter === 'status') return byStatus;
+                        return byName || byType || byStatus;
+                    });
+                }
+
+                if (list.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4"> No surgeries found. </td></tr>';
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
+                    }
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                list.forEach(surg => {
+                    const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
+                    const statusBadge = surg.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
+
+                    const row = `
+                        <tr>
+                            <td>${surg.surgery_name}</td>
+                            <td>${surg.surgery_type_name}</td>
+                            <td>₱${parseFloat(surg.surgery_price).toFixed(2)}</td>
+                            <td><span class="${statusBadge}">${isActive}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSurgery(${surg.surgery_id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
-                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found.'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading surgeries: ', error);
@@ -237,181 +164,153 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Render surgery table with current filtered data
-    function renderSurgeryTable() {
-        if (!tableBody) return;
-        
-        tableBody.innerHTML = '';
-        
-        if (filteredSurgeries.length > 0) {
-            filteredSurgeries.forEach(surg => {
-                const isActive = surg.is_available == 1 ? 'Active' : 'Inactive';
-                const statusBadge = surg.is_available == 1 ? 
-                    '<span class="status-badge active">Active</span>' : 
-                    '<span class="status-badge inactive">Inactive</span>';
 
-                const row = `
-                    <tr>
-                        <td>${surg.surgery_name}</td>
-                        <td>${surg.surgery_type_name}</td>
-                        <td>${surg.surgery_price}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning edit-btn" data-id="${surg.surgery_id}">Edit</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
+    // Add new Surgery
+    async function saveSurgery() {
+        const name = document.getElementById('surgery_name').value.trim();
+        const typeId = document.getElementById('surgery_type_id').value;
+        const price = document.getElementById('surgery_price').value;
+
+        if (!name || !typeId || !price) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
             });
-        } else {
-            tableBody.innerHTML = '<tr><td colspan="4">No surgeries found.</td></tr>';
+            return;
         }
-    }
 
-    // Search and Filter Functions
-    function applySurgeryFilters() {
-        const searchTerm = document.getElementById('searchSurgery').value.toLowerCase();
-        const typeFilter = document.getElementById('filterSurgeryType').value;
-        const statusFilter = document.getElementById('filterSurgeryStatus').value;
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                operation: 'addSurgery',
+                json: JSON.stringify({
+                    surgery_name: name,
+                    surgery_type_id: parseInt(typeId),
+                    surgery_price: parseFloat(price),
+                    is_available: 1
+                })
+            });
 
-        filteredSurgeries = surgeries.filter(surg => {
-            const matchesSearch = surg.surgery_name.toLowerCase().includes(searchTerm) ||
-                                surg.surgery_type_name.toLowerCase().includes(searchTerm);
-            const matchesType = !typeFilter || surg.surgery_type_id == typeFilter;
-            const matchesStatus = statusFilter === '' || surg.is_available == statusFilter;
+            const data = response.data;
 
-            return matchesSearch && matchesType && matchesStatus;
-        });
-
-        renderSurgeryTable();
-    }
-
-    // Event listeners for search and filters
-    document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('searchSurgery');
-        const typeFilter = document.getElementById('filterSurgeryType');
-        const statusFilter = document.getElementById('filterSurgeryStatus');
-
-        if (searchInput) {
-            searchInput.addEventListener('input', applySurgeryFilters);
-        }
-        if (typeFilter) {
-            typeFilter.addEventListener('change', applySurgeryFilters);
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', applySurgeryFilters);
-        }
-    });
-
-
-    // Add Surgery
-    if (surgForm) {
-        surgForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            // Temporarily enable the status field to get its value
-            const statusField = document.getElementById('is_available');
-            statusField.disabled = false;
-            
-            const surgeryName = document.getElementById('surgery_name').value.trim();
-            const surgeryTypeId = document.getElementById('surgery_type_id').value;
-            const surgeryPrice = document.getElementById('surgery_price').value;
-            
-            if (!surgeryName || !surgeryTypeId || !surgeryPrice) {
-                alert('Please fill in all required fields.');
-                statusField.disabled = true; // Re-disable if validation fails
-                return;
-            }
-            
-            const data = {
-                surgery_name: surgeryName,
-                surgery_type_id: surgeryTypeId,
-                surgery_price: surgeryPrice,
-                is_available: statusField.value
-            };
-
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
-                    operation: 'addSurgery',
-                    json: JSON.stringify(data)
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Surgery added successfully!',
+                    icon: 'success'
+                })
+                addModal.hide();
+                addForm.reset();
+                await loadSurgeries();
+            } else {
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to add surgery',
+                    icon: 'error'
                 });
-
-                const resData = response.data;
-
-                if (resData.success) {
-                    alert('Surgery added successfully');
-                    window.location.reload();
-                } else {
-                    alert(resData.message || 'Failed to add surgery');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error adding surgery');
-            } finally {
-                // Re-disable the status field
-                statusField.disabled = true;
             }
-        });
+        } catch (error) {
+            console.error('Error adding surgery:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to add surgery',
+                icon: 'error'
+            });
+        }
     }
 
-    // Edit Button
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const surgId = e.target.dataset.id;
-            const surg = surgeries.find(s => s.surgery_id == surgId);
-
-            if (surg) {
-                // await loadSurgeryTypes();
-
-                document.getElementById('edit_surgery_id').value = surg.surgery_id;
-                document.getElementById('edit_surgery_name').value = surg.surgery_name;
-                document.getElementById('edit_surgery_type_id').value = surg.surgery_type_id;
-                document.getElementById('edit_surgery_price').value = surg.surgery_price;
-                document.getElementById('edit_is_available').value = surg.is_available;
-
-                const modal = new bootstrap.Modal(document.getElementById('editSurgeryModal'));
-                modal.show();
-            }
+    // Edit Surgery
+    window.editSurgery = async function (surgeryId) {
+        const surgery = surgeries.find(s => s.surgery_id == surgeryId);
+        if (!surgery) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Surgery not found',
+                icon: 'warning'
+            });
+            return;
         }
 
-    });
+        document.getElementById('edit_surgery_id').value = surgery.surgery_id;
+        document.getElementById('edit_surgery_name').value = surgery.surgery_name;
+        document.getElementById('edit_surgery_type_id').value = surgery.surgery_type_id;
+        document.getElementById('edit_surgery_price').value = surgery.surgery_price;
+        document.getElementById('edit_is_available').value = surgery.is_available;
 
-    // Update Form Submit
+        editModal.show();
+    };
 
-    if (editForm) {
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // Update Surgery
+    async function updateSurgery() {
+        const id = document.getElementById('edit_surgery_id').value;
+        const name = document.getElementById('edit_surgery_name').value;
+        const typeId = document.getElementById('edit_surgery_type_id').value;
+        const price = document.getElementById('edit_surgery_price').value;
+        const isAvailable = document.getElementById('edit_is_available').value;
 
-            const data = {
-                surgery_id: document.getElementById('edit_surgery_id').value,
-                surgery_name: document.getElementById('edit_surgery_name').value,
-                surgery_type_id: document.getElementById('edit_surgery_type_id').value,
-                surgery_price: document.getElementById('edit_surgery_price').value,
-                is_available: document.getElementById('edit_is_available').value
-            };
+        if (!name || !typeId || !price) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
+            return;
+        }
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
-                    operation: 'updateSurgery',
-                    json: JSON.stringify(data)
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-surgeries.php`, {
+                operation: 'updateSurgery',
+                json: JSON.stringify({
+                    surgery_id: parseInt(id),
+                    surgery_name: name,
+                    surgery_type_id: parseInt(typeId),
+                    surgery_price: parseFloat(price),
+                    is_available: parseInt(isAvailable)
+                })
+            });
+
+            const data = response.data;
+
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Surgery updated successfully',
+                    icon: 'success'
                 });
-
-                const resData = response.data;
-
-                if (resData.success) {
-                    alert('Surgery updated successfully');
-                    window.location.reload();
-                } else {
-                    alert(resData.message || 'Failed to update surgery');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error updating surgery');
+                editModal.hide();
+                await loadSurgeries();
+            } else {
+                Swal.fire({
+                    title: 'Failed',
+                    text: 'Failed to update surgery',
+                    icon: 'error'
+                });
             }
+        } catch (error) {
+            console.error('Error updating surgery', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Failed to update surgery',
+                icon: 'error'
+            });
+        }
+    }
+
+    // Wire search & filter events
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.trim();
+            loadSurgeries(1, currentItemsPerPage, term);
+        });
+    }
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            const term = (searchInput?.value || '').trim();
+            loadSurgeries(1, currentItemsPerPage, term);
         });
     }
 
     await loadSurgeryTypes();
-    await loadSurgeries();
+    await loadSurgeries(1, currentItemsPerPage, (searchInput?.value || '').trim());
 
 });

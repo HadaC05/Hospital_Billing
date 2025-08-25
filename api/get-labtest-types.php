@@ -5,9 +5,9 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Surgery_Types
+class Labtest_Types
 {
-    // function to display list of surgery types
+    // get types
     function getTypes($params = [])
     {
         include 'connection-pdo.php';
@@ -21,7 +21,7 @@ class Surgery_Types
         $offset = ($page - 1) * $itemsPerPage;
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_surgery_type";
+        $countSql = "SELECT COUNT(*) as total FROM tbl_labtest_category";
         $countStmt = $conn->prepare($countSql);
 
         $countStmt->execute();
@@ -29,9 +29,9 @@ class Surgery_Types
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         $sql = "
-            SELECT * 
-            FROM tbl_surgery_type
-            ORDER BY surgery_type_name ASC
+            SELECT *
+            FROM tbl_labtest_category
+            ORDER BY labtest_category_name ASC
             LIMIT :limit OFFSET :offset
         ";
 
@@ -61,19 +61,19 @@ class Surgery_Types
         ]);
     }
 
-    // function to add new surgery type
-    function addSurgeryType($data)
+    // add new type
+    function addType($data)
     {
         include 'connection-pdo.php';
 
-        // Check duplicate
+        // check duplicate name
         $checkSql = "
-            SELECT COUNT(*)
-            FROM tbl_surgery_type
-            WHERE surgery_type_name = :surgery_type_name
+            SELECT COUNT(*) 
+            FROM tbl_labtest_category 
+            WHERE labtest_category_name = :labtest_category_name
         ";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $checkStmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -85,58 +85,57 @@ class Surgery_Types
         }
 
         $sql = "
-            INSERT INTO tbl_surgery_type (surgery_type_name, description, is_active)
-            VALUES (:surgery_type_name, :description, 1)
+            INSERT INTO tbl_labtest_category (labtest_category_name, labtest_category_desc, is_active)
+            VALUES (:labtest_category_name, :labtest_category_desc, 1)
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
-        $stmt->bindParam(':description', $data['description']);
+        $stmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
+        $stmt->bindParam(':labtest_category_desc', $data['labtest_category_desc']);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Surgery type added']);
+            echo json_encode(['success' => true, 'message' => 'Labtest type added']);
         } else {
-            echo json_encode(['success' => true, 'message' => 'Insert failed']);
+            echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
-    // function to update existing surgery type
-    function updateSurgeryType($surgery_type_name, $surgery_type_id, $description, $is_active)
+    // update existing type 
+    function updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc, $is_active)
     {
         include 'connection-pdo.php';
 
-        // Check duplicate
+        // check duplicate
         $checkSql = "
-            SELECT COUNT(*)
-            FROM tbl_surgery_type
-            WHERE surgery_type_name = :surgery_type_name
-            AND surgery_type_id != :surgery_type_id
-        ";
+        SELECT COUNT(*) 
+        FROM tbl_labtest_category 
+        WHERE labtest_category_name = :labtest_category_name AND labtest_category_id != :labtest_category_id";
+
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
-        $checkStmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
+        $checkStmt->bindParam(':labtest_category_name', $labtest_category_name);
+        $checkStmt->bindParam(':labtest_category_id', $labtest_category_id);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'A type with this name already exists'
+                'message' => 'Another type with this name already exists'
             ]);
             return;
         }
 
         $sql = "
-            UPDATE tbl_surgery_type
-            SET surgery_type_name = :surgery_type_name,
-                description = :description,
+            UPDATE tbl_labtest_category
+            SET labtest_category_name = :labtest_category_name,
+                labtest_category_desc = :labtest_category_desc,
                 is_active = :is_active
-            WHERE surgery_type_id = :surgery_type_id
+            WHERE labtest_category_id = :labtest_category_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':surgery_type_name', $surgery_type_name);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':labtest_category_name', $labtest_category_name);
+        $stmt->bindParam(':labtest_category_id', $labtest_category_id);
+        $stmt->bindParam(':labtest_category_desc', $labtest_category_desc);
         $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
@@ -154,11 +153,12 @@ if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
 
+    // get pagination parameters
     $page = $_GET['page'] ?? 1;
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
-    $body = file_get_contents("php://input");
+    $body = file_get_contents('php://input');
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
@@ -172,7 +172,7 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
-$surgType = new Surgery_Types();
+$labtestType = new Labtest_Types();
 
 switch ($operation) {
     case 'getTypes':
@@ -181,20 +181,17 @@ switch ($operation) {
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $surgType->getTypes($params);
+        $labtestType->getTypes($params);
         break;
-    case 'addSurgeryType':
-        $surgType->addSurgeryType($data);
+    case 'addType':
+        $labtestType->addType($data);
         break;
-    case 'updateSurgeryType':
-        $surgery_type_name = $data['surgery_type_name'];
-        $surgery_type_id = $data['surgery_type_id'];
-        $description = $data['description'];
-        $is_active = $data['is_active'];
-        $surgType->updateSurgeryType(
-            $surgery_type_name,
-            $surgery_type_id,
-            $description,
-            $is_active
+    case 'updateType':
+        $labtestType->updateType(
+            $data['labtest_category_name'],
+            $data['labtest_category_id'],
+            $data['labtest_category_desc'],
+            $data['is_active']
         );
+        break;
 }

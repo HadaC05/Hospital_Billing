@@ -1,7 +1,7 @@
 console.log('patients.js is working');
 
 // Use relative path for API URL to avoid cross-origin issues
-const baseApiUrl = '../api';
+const baseApiUrl = 'http://localhost/hospital_billing/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
@@ -10,161 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
         return;
-    }
-
-    // Check if user has permission to view patient records
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
-        });
-
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('view_patient_records')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../components/dashboard.html';
-            return;
-        }
-        
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../components/dashboard.html';
-        return;
-    }
-
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
-                }
-            });
-        }
-
-        // Set user name in sidebar
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = user.full_name || user.username;
-        }
-
-        // Render navigation modules based on permissions
-        if (window.userPermissions) {
-            renderModules(window.userPermissions);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
-
-    // Function to render sidebar modules
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-            'dashboard': { label: 'Dashboard', link: '../components/dashboard.html' },
-        };  
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Clear existing links
-        if (sidebarLinks) sidebarLinks.innerHTML = '';
-        if (accordionBody) accordionBody.innerHTML = '';
-
-        // Add standalone navigation links
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-                
-                // Highlight current page
-                if (link === 'patient-records.html') {
-                    a.classList.add('bg-primary', 'bg-opacity-25');
-                }
-                
-                if (sidebarLinks) {
-                    sidebarLinks.appendChild(a);
-                }
-            }
-        });
-
-        // Add inventory modules to accordion
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
-                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
-                
-                // Add hover effects
-                a.addEventListener('mouseenter', () => {
-                    a.classList.add('bg-light');
-                });
-                a.addEventListener('mouseleave', () => {
-                    if (!a.classList.contains('bg-primary')) {
-                        a.classList.remove('bg-light');
-                    }
-                });
-                
-                if (accordionBody) {
-                    accordionBody.appendChild(a);
-                }
-                inventoryShown = true;
-            }
-        });
-
-        // Show/hide inventory accordion based on permissions
-        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
-        if (inventoryAccordion) {
-            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
-        }
     }
 
     // Patient Records functionality
@@ -177,8 +22,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentPatientId = null;
     let currentAdmissionId = null;
 
+    // Optional search/filter controls
+    let currentItemsPerPage = 10;
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
+
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: currentItemsPerPage,
+        onPageChange: (page) => {
+            const term = (searchInput?.value || '').trim();
+            loadPatients(page, currentItemsPerPage, term);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            currentItemsPerPage = itemsPerPage;
+            const term = (searchInput?.value || '').trim();
+            loadPatients(1, currentItemsPerPage, term);
+        }
+    });
+
     // Load Patient List
-    async function loadPatients() {
+    async function loadPatients(page = 1, itemsPerPage = 10, search = '') {
         if (!patientListElement) {
             console.error('Patient list element not found');
             return;
@@ -190,65 +54,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-patients.php`, {
                 params: {
                     operation: 'getPatients',
-                    json: JSON.stringify({})
+                    json: JSON.stringify({}),
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
                 }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.patients)) {
-                let patients = data.patients;
-                let filteredPatients = [...patients];
+                const patients = data.patients;
+                const paginationData = data.pagination;
 
-                // Search functionality
-                function applyPatientSearch() {
-                    const searchTerm = document.getElementById('searchPatients')?.value.toLowerCase() || '';
-                    
-                    filteredPatients = patients.filter(patient => {
-                        return patient.patient_fname.toLowerCase().includes(searchTerm) ||
-                               patient.patient_lname.toLowerCase().includes(searchTerm) ||
-                               patient.email.toLowerCase().includes(searchTerm) ||
-                               patient.mobile_number.includes(searchTerm);
-                    });
-                    
-                    renderPatientTable();
-                }
-
-                // Render patient table
-                function renderPatientTable() {
-                    if (filteredPatients.length === 0) {
-                        patientListElement.innerHTML = '<tr><td colspan="5" class="text-center">No patients found.</td></tr>';
-                        return;
+                if (patients.length === 0) {
+                    patientListElement.innerHTML = '<tr><td colspan="5" class="text-center">No patients found.</td></tr>';
+                    // Clear pagination controls
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
                     }
+                    return;
+                }
 
-                    patientListElement.innerHTML = '';
-
-                    filteredPatients.forEach(patient => {
-                        const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
-
-                        const row = `
-                            <tr>
-                                <td>${patient.patient_id}</td>
-                                <td>${fullName}</td>
-                                <td>${patient.mobile_number}</td>
-                                <td>${patient.email}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-info view-patient-btn" data-id="${patient.patient_id}">View Details</button>
-                                </td>
-                            </tr>
-                        `;
-                        patientListElement.innerHTML += row;
+                // Optional client-side filter by selected field
+                let list = patients;
+                const term = (searchInput?.value || '').toLowerCase().trim();
+                const filter = (filterSelect?.value || 'all');
+                if (filterSelect && filter !== 'all' && term) {
+                    list = patients.filter(patient => {
+                        const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`.toLowerCase();
+                        const byName = fullName.includes(term);
+                        const byContact = (patient.mobile_number || '').toLowerCase().includes(term);
+                        const byEmail = (patient.email || '').toLowerCase().includes(term);
+                        if (filter === 'name') return byName;
+                        if (filter === 'contact') return byContact;
+                        if (filter === 'email') return byEmail;
+                        return byName || byContact || byEmail;
                     });
                 }
 
-                // Event listener for search
-                const searchInput = document.getElementById('searchPatients');
-                if (searchInput) {
-                    searchInput.addEventListener('input', applyPatientSearch);
-                }
+                patientListElement.innerHTML = '';
 
-                // Initial render
-                renderPatientTable();
+                list.forEach(patient => {
+                    const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
+
+                    const row = `
+                        <tr>
+                            <td>${fullName}</td>
+                            <td>${patient.mobile_number}</td>
+                            <td>${patient.email}</td>
+                            <td>${patient.current_room_number ? patient.current_room_number : '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-patient-btn" data-id="${patient.patient_id}">View Details</button>
+                            </td>
+                        </tr>
+                    `;
+                    patientListElement.innerHTML += row;
+                });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
                 patientListElement.innerHTML = `<tr><td colspan="5" class="text-center">Failed to load patients.</td></tr>`;
             }
@@ -558,6 +425,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Wire search & filter events
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.trim();
+            loadPatients(1, currentItemsPerPage, term);
+        });
+    }
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            const term = (searchInput?.value || '').trim();
+            loadPatients(1, currentItemsPerPage, term);
+        });
+    }
+
     // Load initial data
-    await loadPatients();
+    await loadPatients(1, currentItemsPerPage, (searchInput?.value || '').trim());
 });

@@ -1,354 +1,271 @@
 console.log('treatments.js is working');
+console.log('is treatment working?');
+
+const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = '../api';
+    // Check for user authentication
     const user = JSON.parse(localStorage.getItem('user'));
-
     if (!user) {
         console.error('No user data found. Redirecting to login.');
         window.location.href = '../index.html';
         return;
     }
 
-    // Check if user has permission to manage treatments
-    try {
-        const response = await axios.post(`${baseApiUrl}/get-permissions.php`, {
-            operation: 'getUserPermissions',
-            json: JSON.stringify({ user_id: user.user_id })
+    // Treatment management functionality
+    const tableBody = document.getElementById('treatment-list');
+    let treatments = [];
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
+    let currentItemsPerPage = 10;
+
+    // Initialize pagination utility
+    const pagination = new PaginationUtility({
+        itemsPerPage: currentItemsPerPage,
+        onPageChange: (page) => {
+            const search = searchInput ? searchInput.value.trim() : '';
+            loadTreatments(page, currentItemsPerPage, search);
+        },
+        onItemsPerPageChange: (itemsPerPage) => {
+            currentItemsPerPage = itemsPerPage;
+            const search = searchInput ? searchInput.value.trim() : '';
+            loadTreatments(1, currentItemsPerPage, search);
+        }
+    });
+
+    // Modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addTreatmentModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editTreatmentModal'));
+
+    // Form elements
+    const addForm = document.getElementById('addTreatmentForm');
+    const editForm = document.getElementById('editTreatmentForm');
+
+    // Button event listeners
+    document.getElementById('saveTreatmentBtn').addEventListener('click', saveTreatment);
+    document.getElementById('updateTreatmentBtn').addEventListener('click', updateTreatment);
+
+    // Load treatment categories
+    async function loadTreatmentCategories() {
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
+                params: { operation: 'getTreatmentCategories' }
+            });
+
+            const data = response.data;
+
+            if (data.success && Array.isArray(data.categories)) {
+                const options = data.categories.map(c => {
+                    return `<option value="${c.treatment_category_id}">${c.category_name}</option>`;
+                }).join('');
+
+                // Populate dropdowns
+                const addCategorySelect = document.getElementById('treatment_category_id');
+                const editCategorySelect = document.getElementById('edit_treatment_category_id');
+
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+            } else {
+                const addCategorySelect = document.getElementById('treatment_category_id');
+                const editCategorySelect = document.getElementById('edit_treatment_category_id');
+
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+            }
+        } catch (error) {
+            console.error('Failed to load treatment categories', error);
+        }
+    }
+
+    // Wire search and filter controls
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.trim();
+            loadTreatments(1, currentItemsPerPage, term);
         });
-        const data = response.data;
-        if (!data.success || !data.permissions.includes('manage_treatments')) {
-            alert('You do not have permission to access this page.');
-            window.location.href = '../components/dashboard.html';
+    }
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => {
+            const term = searchInput ? searchInput.value.trim() : '';
+            loadTreatments(1, currentItemsPerPage, term);
+        });
+    }
+
+    // Load treatments
+    async function loadTreatments(page = 1, itemsPerPage = 10, search = '') {
+        if (!tableBody) {
+            console.error('Treatment table body not found');
             return;
         }
 
-        // Store permissions for sidebar rendering
-        window.userPermissions = data.permissions;
-    } catch (error) {
-        console.error('Error checking permissions:', error);
-        alert('Failed to verify permissions. Please try again.');
-        window.location.href = '../components/dashboard.html';
-        return;
-    }
+        tableBody.innerHTML = '<tr><td colspan="5">Loading treatments...</td></tr>';
 
-    // Load Sidebar
-    const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-    try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
-        sidebarPlaceholder.innerHTML = sidebarResponse.data;
-        const sidebarElement = document.getElementById('sidebar');
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const pageContainer = document.getElementById('page-container');
-
-        // Restore sidebar collapsed state
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebarElement.classList.add('collapsed');
-            pageContainer.classList.add('expanded');
-        }
-
-        hamburgerBtn.addEventListener('click', () => {
-            sidebarElement.classList.toggle('collapsed');
-            pageContainer.classList.toggle('expanded');
-            localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-        });
-
-        // Log out Logic
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await axios.post(`${baseApiUrl}/logout.php`);
-                    localStorage.removeItem('user');
-                    window.location.href = '../index.html';
-                } catch (error) {
-                    console.error('Logout failed: ', error);
-                    alert('Logout failed. Please try again.');
+        try {
+            const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
+                params: {
+                    operation: 'getTreatments',
+                    page: page,
+                    itemsPerPage: itemsPerPage,
+                    search: search
                 }
             });
-        }
 
-        // Set user name in sidebar
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = user.full_name || user.username;
-        }
+            const data = response.data;
 
-        // Render navigation modules based on permissions
-        if (window.userPermissions) {
-            renderModules(window.userPermissions);
-        }
-    } catch (err) {
-        console.error('Failed to load sidebar: ', err);
-    }
+            if (data.success && Array.isArray(data.treatments)) {
+                treatments = data.treatments;
+                const paginationData = data.pagination;
 
-    // Function to render navigation modules based on permissions
-    function renderModules(permissions) {
-        const moduleMap = {
-            'dashboard': { label: 'Dashboard', link: '../dashboard.html' },
-            'manage_users': { label: 'Manage Users', link: 'user-management.html' },
-            'manage_roles': { label: 'Role Settings', link: 'role-settings.html' },
-            'view_admissions': { label: 'Admission Records', link: 'admission-records.html' },
-            'edit_admissions': { label: 'Admission Editor', link: 'admission-editor.html' },
-            'access_billing': { label: 'Billing Overview', link: 'billing-overview.html' },
-            'generate_invoice': { label: 'Invoice Generator', link: 'invoice-generator.html' },
-            'view_patient_records': { label: 'Patient Records Viewer', link: 'patient-records.html' },
-            'approve_insurance': { label: 'Insurance Approval Panel', link: 'insurance-approval.html' },
-        };
-
-        const inventoryMap = {
-            'manage_medicine': { label: 'Medicine Module', link: 'inv-medicine.html' },
-            'manage_surgeries': { label: 'Surgical Module', link: 'inv-surgery.html' },
-            'manage_labtests': { label: 'Laboratory Module', link: 'inv-labtest.html' },
-            'manage_treatments': { label: 'Treatment Module', link: 'inv-treatments.html' },
-            'manage_rooms': { label: 'Room Management', link: 'inv-rooms.html' },
-        };
-
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const accordionBody = document.querySelector('#invCollapse .accordion-body');
-
-        // Clear existing links
-        if (sidebarLinks) sidebarLinks.innerHTML = '';
-        if (accordionBody) accordionBody.innerHTML = '';
-
-        // Add standalone navigation links
-        permissions.forEach(permission => {
-            if (moduleMap[permission]) {
-                const { label, link } = moduleMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-white', 'text-decoration-none');
-                a.innerHTML = `<i class="fas fa-chevron-right me-2"></i>${label}`;
-
-                if (sidebarLinks) {
-                    sidebarLinks.appendChild(a);
+                // Optional client-side filtering based on selected field
+                const searchTerm = (search || '').toLowerCase();
+                let list = treatments;
+                if (filterSelect && filterSelect.value !== 'all' && searchTerm) {
+                    list = treatments.filter(t => {
+                        if (filterSelect.value === 'name') return (t.treatment_name || '').toLowerCase().includes(searchTerm);
+                        if (filterSelect.value === 'category') return (t.treatment_category || '').toLowerCase().includes(searchTerm);
+                        if (filterSelect.value === 'status') return ((t.is_active == 1 ? 'active' : 'inactive')).includes(searchTerm);
+                        return true;
+                    });
                 }
-            }
-        });
 
-        // Add inventory modules to accordion
-        let inventoryShown = false;
-        permissions.forEach(permission => {
-            if (inventoryMap[permission]) {
-                const { label, link } = inventoryMap[permission];
-                const a = document.createElement('a');
-                a.href = `../module/${link}`;
-                a.classList.add('d-block', 'px-3', 'py-2', 'text-dark', 'text-decoration-none', 'border-bottom', 'border-light');
-                a.innerHTML = `<i class="fas fa-box me-2 text-primary"></i>${label}`;
-                
-                // Add hover effects
-                a.addEventListener('mouseenter', () => {
-                    a.classList.add('bg-light');
-                });
-                a.addEventListener('mouseleave', () => {
-                    if (!a.classList.contains('bg-primary')) {
-                        a.classList.remove('bg-light');
+                if (list.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
+                    const paginationContainer = document.getElementById('pagination-container');
+                    if (paginationContainer) {
+                        paginationContainer.innerHTML = '';
                     }
-                });
-
-                // Highlight current page
-                if (link === 'inv-treatments.html') {
-                    a.classList.add('bg-primary', 'bg-opacity-25');
+                    return;
                 }
 
-                if (accordionBody) {
-                    accordionBody.appendChild(a);
-                }
-                inventoryShown = true;
-            }
-        });
+                tableBody.innerHTML = '';
 
-        // Show/hide inventory accordion based on permissions
-        const inventoryAccordion = document.querySelector('#invHeading').parentElement;
-        if (inventoryAccordion) {
-            inventoryAccordion.style.display = inventoryShown ? 'block' : 'none';
-        }
-    }
+                list.forEach(t => {
+                    const status = t.is_active == 1 ? 'Active' : 'Inactive';
+                    const statusBadge = t.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
-    // Load treatment list and populate category select
-    const tableBody = document.getElementById('treatment-list');
-    if (!tableBody) {
-        console.error('Treatment table body not found.');
-        return;
-    }
-    tableBody.innerHTML = '<tr><td colspan="4">Loading treatments...</td></tr>';
-    try {
-        const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-            params: {
-                operation: 'getTreatments',
-                json: JSON.stringify({})
-            }
-        });
-        const data = response.data;
-        if (data.success && Array.isArray(data.treatments)) {
-            if (data.treatments.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4">No treatments found.</td></tr>';
-                return;
-            }
-            tableBody.innerHTML = '';
-            data.treatments.forEach(treatment => {
-                const row = `
-                    <tr>
-                        <td>${treatment.treatment_name}</td>
-                        <td>${treatment.unit_price}</td>
-                        <td>${treatment.treatment_category}</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm update-treatment" data-id="${treatment.treatment_id}">Update</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found.'}</td></tr>`;
-        }
-    } catch (error) {
-        console.error('Error loading treatments: ', error);
-        tableBody.innerHTML = '<tr><td colspan="4">Failed to load treatments.</td></tr>';
-    }
-    // Populate treatment categories
-    const categorySelect = document.getElementById('treatment_category_id');
-    if (categorySelect) {
-        try {
-            const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                params: { operation: 'getTreatmentCategories', json: JSON.stringify({}) }
-            });
-            if (resp.data.success && Array.isArray(resp.data.categories)) {
-                // Add default "Select a category" option
-                categorySelect.innerHTML = '<option value="">Select a category</option>';
-                resp.data.categories.forEach(cat => {
-                    categorySelect.innerHTML += `<option value="${cat.treatment_category_id}">${cat.category_name}</option>`;
+                    const row = `
+                        <tr>
+                            <td>${t.treatment_name}</td>
+                            <td>₱${parseFloat(t.unit_price).toFixed(2)}</td>
+                            <td>${t.treatment_category}</td>
+                            <td><span class="${statusBadge}">${status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTreatment(${t.treatment_id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
                 });
+
+                // Update pagination controls
+                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
+                pagination.generatePaginationControls('pagination-container');
             } else {
-                categorySelect.innerHTML = '<option value="">No categories found</option>';
+                tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
             }
-        } catch (err) {
-            categorySelect.innerHTML = '<option value="">Error loading categories</option>';
+        } catch (error) {
+            console.error('Error loading treatments: ', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Failed to load treatments</td></tr>';
         }
     }
-    // Add Treatment
-    const addTreatmentForm = document.getElementById('addTreatmentForm');
-    if (addTreatmentForm) {
-        addTreatmentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                treatment_name: document.getElementById('treatment_name').value.trim(),
-                unit_price: document.getElementById('unit_price').value,
-                treatment_category_id: document.getElementById('treatment_category_id').value
-            };
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
-                    operation: 'addTreatment',
-                    json: JSON.stringify(data)
-                });
-                const respData = response.data;
-                if (respData.success) {
-                    alert('Treatment added successfully');
-                    window.location.reload();
-                } else {
-                    alert(respData.message || 'Failed to add treatment');
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error adding treatment');
-            }
-        });
-    } else {
-        console.error('Add Treatment form not found.');
-    }
-    // Add modal HTML if not present
-    if (!document.getElementById('treatmentModal')) {
-        const modalHtml = `
-        <div class="modal fade" id="treatmentModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <form id="treatmentModalForm" class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Update Treatment</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="modal_treatment_id">
-                        <div class="mb-2">
-                            <label>Treatment Name</label>
-                            <input type="text" class="form-control" id="modal_treatment_name" required>
-                        </div>
-                        <div class="mb-2">
-                            <label>Unit Price</label>
-                            <input type="number" class="form-control" id="modal_unit_price" required>
-                        </div>
-                        <div class="mb-2">
-                            <label>Category</label>
-                            <select class="form-select" id="modal_treatment_category_id" required></select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Update</button>
-                    </div>
-                </form>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-    // Helper to populate category select in modal
-    async function populateModalCategorySelect(selectedId) {
-        const select = document.getElementById('modal_treatment_category_id');
+
+    // Create new treatment
+    async function saveTreatment() {
+        const treatmentName = document.getElementById('treatment_name').value.trim();
+        const unitPrice = document.getElementById('unit_price').value;
+        const categoryId = document.getElementById('treatment_category_id').value;
+
+        if (!treatmentName || !unitPrice || !categoryId) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
         try {
-            const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                params: { operation: 'getTreatmentCategories', json: JSON.stringify({}) }
+            const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
+                operation: 'addTreatment',
+                json: JSON.stringify({
+                    treatment_name: treatmentName,
+                    unit_price: parseFloat(unitPrice),
+                    treatment_category_id: parseInt(categoryId),
+                    is_active: 1
+                })
             });
-            if (resp.data.success && Array.isArray(resp.data.categories)) {
-                select.innerHTML = '';
-                resp.data.categories.forEach(cat => {
-                    select.innerHTML += `<option value="${cat.treatment_category_id}" ${cat.treatment_category_id == selectedId ? 'selected' : ''}>${cat.category_name}</option>`;
-                });
+
+            const data = response.data;
+            if (data.success) {
+                alert('Treatment added successfully!');
+                addModal.hide();
+                addForm.reset();
+                await loadTreatments();
+            } else {
+                alert(data.message || 'Failed to add treatment.');
             }
-        } catch { }
-    }
-    // Update button logic
-    tableBody.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('update-treatment')) {
-            const treatmentId = e.target.getAttribute('data-id');
-            try {
-                const resp = await axios.get(`${baseApiUrl}/get-treatments.php`, {
-                    params: { operation: 'getTreatment', json: JSON.stringify({ treatment_id: treatmentId }) }
-                });
-                if (resp.data.success) {
-                    const treatment = resp.data.treatment;
-                    document.getElementById('modal_treatment_id').value = treatment.treatment_id;
-                    document.getElementById('modal_treatment_name').value = treatment.treatment_name;
-                    document.getElementById('modal_unit_price').value = treatment.unit_price;
-                    await populateModalCategorySelect(treatment.treatment_category_id);
-                    new bootstrap.Modal(document.getElementById('treatmentModal')).show();
-                } else {
-                    alert(resp.data.message || 'Treatment not found');
-                }
-            } catch {
-                alert('Failed to fetch treatment');
-            }
+        } catch (error) {
+            console.error('Error adding treatment:', error);
+            alert('Failed to add treatment. Please try again.');
         }
-    });
-    // Update logic
-    document.getElementById('treatmentModalForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const data = {
-            treatment_id: document.getElementById('modal_treatment_id').value,
-            treatment_name: document.getElementById('modal_treatment_name').value.trim(),
-            unit_price: document.getElementById('modal_unit_price').value,
-            treatment_category_id: document.getElementById('modal_treatment_category_id').value
-        };
+    }
+
+    // Edit treatment
+    window.editTreatment = async function (treatmentId) {
+        const treatment = treatments.find(t => t.treatment_id == treatmentId);
+        if (!treatment) {
+            alert('Treatment not found.');
+            return;
+        }
+
+        document.getElementById('edit_treatment_id').value = treatment.treatment_id;
+        document.getElementById('edit_treatment_name').value = treatment.treatment_name;
+        document.getElementById('edit_unit_price').value = treatment.unit_price;
+        document.getElementById('edit_treatment_category_id').value = treatment.treatment_category_id;
+        document.getElementById('edit_is_active').value = treatment.is_active;
+
+        editModal.show();
+    };
+
+    // Update treatment
+    async function updateTreatment() {
+        const treatmentId = document.getElementById('edit_treatment_id').value;
+        const treatmentName = document.getElementById('edit_treatment_name').value.trim();
+        const unitPrice = document.getElementById('edit_unit_price').value;
+        const categoryId = document.getElementById('edit_treatment_category_id').value;
+        const isActive = document.getElementById('edit_is_active').value;
+
+        if (!treatmentName || !unitPrice || !categoryId) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
         try {
-            const resp = await axios.post(`${baseApiUrl}/get-treatments.php`, {
+            const response = await axios.post(`${baseApiUrl}/get-treatments.php`, {
                 operation: 'updateTreatment',
-                json: JSON.stringify(data)
+                json: JSON.stringify({
+                    treatment_id: parseInt(treatmentId),
+                    treatment_name: treatmentName,
+                    unit_price: parseFloat(unitPrice),
+                    treatment_category_id: parseInt(categoryId),
+                    is_active: parseInt(isActive)
+                })
             });
-            if (resp.data.success) {
-                alert('Treatment updated successfully');
-                window.location.reload();
+
+            const data = response.data;
+            if (data.success) {
+                alert('Treatment updated successfully!');
+                editModal.hide();
+                await loadTreatments();
             } else {
-                alert(resp.data.message || 'Failed to update treatment');
+                alert(data.message || 'Failed to update treatment.');
             }
-        } catch {
-            alert('Error updating treatment');
+        } catch (error) {
+            console.error('Error updating treatment:', error);
+            alert('Failed to update treatment. Please try again.');
         }
-    });
+    }
+
+    // Initialize
+    await loadTreatmentCategories();
+    const initialSearch = searchInput ? searchInput.value.trim() : '';
+    await loadTreatments(1, currentItemsPerPage, initialSearch);
 });

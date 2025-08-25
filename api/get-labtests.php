@@ -22,8 +22,41 @@ class LabTestManager
     }
 
     // Get all lab tests
-    public function getLabtests()
+    public function getLabtests($params = [])
     {
+        include 'connection-pdo.php';
+
+        // Get pagination parameters
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        $search = isset($params['search']) ? $params['search'] : '';
+
+        // Calculate offset
+        $offset = ($page - 1) * $itemsPerPage;
+
+        // Build WHERE clause for search
+        $whereClause = '';
+        $searchParams = [];
+
+        if (!empty($search)) {
+            $whereClause = "WHERE l.test_name LIKE :search 
+                            OR lc.labtest_category_name LIKE :search";
+            $searchParams[':search'] = "%$search%";
+        }
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM tbl_labtest l 
+                        JOIN tbl_labtest_category lc ON l.labtest_id = lc.labtest_category_id 
+                        $whereClause";
+        $countStmt = $conn->prepare($countSql);
+        if (!empty($searchParams)) {
+            $countStmt->execute($searchParams);
+        } else {
+            $countStmt->execute();
+        }
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+
         $sql = "
             SELECT 
                 l.labtest_id,
@@ -34,16 +67,40 @@ class LabTestManager
                 l.is_active
             FROM tbl_labtest l
             JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
+            $whereClause
             ORDER BY l.test_name ASC
+            LIMIT :limit OFFSET :offset
         ";
 
         $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        if (!empty($searchParams)) {
+            foreach ($searchParams as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+        }
         $stmt->execute();
         $labtests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+        // Calculate pagination info
+        $totalPages = ceil($totalCount / $itemsPerPage);
+        $startIndex = $offset + 1;
+        $endIndex = min($offset + $itemsPerPage, $totalCount);
+
         echo json_encode([
             'success' => true,
-            'labtests' => $labtests
+            'labtests' => $labtests,
+            'pagination' => [
+                'currentPage' => $page,
+                'itemsPerPage' => $itemsPerPage,
+                'totalItems' => $totalCount,
+                'totalPages' => $totalPages,
+                'startIndex' => $startIndex,
+                'endIndex' => $endIndex
+            ]
         ]);
     }
 
@@ -84,7 +141,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':test_name', $data['test_name']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -98,14 +155,13 @@ class LabTestManager
 
             // Insert new lab test
             $sql = "INSERT INTO tbl_labtest (test_name, labtest_category_id, unit_price, is_active) 
-                    VALUES (:test_name, :labtest_category_id, :unit_price, :is_active)";
-            
+                    VALUES (:test_name, :labtest_category_id, :unit_price, 1)";
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':test_name', $data['test_name']);
             $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
             $stmt->bindParam(':unit_price', $data['unit_price']);
-            $stmt->bindParam(':is_active', $isActive);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -144,7 +200,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() == 0) {
                 echo json_encode([
                     'success' => false,
@@ -159,7 +215,7 @@ class LabTestManager
             $checkNameStmt->bindParam(':test_name', $data['test_name']);
             $checkNameStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkNameStmt->execute();
-            
+
             if ($checkNameStmt->fetchColumn() > 0) {
                 echo json_encode([
                     'success' => false,
@@ -175,17 +231,17 @@ class LabTestManager
                         unit_price = :unit_price, 
                         is_active = :is_active 
                     WHERE labtest_id = :labtest_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
             $stmt->bindParam(':test_name', $data['test_name']);
             $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
             $stmt->bindParam(':unit_price', $data['unit_price']);
-            
+
             // Set is_active to 1 if not provided
             $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
             $stmt->bindParam(':is_active', $isActive);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -223,7 +279,7 @@ class LabTestManager
             $checkStmt = $this->conn->prepare($checkSql);
             $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
             $checkStmt->execute();
-            
+
             if ($checkStmt->fetchColumn() == 0) {
                 echo json_encode([
                     'success' => false,
@@ -237,13 +293,13 @@ class LabTestManager
             $usageStmt = $this->conn->prepare($usageSql);
             $usageStmt->bindParam(':labtest_id', $data['labtest_id']);
             $usageStmt->execute();
-            
+
             if ($usageStmt->fetchColumn() > 0) {
                 // Instead of deleting, mark as inactive
                 $deactivateSql = "UPDATE tbl_labtest SET is_active = 0 WHERE labtest_id = :labtest_id";
                 $deactivateStmt = $this->conn->prepare($deactivateSql);
                 $deactivateStmt->bindParam(':labtest_id', $data['labtest_id']);
-                
+
                 if ($deactivateStmt->execute()) {
                     echo json_encode([
                         'success' => true,
@@ -262,7 +318,7 @@ class LabTestManager
             $sql = "DELETE FROM tbl_labtest WHERE labtest_id = :labtest_id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
-            
+
             if ($stmt->execute()) {
                 echo json_encode([
                     'success' => true,
@@ -304,13 +360,13 @@ class LabTestManager
                     FROM tbl_labtest l
                     JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
                     WHERE l.labtest_id = :labtest_id";
-            
+
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':labtest_id', $data['labtest_id']);
             $stmt->execute();
-            
+
             $labtest = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($labtest) {
                 echo json_encode([
                     'success' => true,
@@ -341,12 +397,22 @@ $manager = new LabTestManager();
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '{}';
+
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
-    
+
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '{}';
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
 }
 
 $data = json_decode($json, true) ?? [];
@@ -354,7 +420,12 @@ $data = json_decode($json, true) ?? [];
 // Route the request to the appropriate method
 switch ($operation) {
     case 'getLabtests':
-        $manager->getLabtests();
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search
+        ];
+        $manager->getLabtests($params);
         break;
     case 'getTypes':
         $manager->getTypes();
