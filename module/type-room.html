@@ -47,19 +47,30 @@
 
                     <!-- Search and Filter Section -->
                     <div class="row mb-3">
-                        <div class="col-md-8">
+                        <div class="col-md-6 mt-2 mt-md-0">
+                            <label for="searchInput" class="form-label">Search</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                                 <input type="text" id="searchInput" class="form-control"
                                     placeholder="Search room types...">
                             </div>
                         </div>
-                        <!-- filter  -->
-                        <div class="col-md-4">
-                            <select id="filterSelect" class="form-select">
-                                <option value="all">All Types</option>
-                                <option value="name">By Name</option>
-                                <option value="description">By Description</option>
+                        <!-- Status Filter -->
+                        <div class="col-md-3 mt-2 mt-md-0">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select id="statusFilter" class="form-select">
+                                <option value="all">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <!-- Sort Control -->
+                        <div class="col-md-3 mt-2 mt-md-0">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select id="sortBy" class="form-select">
+                                <option value="name-asc">Name: A → Z</option>
+                                <option value="name-desc">Name: Z → A</option>
                             </select>
                         </div>
                     </div>

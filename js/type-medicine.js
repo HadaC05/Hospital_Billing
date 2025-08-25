@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // type management functionality
     const tableBody = document.getElementById('medicine-type-list');
-    let medTypes = [];
+    let allTypes = [];
     let filteredTypes = [];
 
     // modal elements
@@ -29,7 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Search and filter elements
     const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
+    const statusFilter = document.getElementById('statusFilter');
+    const sortBy = document.getElementById('sortBy');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
@@ -43,21 +44,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Load Medicine Type List
-    async function loadMedicineTypes(page = 1, itemsPerPage = 10, search = '') {
+    async function loadMedicineTypes() {
         if (!tableBody) {
             console.error('Medicine types table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="3">Loading medicine types...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Loading medicine types...</td></tr>';
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-medicine-types.php`, {
                 params: {
                     operation: 'getTypes',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search,
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: '',
                     json: JSON.stringify({})
                 }
             });
@@ -65,16 +66,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                medTypes = data.types;
-                filteredTypes = [...medTypes];
+                allTypes = data.types;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
 
-                renderTable(filteredTypes, data.pagination);
             } else {
-                tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading medicine types: ', error);
-            tableBody.innerHTML = '<tr><td colspan="3">Failed to load medicine types.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">Failed to load medicine types.</td></tr>';
         }
     }
 
@@ -86,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (typesToRender.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="3">No medicine types found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">No medicine types found</td></tr>';
 
             const paginationContainer = document.getElementById('pagination-container');
             if (paginationContainer) {
@@ -127,26 +128,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Filter medicine types based on search and filter criteria
-    function filterMedicineTypes() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const filterType = filterSelect.value;
+    function applyFiltersAndSort() {
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+        const statusValue = (statusFilter?.value || 'all');
+        const sortValue = (sortBy?.value || 'name-asc');
 
-        filteredTypes = medTypes.filter(type => {
+        filteredTypes = allTypes.filter(type => {
             const matchesSearch = searchTerm === '' ||
-                type.med_type_name.toLowerCase().includes(searchTerm) ||
-                type.description.toLowerCase().includes(searchTerm);
+                String(type.med_type_name || '').toLowerCase().includes(searchTerm) ||
+                String(type.description || '').toLowerCase().includes(searchTerm);
 
-            let matchesFilter = true;
-            if (filterType === 'name') {
-                matchesFilter = type.med_type_name.toLowerCase().includes(searchTerm);
-            } else if (filterType === 'description') {
-                matchesFilter = type.description.toLowerCase().includes(searchTerm);
-            }
+            const isActive = Number(type.is_active) === 1;
+            const matchesStatus = statusValue === 'all' ||
+                (statusValue === 'active' && isActive) ||
+                (statusValue === 'inactive' && !isActive);
 
-            return matchesSearch && matchesFilter;
+            return matchesSearch && matchesStatus;
         });
 
-        renderTable(filteredTypes);
+        // Sort by name asc/desc
+        filteredTypes.sort((a, b) => {
+            const nameA = String(a.med_type_name || '').toLowerCase();
+            const nameB = String(b.med_type_name || '').toLowerCase();
+            if (nameA < nameB) return sortValue === 'name-asc' ? -1 : 1;
+            if (nameA > nameB) return sortValue === 'name-asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Render current page from filteredTypes
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredTypes, page, itemsPerPage);
+        renderTable(data, pageData);
     }
 
     // Add medicine type
@@ -206,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit button click handler
     window.editType = async function (typeId) {
-        const type = medTypes.find(mt => mt.med_type_id == typeId);
+        const type = allTypes.find(mt => mt.med_type_id == typeId);
         if (!type) {
             Swal.fire({
                 title: 'Warning',
@@ -283,14 +296,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Search input event listener
+    // Event listeners for controls
     if (searchInput) {
-        searchInput.addEventListener('input', filterMedicineTypes);
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
     }
 
-    // Filter select event listener
-    if (filterSelect) {
-        filterSelect.addEventListener('change', filterMedicineTypes);
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
     }
 
     // Initial load
