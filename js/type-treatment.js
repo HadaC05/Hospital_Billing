@@ -10,15 +10,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // DOM elements
+    // type management functionality
     const tableBody = document.getElementById('treatment-type-list');
-    const typeForm = document.getElementById('addTreatmentTypeForm');
-    const updateForm = document.getElementById('editTreatmentTypeForm');
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
-
     let treatmentTypes = [];
     let filteredTypes = [];
+
+    // form elements
+    const typeForm = document.getElementById('addTreatmentTypeForm');
+    const updateForm = document.getElementById('editTreatmentTypeForm');
+
+    // modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addTreatmentTypeModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editTreatmentTypeModal'));
+
+    // button event listener
+    document.getElementById('saveTypeBtn').addEventListener('click', saveType);
+    document.getElementById('updateTypeBtn').addEventListener('click', updateType);
+
+    // search and filter elements
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
@@ -55,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success && Array.isArray(data.types)) {
                 treatmentTypes = data.types;
                 filteredTypes = [...treatmentTypes];
+
                 renderTable(filteredTypes, data.pagination);
             } else {
                 tableBody.innerHTML = '<tr><td colspan="3">No treatment types found</td></tr>';
@@ -83,12 +95,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tableBody.innerHTML = '';
         typesToRender.forEach(treatmentType => {
+            const isActive = treatmentType.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = treatmentType.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+
             const row = `
                 <tr>
                     <td>${treatmentType.category_name}</td>
                     <td>${treatmentType.description}</td>
+                    <td><span class="${statusBadge}">${isActive}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-warning edit-btn" data-id="${treatmentType.treatment_category_id}">Edit</button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editType(${treatmentType.treatment_category_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -129,118 +147,139 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Add new treatment type
-    if (typeForm) {
-        typeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function saveType(e) {
+        e.preventDefault();
 
-            const data = {
-                category_name: document.getElementById('category_name').value.trim(),
-                description: document.getElementById('description').value.trim()
-            };
+        const typeName = document.getElementById('category_name').value.trim();
+        const typeDesc = document.getElementById('description').value.trim();
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-treatment-types.php`, {
-                    operation: 'addType',
-                    json: JSON.stringify(data)
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all require fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-treatment-types.php`, {
+                operation: 'addType',
+                json: JSON.stringify({
+                    category_name: typeName,
+                    description: typeDesc,
+                    is_active: 1
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Treatment type added successfully',
+                    icon: 'success'
                 });
 
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Treatment type added successfully',
-                        icon: 'success'
-                    });
+                addModal.hide();
+                typeForm.reset();
+                await loadTreatmentTypes();
 
-                    // Reset form and reload data
-                    typeForm.reset();
-                    await loadTreatmentTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addTreatmentTypeModal'));
-                    modal.hide();
-                } else {
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to add treatment type',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error adding treatment type',
+                    text: data.message || 'Failed to add treatment type',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error adding type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error adding treatment type',
+                icon: 'error'
+            });
+        }
     }
 
     // Edit button click handler
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const treatId = e.target.dataset.id;
-            const treatmentType = treatmentTypes.find(tt => tt.treatment_category_id == treatId);
-
-            if (treatmentType) {
-                document.getElementById('edit_treatment_category_id').value = treatmentType.treatment_category_id;
-                document.getElementById('edit_category_name').value = treatmentType.category_name;
-                document.getElementById('edit_description').value = treatmentType.description;
-
-                const modal = new bootstrap.Modal(document.getElementById('editTreatmentTypeModal'));
-                modal.show();
-            }
+    window.editType = async function (typeId) {
+        const type = treatmentTypes.find(tt => tt.treatment_category_id == typeId)
+        if (!type) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Medicine type not found',
+                icon: 'warning'
+            });
+            return;
         }
-    });
+
+        // Populate edit form
+        document.getElementById('edit_treatment_category_id').value = type.treatment_category_id;
+        document.getElementById('edit_category_name').value = type.category_name;
+        document.getElementById('edit_description').value = type.description;
+        document.getElementById('edit_is_active').value = type.is_active;
+
+        editModal.show();
+    }
 
     // Edit form submission
-    if (updateForm) {
-        updateForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function updateType(e) {
+        e.preventDefault();
 
-            const data = {
-                treatment_category_id: document.getElementById('edit_treatment_category_id').value,
-                category_name: document.getElementById('edit_category_name').value.trim(),
-                description: document.getElementById('edit_description').value.trim()
-            };
+        const typeId = document.getElementById('edit_treatment_category_id').value;
+        const typeName = document.getElementById('edit_category_name').value.trim();
+        const typeDesc = document.getElementById('edit_description').value.trim();
+        const isActive = document.getElementById('edit_is_active').value;
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-treatment-types.php`, {
-                    operation: 'updateType',
-                    json: JSON.stringify(data)
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-treatment-types.php`, {
+                operation: 'updateType',
+                json: JSON.stringify({
+                    treatment_category_id: parseInt(typeId),
+                    category_name: typeName,
+                    description: typeDesc,
+                    is_active: parseInt(isActive)
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Type updated successfully',
+                    icon: 'success'
                 });
 
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Treatment type updated successfully',
-                        icon: 'success'
-                    });
+                // Reload data
+                await loadTreatmentTypes();
 
-                    // Reload data
-                    await loadTreatmentTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editTreatmentTypeModal'));
-                    modal.hide();
-                } else {
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to update treatment type',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editTreatmentTypeModal'));
+                modal.hide();
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error updating treatment type',
+                    text: data.message || 'Failed to update treatment type',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error updating type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error updating treatment type',
+                icon: 'error'
+            });
+        }
     }
 
     // Search input event listener

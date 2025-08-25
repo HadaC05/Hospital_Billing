@@ -66,9 +66,27 @@ class Treatment_Types
     {
         include 'connection-pdo.php';
 
+        // check duplicate name
+        $checkSql = "
+            SELECT COUNT(*) 
+            FROM tbl_treatment_category 
+            WHERE category_name = :category_name
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':category_name', $data['category_name']);
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
+
         $sql = "
-            INSERT INTO tbl_treatment_category (category_name, description)
-            VALUES (:category_name, :description)
+            INSERT INTO tbl_treatment_category (category_name, description, is_active)
+            VALUES (:category_name, :description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
@@ -83,14 +101,36 @@ class Treatment_Types
     }
 
     // update existing type 
-    function updateType($category_name, $description, $treatment_category_id)
+    function updateType($category_name, $description, $treatment_category_id, $is_active)
     {
         include 'connection-pdo.php';
+
+        // check duplicate name
+        $checkSql = "
+            SELECT COUNT(*) 
+            FROM tbl_treatment_category 
+            WHERE category_name = :category_name
+            AND treatment_category_id != :treatment_category_id
+        ";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':category_name', $data['category_name']);
+        $checkStmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
+
+        $checkStmt->execute();
+
+        if ($checkStmt->fetchColumn() > 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'A type with this name already exists'
+            ]);
+            return;
+        }
 
         $sql = "
             UPDATE tbl_treatment_category
             SET category_name = :category_name,
-                description = :description
+                description = :description,
+                is_active = :is_active
             WHERE treatment_category_id = :treatment_category_id
         ";
 
@@ -98,10 +138,14 @@ class Treatment_Types
         $stmt->bindParam(':category_name', $category_name);
         $stmt->bindParam(':description', $description);
         $stmt->bindParam(':treatment_category_id', $treatment_category_id);
+        $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
-        echo json_encode(['success' => $success, 'message' => $success ? 'Updated succesfully' : 'Failed to update']);
+        echo json_encode([
+            'success' => $success,
+            'message' => $success ? 'Updated succesfully' : 'Failed to update'
+        ]);
     }
 }
 
@@ -147,6 +191,12 @@ switch ($operation) {
         $treatment_category_id = $data['treatment_category_id'];
         $category_name = $data['category_name'];
         $description = $data['description'];
-        $treatmentType->updateType($category_name, $description, $treatment_category_id);
+        $is_active = $data['is_active'];
+        $treatmentType->updateType(
+            $category_name,
+            $description,
+            $treatment_category_id,
+            $is_active
+        );
         break;
 }

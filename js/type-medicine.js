@@ -10,15 +10,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // DOM elements
+    // type management functionality
     const tableBody = document.getElementById('medicine-type-list');
-    const typeForm = document.getElementById('addMedTypeForm');
-    const editForm = document.getElementById('editMedTypeForm');
-    const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
-
     let medTypes = [];
     let filteredTypes = [];
+
+    // modal elements
+    const addModal = new bootstrap.Modal(document.getElementById('addMedTypeModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editMedTypeModal'));
+
+    // Form elements
+    const typeForm = document.getElementById('addMedTypeForm');
+    const editForm = document.getElementById('editMedTypeForm');
+
+    // button event listeners
+    document.getElementById('saveTypeBtn').addEventListener('click', saveType);
+    document.getElementById('updateTypeBtn').addEventListener('click', updateType);
+
+    // Search and filter elements
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
@@ -52,9 +63,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const data = response.data;
+
             if (data.success && Array.isArray(data.types)) {
                 medTypes = data.types;
                 filteredTypes = [...medTypes];
+
                 renderTable(filteredTypes, data.pagination);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="3">${data.message || 'No data found'}</td></tr>`;
@@ -84,18 +97,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tableBody.innerHTML = '';
         typesToRender.forEach(medType => {
+            const isActive = medType.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = medType.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+
             const row = `
                 <tr>
                     <td>${medType.med_type_name}</td>
                     <td>${medType.description}</td>
+                    <td><span class="${statusBadge}">${isActive}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-warning edit-btn" data-id="${medType.med_type_id}">Edit</button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editType(${medType.med_type_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </td>
                 </tr>
             `;
             tableBody.innerHTML += row;
         });
 
+        // update pagination controls
         if (paginationData) {
             pagination.calculatePagination(
                 paginationData.totalItems,
@@ -130,118 +150,137 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Add medicine type
-    if (typeForm) {
-        typeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function saveType(e) {
+        e.preventDefault();
 
-            const data = {
-                med_type_name: document.getElementById('med_type_name').value.trim(),
-                description: document.getElementById('description').value.trim()
-            };
+        const typeName = document.getElementById('med_type_name').value.trim();
+        const typeDesc = document.getElementById('description').value.trim();
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-medicine-types.php`, {
-                    operation: 'addMedicineType',
-                    json: JSON.stringify(data)
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all require fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-medicine-types.php`, {
+                operation: 'addMedicineType',
+                json: JSON.stringify({
+                    med_type_name: typeName,
+                    description: typeDesc,
+                    is_active: 1
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Medicine type added successfully!',
+                    icon: 'success'
                 });
 
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Medicine type added successfully!',
-                        icon: 'success'
-                    });
+                addModal.hide();
+                typeForm.reset();
+                await loadMedicineTypes();
 
-                    // Reset form and reload data
-                    typeForm.reset();
-                    await loadMedicineTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addMedTypeModal'));
-                    modal.hide();
-                } else {
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to add medicine type.',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error adding medicine type',
+                    text: data.message || 'Failed to add medicine type.',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error adding type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error adding medicine type',
+                icon: 'error'
+            });
+        }
     }
 
     // Edit button click handler
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const medTypeId = e.target.dataset.id;
-            const medType = medTypes.find(mt => mt.med_type_id == medTypeId);
-
-            if (medType) {
-                document.getElementById('edit_med_type_id').value = medType.med_type_id;
-                document.getElementById('edit_med_type_name').value = medType.med_type_name;
-                document.getElementById('edit_description').value = medType.description;
-
-                const modal = new bootstrap.Modal(document.getElementById('editMedTypeModal'));
-                modal.show();
-            }
+    window.editType = async function (typeId) {
+        const type = medTypes.find(mt => mt.med_type_id == typeId);
+        if (!type) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Medicine type not found',
+                icon: 'warning'
+            });
+            return;
         }
-    });
+
+        // Populate edit form
+        document.getElementById('edit_med_type_id').value = type.med_type_id;
+        document.getElementById('edit_med_type_name').value = type.med_type_name;
+        document.getElementById('edit_description').value = type.description;
+        document.getElementById('edit_is_active').value = type.is_active;
+
+        editModal.show();
+    }
 
     // Edit form submission
-    if (editForm) {
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    async function updateType(e) {
+        e.preventDefault();
 
-            const data = {
-                med_type_id: document.getElementById('edit_med_type_id').value,
-                med_type_name: document.getElementById('edit_med_type_name').value.trim(),
-                description: document.getElementById('edit_description').value.trim()
-            };
+        const typeId = document.getElementById('edit_med_type_id').value;
+        const typeName = document.getElementById('edit_med_type_name').value.trim();
+        const typeDesc = document.getElementById('edit_description').value.trim();
+        const isActive = document.getElementById('edit_is_active').value;
 
-            try {
-                const response = await axios.post(`${baseApiUrl}/get-medicine-types.php`, {
-                    operation: 'updateMedType',
-                    json: JSON.stringify(data)
+        if (!typeName || !typeDesc) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields',
+                icon: 'warning'
+            });
+            return;
+        }
+
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/get-medicine-types.php`, {
+                operation: 'updateMedType',
+                json: JSON.stringify({
+                    med_type_id: parseInt(typeId),
+                    med_type_name: typeName,
+                    description: typeDesc,
+                    is_active: parseInt(isActive)
+                })
+            });
+
+            const data = response.data;
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Type updated successfully!',
+                    icon: 'success'
                 });
 
-                const resData = response.data;
-                if (resData.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: 'Medicine type updated successfully!',
-                        icon: 'success'
-                    });
+                editModal.hide();
+                await loadMedicineTypes();
 
-                    // Reload data
-                    await loadMedicineTypes();
-
-                    // Close modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editMedTypeModal'));
-                    modal.hide();
-                } else {
-                    Swal.fire({
-                        title: 'Failed',
-                        text: 'Failed to update medicine type',
-                        icon: 'error'
-                    });
-                }
-            } catch (error) {
-                console.error(error);
+            } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Error updating medicine type',
+                    text: data.message || 'Failed to update type',
                     icon: 'error'
                 });
             }
-        });
+        } catch (error) {
+            console.error('Error updating type:', error);
+            Swal.fire({
+                title: 'Failed',
+                text: 'Error updating medicine type',
+                icon: 'error'
+            });
+        }
     }
 
     // Search input event listener
