@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // type management functionality
     const tableBody = document.getElementById('treatment-type-list');
-    let treatmentTypes = [];
+    let allTypes = [];
     let filteredTypes = [];
 
     // form elements
@@ -29,51 +29,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // search and filter elements
     const searchInput = document.getElementById('searchInput');
-    const filterSelect = document.getElementById('filterSelect');
+    const statusFilter = document.getElementById('statusFilter');
+    const sortBy = document.getElementById('sortBy');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadLabtestTypes(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadLabtestTypes(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
-    // Load treatment types
-    async function loadTreatmentTypes(page = 1, itemsPerPage = 10, search = '') {
+    // Fetch all labtest types once (bypass server-side pagination)
+    async function loadTreatmentTypes() {
         if (!tableBody) {
             console.error('Table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="3">Treatment types loading...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Treatment types loading...</td></tr>';
 
         try {
+            // request a very large page size to retrieve all records
             const response = await axios.get(`${baseApiUrl}/get-treatment-types.php`, {
                 params: {
                     operation: 'getTypes',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search,
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: '',
                     json: JSON.stringify({})
                 }
             });
 
             const data = response.data;
             if (data.success && Array.isArray(data.types)) {
-                treatmentTypes = data.types;
-                filteredTypes = [...treatmentTypes];
-
-                renderTable(filteredTypes, data.pagination);
+                allTypes = data.types;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
-                tableBody.innerHTML = '<tr><td colspan="3">No treatment types found</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4">No treatment types found</td></tr>';
             }
         } catch (error) {
             console.error('Error loading treatment types: ', error);
-            tableBody.innerHTML = '<tr><td colspan="3">Failed to load treatment types</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">Failed to load treatment types</td></tr>';
         }
     }
 
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (typesToRender.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="3">No treatment types found</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4">No treatment types found</td></tr>';
             const paginationContainer = document.getElementById('pagination-container');
             if (paginationContainer) {
                 paginationContainer.innerHTML = '';
@@ -124,26 +125,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Filter treatment types based on search and filter criteria
-    function filterTreatmentTypes() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const filterType = filterSelect.value;
+    function applyFiltersAndSort() {
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
+        const statusValue = (statusFilter?.value || 'all');
+        const sortValue = (sortBy?.value || 'name-asc');
 
-        filteredTypes = treatmentTypes.filter(type => {
+        filteredTypes = allTypes.filter(type => {
             const matchesSearch = searchTerm === '' ||
-                type.category_name.toLowerCase().includes(searchTerm) ||
-                type.description.toLowerCase().includes(searchTerm);
+                String(type.category_name || '').toLowerCase().includes(searchTerm) ||
+                String(type.description || '').toLowerCase().includes(searchTerm);
 
-            let matchesFilter = true;
-            if (filterType === 'name') {
-                matchesFilter = type.category_name.toLowerCase().includes(searchTerm);
-            } else if (filterType === 'description') {
-                matchesFilter = type.description.toLowerCase().includes(searchTerm);
-            }
+            const isActive = Number(type.is_active) === 1;
+            const matchesStatus = statusValue === 'all' ||
+                (statusValue === 'active' && isActive) ||
+                (statusValue === 'inactive' && !isActive);
 
-            return matchesSearch && matchesFilter;
+            return matchesSearch && matchesStatus;
         });
 
-        renderTable(filteredTypes);
+        // Sort by name asc/desc
+        filteredTypes.sort((a, b) => {
+            const nameA = String(a.category_name || '').toLowerCase();
+            const nameB = String(b.category_name || '').toLowerCase();
+            if (nameA < nameB) return sortValue === 'name-asc' ? -1 : 1;
+            if (nameA > nameB) return sortValue === 'name-asc' ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Render current page from filteredTypes
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredTypes, page, itemsPerPage);
+        renderTable(data, pageData);
     }
 
     // Add new treatment type
@@ -203,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit button click handler
     window.editType = async function (typeId) {
-        const type = treatmentTypes.find(tt => tt.treatment_category_id == typeId)
+        const type = allTypes.find(tt => tt.treatment_category_id == typeId)
         if (!type) {
             Swal.fire({
                 title: 'Warning',
@@ -259,12 +272,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
 
-                // Reload data
+                editModal.hide();
                 await loadTreatmentTypes();
-
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editTreatmentTypeModal'));
-                modal.hide();
             } else {
                 Swal.fire({
                     title: 'Failed',
@@ -282,14 +291,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Search input event listener
+    // Event listeners for controls
     if (searchInput) {
-        searchInput.addEventListener('input', filterTreatmentTypes);
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
     }
 
-    // Filter select event listener
-    if (filterSelect) {
-        filterSelect.addEventListener('change', filterTreatmentTypes);
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
     }
 
     // Initial load
