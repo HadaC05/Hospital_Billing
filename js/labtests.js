@@ -11,19 +11,122 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function renderTable(items, paginationData = null) {
+        if (!tableBody) return;
+
+        if (!items || items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5">No lab tests found</td></tr>';
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        items.forEach(test => {
+            const isActive = test.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = test.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+            const row = `
+                <tr>
+                    <td>${test.test_name}</td>
+                    <td>${test.labtest_category_name}</td>
+                    <td>₱${parseFloat(test.unit_price).toFixed(2)}</td>
+                    <td><span class="${statusBadge}">${isActive}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editLabtest(${test.labtest_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteLabtest(${test.labtest_id}, '${test.test_name}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
+    }
+
+    function applyFiltersAndSort() {
+        const term = (searchInput?.value || '').toLowerCase().trim();
+        const categoryVal = categoryFilter?.value || 'all';
+        const statusVal = statusFilter?.value || 'all';
+        const sortFieldVal = sortField?.value || 'name';
+        const sortOrderVal = sortOrder?.value || 'asc';
+
+        filteredLabtests = allLabtests.filter(test => {
+            const matchesSearch = term === '' ||
+                String(test.test_name || '').toLowerCase().includes(term) ||
+                String(test.labtest_category_name || '').toLowerCase().includes(term);
+
+            const matchesCategory = categoryVal === 'all' || String(test.labtest_category_id) === String(categoryVal);
+            const isActive = Number(test.is_active) === 1;
+            const matchesStatus = statusVal === 'all' ||
+                (statusVal === 'active' && isActive) ||
+                (statusVal === 'inactive' && !isActive);
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        filteredLabtests.sort((a, b) => {
+            switch (sortFieldVal) {
+                case 'name': {
+                    const A = String(a.test_name || '').toLowerCase();
+                    const B = String(b.test_name || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'category': {
+                    const A = String(a.labtest_category_name || '').toLowerCase();
+                    const B = String(b.labtest_category_name || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'price': {
+                    const A = Number(a.unit_price) || 0;
+                    const B = Number(b.unit_price) || 0;
+                    return sortOrderVal === 'asc' ? (A - B) : (B - A);
+                }
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredLabtests, page, itemsPerPage);
+        renderTable(data, pageData);
+    }
 
     // Labtest management functionality
     const tableBody = document.getElementById('labtest-list');
-    let labtests = [];
+    let allLabtests = [];
+    let filteredLabtests = [];
+
+    // Controls
+    const searchInput = document.getElementById('labtestSearchInput');
+    const categoryFilter = document.getElementById('labtestCategoryFilter');
+    const statusFilter = document.getElementById('labtestStatusFilter');
+    const sortField = document.getElementById('labtestSortField');
+    const sortOrder = document.getElementById('labtestSortOrder');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadLabtest(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadLabtest(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
@@ -41,112 +144,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('updateLabtestBtn').addEventListener('click', updateLabtest);
     document.getElementById('confirmDeleteBtn').addEventListener('click', deleteLabtest);
 
-    // load labtest types
+    // Load labtest types
     async function loadLabtestTypes() {
         try {
             const response = await axios.get(`${baseApiUrl}/get-labtests.php`, {
-                params: {
-                    operation: 'getTypes'
-                }
+                params: { operation: 'getTypes' }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                const options = data.types.map(type => {
+                const allTypes = data.types;
+                const activeTypes = allTypes.filter(t => Number(t.is_active) === 1);
+
+                const activeOptions = activeTypes.map(type => {
+                    return `<option value="${type.labtest_category_id}">${type.labtest_category_name}</option>`;
+                }).join('');
+
+                const allOptions = allTypes.map(type => {
                     return `<option value="${type.labtest_category_id}">${type.labtest_category_name}</option>`;
                 }).join('');
 
                 // Populate all category dropdowns
                 const addCategorySelect = document.getElementById('add_labtest_category_id');
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
+                const filterCategorySelect = document.getElementById('labtestCategoryFilter');
 
-                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
-                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
+                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
             } else {
                 const addCategorySelect = document.getElementById('add_labtest_category_id');
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
+                const filterCategorySelect = document.getElementById('labtestCategoryFilter');
 
                 if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">No categories available</option>`;
                 if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>`;
             }
         } catch (error) {
             console.error('Failed to load labtest types', error);
         }
     }
 
-    // load labtest list
-    async function loadLabtest(page = 1, itemsPerPage = 10, search = '') {
+    // Load all labtests once for full-list search
+    async function loadAllLabtests() {
         if (!tableBody) {
             console.error('Labtest table body not found');
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="5">Loading labtests...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5">Loading lab tests...</td></tr>';
 
         try {
             const response = await axios.get(`${baseApiUrl}/get-labtests.php`, {
                 params: {
                     operation: 'getLabtests',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: ''
                 }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.labtests)) {
-                labtests = data.labtests;
-                const paginationData = data.pagination;
-
-
-                if (labtests.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4">No labtests found</td></tr>';
-                    // Clear pagination controls
-                    const paginationContainer = document.getElementById('pagination-container');
-                    if (paginationContainer) {
-                        paginationContainer.innerHTML = '';
-                    }
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                labtests.forEach(test => {
-                    const isActive = test.is_active == 1 ? 'Active' : 'Inactive';
-                    const statusBadge = test.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
-
-                    const row = `
-                        <tr>
-                            <td>${test.test_name}</td>
-                            <td>${test.labtest_category_name}</td>
-                            <td>₱${parseFloat(test.unit_price).toFixed(2)}</td>
-                            <td><span class="${statusBadge}">${isActive}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editLabtest(${test.labtest_id})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteLabtest(${test.labtest_id}, '${test.test_name}')" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-
-                // Update pagination controls
-                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
-                pagination.generatePaginationControls('pagination-container');
+                allLabtests = data.labtests;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
-                tableBody.innerHTML = `<tr><td colspan="4">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
             }
         } catch (error) {
-            console.error('Error loading labtests: ', error);
-            tableBody.innerHTML = '<tr><td colspan="4">Failed to load labtests</td></tr>';
-
+            console.error('Error loading lab tests: ', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Failed to load lab tests</td></tr>';
         }
     }
 
@@ -187,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 addModal.hide();
                 addForm.reset();
-                await loadLabtest();
+                await loadAllLabtests();
             } else {
                 Swal.fire({
                     title: 'Failed',
@@ -207,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit lab test
     window.editLabtest = async function (labtestId) {
-        const labtest = labtests.find(test => test.labtest_id == labtestId);
+        const labtest = allLabtests.find(test => test.labtest_id == labtestId);
         if (!labtest) {
             Swal.fire({
                 title: 'Failed',
@@ -264,12 +335,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 editModal.hide();
-
-                await loadLabtest();
+                await loadAllLabtests();
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to update lab test.',
+                    text: data.message || 'Failed to update lab test',
                     icon: 'error'
                 });
             }
@@ -310,11 +380,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 deleteModal.hide();
-                await loadLabtest();
+                await loadAllLabtests();
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to delete lab test',
+                    text: data.message || 'Failed to delete lab test',
                     icon: 'error'
                 });
             }
@@ -330,5 +400,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize the module
     await loadLabtestTypes();
-    await loadLabtest();
+
+    // Wire control events
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (sortField) {
+        sortField.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+    if (sortOrder) {
+        sortOrder.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+
+    await loadAllLabtests();
 });

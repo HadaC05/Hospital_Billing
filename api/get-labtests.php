@@ -31,22 +31,65 @@ class LabTestManager
         $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
         $search = isset($params['search']) ? $params['search'] : '';
 
+        // Get filter parameters
+        $statusFilter = isset($params['statusFilter']) ? $params['statusFilter'] : '';
+        $categoryFilter = isset($params['categoryFilter']) ? $params['categoryFilter'] : '';
+
+        // Get sorting parameters
+        $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'test_name';
+        $sortOrder = isset($params['sortOrder']) ? $params['sortOrder'] : 'ASC';
+
         // Calculate offset
         $offset = ($page - 1) * $itemsPerPage;
 
-        // Build WHERE clause for search
-        $whereClause = '';
+        // Build WHERE clause for search and filters
+        $whereConditions = [];
         $searchParams = [];
 
         if (!empty($search)) {
-            $whereClause = "WHERE l.test_name LIKE :search 
-                            OR lc.labtest_category_name LIKE :search";
+            $whereConditions[] = "(l.test_name LIKE :search OR lc.labtest_category_name LIKE :search)";
             $searchParams[':search'] = "%$search%";
+        }
+
+        if (!empty($statusFilter)) {
+            $whereConditions[] = "l.is_active = :statusFilter";
+            $searchParams[':statusFilter'] = $statusFilter;
+        }
+
+        if (!empty($categoryFilter)) {
+            $whereConditions[] = "l.labtest_category_id = :categoryFilter";
+            $searchParams[':categoryFilter'] = $categoryFilter;
+        }
+
+        $whereClause = '';
+        if (!empty($whereConditions)) {
+            $whereClause = "WHERE " . implode(' AND ', $whereConditions);
+        }
+
+        // Validate sort parameters
+        $allowedSortFields = ['test_name', 'labtest_category_name', 'unit_price'];
+        $allowedSortOrders = ['ASC', 'DESC'];
+
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'test_name';
+        }
+        if (!in_array(strtoupper($sortOrder), $allowedSortOrders)) {
+            $sortOrder = 'ASC';
+        }
+
+        // Build ORDER BY clause
+        $orderByClause = "ORDER BY ";
+        if ($sortBy === 'test_name') {
+            $orderByClause .= "l.test_name $sortOrder";
+        } elseif ($sortBy === 'labtest_category_name') {
+            $orderByClause .= "lc.labtest_category_name $sortOrder";
+        } elseif ($sortBy === 'unit_price') {
+            $orderByClause .= "l.unit_price $sortOrder";
         }
 
         // Get total count
         $countSql = "SELECT COUNT(*) as total FROM tbl_labtest l 
-                        JOIN tbl_labtest_category lc ON l.labtest_id = lc.labtest_category_id 
+                        JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id 
                         $whereClause";
         $countStmt = $conn->prepare($countSql);
         if (!empty($searchParams)) {
@@ -55,7 +98,6 @@ class LabTestManager
             $countStmt->execute();
         }
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-
 
         $sql = "
             SELECT 
@@ -68,7 +110,7 @@ class LabTestManager
             FROM tbl_labtest l
             JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
             $whereClause
-            ORDER BY l.test_name ASC
+            $orderByClause
             LIMIT :limit OFFSET :offset
         ";
 
@@ -83,7 +125,6 @@ class LabTestManager
         }
         $stmt->execute();
         $labtests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 
         // Calculate pagination info
         $totalPages = ceil($totalCount / $itemsPerPage);
@@ -402,6 +443,12 @@ if ($method === 'GET') {
     $page = $_GET['page'] ?? 1;
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
+
+    // Get filter and sort parameters from GET request
+    $statusFilter = $_GET['statusFilter'] ?? '';
+    $categoryFilter = $_GET['categoryFilter'] ?? '';
+    $sortBy = $_GET['sortBy'] ?? 'test_name';
+    $sortOrder = $_GET['sortOrder'] ?? 'ASC';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
@@ -413,6 +460,12 @@ if ($method === 'GET') {
     $page = $payload['page'] ?? 1;
     $itemsPerPage = $payload['itemsPerPage'] ?? 10;
     $search = $payload['search'] ?? '';
+
+    // Get filter and sort parameters from POST request
+    $statusFilter = $payload['statusFilter'] ?? '';
+    $categoryFilter = $payload['categoryFilter'] ?? '';
+    $sortBy = $payload['sortBy'] ?? 'test_name';
+    $sortOrder = $payload['sortOrder'] ?? 'ASC';
 }
 
 $data = json_decode($json, true) ?? [];
@@ -423,7 +476,11 @@ switch ($operation) {
         $params = [
             'page' => $page,
             'itemsPerPage' => $itemsPerPage,
-            'search' => $search
+            'search' => $search,
+            'statusFilter' => $statusFilter,
+            'categoryFilter' => $categoryFilter,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder
         ];
         $manager->getLabtests($params);
         break;
