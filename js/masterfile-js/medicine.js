@@ -2,6 +2,74 @@ console.log('medicine.js is working');
 
 const baseApiUrl = 'http://localhost/hospital_billing/api';
 
+// Global variables
+let allMedicines = [];
+let filteredMedicines = [];
+let tableBody;
+let searchInput;
+let typeFilter;
+let unitFilter;
+let statusFilter;
+let sortField;
+let sortOrder;
+let pagination;
+let addModal;
+let editModal;
+let addForm;
+let editForm;
+
+// Edit medicine function - must be global for onclick handlers
+window.editMedicine = async function (medId) {
+    try {
+        console.log('editMedicine called with ID:', medId);
+
+        const med = allMedicines.find(m => m.med_id == medId);
+        if (!med) {
+            Swal.fire({
+                title: "Warning",
+                text: "Medicine not found",
+                icon: "warning"
+            });
+            return;
+        }
+
+        console.log('Found medicine:', med);
+
+        // Populate edit form
+        document.getElementById('edit_med_id').value = med.med_id;
+        document.getElementById('edit_med_name').value = med.med_name;
+        document.getElementById('edit_med_type_id').value = med.med_type_id;
+        document.getElementById('edit_unit_price').value = med.unit_price;
+        document.getElementById('edit_stock_quantity').value = med.stock_quantity;
+        document.getElementById('edit_unit_id').value = med.unit_id;
+        document.getElementById('edit_is_active').value = med.is_active;
+
+        console.log('Form populated, showing modal...');
+
+        // Initialize modal if not already done
+        if (!editModal) {
+            const modalElement = document.getElementById('editMedicineModal');
+            if (!modalElement) {
+                console.error('Modal element not found!');
+                return;
+            }
+            editModal = new bootstrap.Modal(modalElement);
+            console.log('Modal initialized');
+        }
+
+        editModal.show();
+        console.log('Modal show() called');
+
+    } catch (error) {
+        console.error('Error in editMedicine:', error);
+        Swal.fire({
+            title: "Error",
+            text: "Failed to open edit modal: " + error.message,
+            icon: "error"
+        });
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
     const user = JSON.parse(localStorage.getItem('user'));
@@ -114,20 +182,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderTable(data, pageData);
     }
     // Medicine management functionality
-    const tableBody = document.getElementById('medicine-list');
-    let allMedicines = [];
-    let filteredMedicines = [];
+    tableBody = document.getElementById('medicine-list');
 
     // Controls
-    const searchInput = document.getElementById('medSearchInput');
-    const typeFilter = document.getElementById('medTypeFilter');
-    const unitFilter = document.getElementById('medUnitFilter');
-    const statusFilter = document.getElementById('medStatusFilter');
-    const sortField = document.getElementById('medSortField');
-    const sortOrder = document.getElementById('medSortOrder');
+    searchInput = document.getElementById('medSearchInput');
+    typeFilter = document.getElementById('medTypeFilter');
+    unitFilter = document.getElementById('medUnitFilter');
+    statusFilter = document.getElementById('medStatusFilter');
+    sortField = document.getElementById('medSortField');
+    sortOrder = document.getElementById('medSortOrder');
 
     // Initialize pagination utility
-    const pagination = new PaginationUtility({
+    pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
             renderCurrentPage(page);
@@ -138,12 +204,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Modal elements
-    const addModal = new bootstrap.Modal(document.getElementById('addMedicineModal'));
-    const editModal = new bootstrap.Modal(document.getElementById('editMedicineModal'));
+    addModal = new bootstrap.Modal(document.getElementById('addMedicineModal'));
+    editModal = new bootstrap.Modal(document.getElementById('editMedicineModal'));
 
     // Form elements
-    const addForm = document.getElementById('addMedicineForm');
-    const editForm = document.getElementById('editMedicineForm');
+    addForm = document.getElementById('addMedicineForm');
+    editForm = document.getElementById('editMedicineForm');
 
     // Button event listeners
     document.getElementById('saveMedicineBtn').addEventListener('click', saveMedicine);
@@ -287,10 +353,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 operation: 'addMedicine',
                 json: JSON.stringify({
                     med_name: medName,
-                    med_type_id: typeId,
+                    med_type_id: parseInt(typeId),
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    unit_id: medUnit,
+                    unit_id: parseInt(medUnit),
                     is_active: 1
                 })
             });
@@ -304,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 addModal.hide();
                 addForm.reset();
-                await loadMedicines();
+                await loadAllMedicines();
             } else {
                 Swal.fire({
                     title: 'Failed',
@@ -322,29 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Edit medicine
-    window.editMedicine = async function (medId) {
-        const med = allMedicines.find(m => m.med_id == medId);
-        if (!med) {
-            Swal.fire({
-                title: "Warning",
-                text: "Medicine not found",
-                icon: "warning"
-            });
-            return;
-        }
 
-        // Populate edit form
-        document.getElementById('edit_med_id').value = med.med_id;
-        document.getElementById('edit_med_name').value = med.med_name;
-        document.getElementById('edit_med_type_id').value = med.med_type_id;
-        document.getElementById('edit_unit_price').value = med.unit_price;
-        document.getElementById('edit_stock_quantity').value = med.stock_quantity;
-        document.getElementById('edit_unit_id').value = med.unit_id;
-        document.getElementById('edit_is_active').value = med.is_active;
-
-        editModal.show();
-    };
 
     // Update medicine
     async function updateMedicine() {
@@ -371,10 +415,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 json: JSON.stringify({
                     med_id: parseInt(medId),
                     med_name: medName,
-                    med_type_id: typeId,
+                    med_type_id: parseInt(typeId),
                     unit_price: parseFloat(unitPrice),
                     stock_quantity: parseInt(stockQty),
-                    unit_id: medUnit,
+                    unit_id: parseInt(medUnit),
                     is_active: parseInt(isActive)
                 })
             });
