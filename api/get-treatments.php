@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 class Treatments
@@ -128,7 +126,7 @@ class Treatments
     {
         include 'connection-pdo.php';
         $sql = "
-            SELECT treatment_category_id, category_name
+            SELECT treatment_category_id, category_name, is_active
             FROM tbl_treatment_category
             ORDER BY category_name ASC
         ";

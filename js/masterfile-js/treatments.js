@@ -166,9 +166,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const editCategorySelect = document.getElementById('edit_treatment_category_id');
                 const filterCategorySelect = document.getElementById('treatmentCategoryFilter');
 
-                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
-                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
-                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
+                if (addCategorySelect) {
+                    addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
+                }
+                if (editCategorySelect) {
+                    editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
+                }
+                if (filterCategorySelect) {
+                    filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
+                }
             } else {
                 const addCategorySelect = document.getElementById('treatment_category_id');
                 const editCategorySelect = document.getElementById('edit_treatment_category_id');

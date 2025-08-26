@@ -171,9 +171,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const editTypeSelect = document.getElementById('edit_room_type_id');
                 const filterTypeSelect = document.getElementById('roomTypeFilter');
 
-                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + allOptions;
-                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
+                if (addTypeSelect) {
+                    addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
+                }
+                if (editTypeSelect) {
+                    editTypeSelect.innerHTML = `<option value="">Select Type</option>` + allOptions;
+                }
+                if (filterTypeSelect) {
+                    filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
+                }
             } else {
                 const addTypeSelect = document.getElementById('room_type_id');
                 const editTypeSelect = document.getElementById('edit_room_type_id');

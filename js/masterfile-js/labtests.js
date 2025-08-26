@@ -35,9 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <button class="btn btn-sm btn-outline-primary me-1" onclick="editLabtest(${test.labtest_id})" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteLabtest(${test.labtest_id}, '${test.test_name}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
                     </td>
                 </tr>
             `;
@@ -133,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Modal elements
     const addModal = new bootstrap.Modal(document.getElementById('addLabtestModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editLabtestModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteLabtestModal'));
 
     // Form elements
     const addForm = document.getElementById('addLabtestForm');
@@ -142,7 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Button event listeners
     document.getElementById('saveLabtestBtn').addEventListener('click', saveLabtest);
     document.getElementById('updateLabtestBtn').addEventListener('click', updateLabtest);
-    document.getElementById('confirmDeleteBtn').addEventListener('click', deleteLabtest);
 
     // Load labtest types
     async function loadLabtestTypes() {
@@ -170,9 +165,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
                 const filterCategorySelect = document.getElementById('labtestCategoryFilter');
 
-                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
-                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
-                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
+                if (addCategorySelect) {
+                    addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
+                }
+                if (editCategorySelect) {
+                    editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
+                }
+                if (filterCategorySelect) {
+                    filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
+                }
             } else {
                 const addCategorySelect = document.getElementById('add_labtest_category_id');
                 const editCategorySelect = document.getElementById('edit_labtest_category_id');
@@ -348,51 +349,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({
                 title: 'Failed',
                 text: 'Failed to update lab test',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Confirm delete lab test
-    window.confirmDeleteLabtest = function (labtestId, testName) {
-        document.getElementById('delete_labtest_id').value = labtestId;
-        document.getElementById('deleteLabtestName').textContent = testName;
-        deleteModal.show();
-    };
-
-    // Delete lab test
-    async function deleteLabtest() {
-        const labtestId = document.getElementById('delete_labtest_id').value;
-
-        try {
-            const response = await axios.post(`${baseApiUrl}/get-labtests.php`, {
-                operation: 'deleteLabtest',
-                json: JSON.stringify({
-                    labtest_id: parseInt(labtestId)
-                })
-            });
-
-            const data = response.data;
-            if (data.success) {
-                Swal.fire({
-                    title: 'Success',
-                    text: 'Lab test deleted successfully!',
-                    icon: 'success'
-                });
-                deleteModal.hide();
-                await loadAllLabtests();
-            } else {
-                Swal.fire({
-                    title: 'Failed',
-                    text: data.message || 'Failed to delete lab test',
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error deleting lab test:', error);
-            Swal.fire({
-                title: 'Failed',
-                text: 'Failed to delete lab test',
                 icon: 'error'
             });
         }

@@ -133,7 +133,7 @@ class Rooms
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT room_type_id, room_type_name
+            SELECT room_type_id, room_type_name, is_active
             FROM tbl_room_type
             ORDER BY room_type_name ASC
         ";

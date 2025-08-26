@@ -137,7 +137,7 @@ class Surgeries
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT surgery_type_id, surgery_type_name
+            SELECT surgery_type_id, surgery_type_name, is_active
             FROM tbl_surgery_type
             ORDER BY surgery_type_name ASC
         ";

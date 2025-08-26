@@ -149,7 +149,7 @@ class LabTestManager
     public function getTypes()
     {
         $sql = "
-            SELECT labtest_category_id, labtest_category_name
+            SELECT labtest_category_id, labtest_category_name, is_active
             FROM tbl_labtest_category
             ORDER BY labtest_category_name ASC
         ";
@@ -302,83 +302,6 @@ class LabTestManager
         }
     }
 
-    // Delete lab test
-    public function deleteLabtest($data)
-    {
-        try {
-            // Validate required fields
-            if (empty($data['labtest_id'])) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Missing required field: labtest_id'
-                ]);
-                return;
-            }
-
-            // Check if test exists
-            $checkSql = "SELECT COUNT(*) FROM tbl_labtest WHERE labtest_id = :labtest_id";
-            $checkStmt = $this->conn->prepare($checkSql);
-            $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
-            $checkStmt->execute();
-
-            if ($checkStmt->fetchColumn() == 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Lab test not found'
-                ]);
-                return;
-            }
-
-            // Check if lab test is being used in any invoices or patient records
-            $usageSql = "SELECT COUNT(*) FROM tbl_invoice_labtest WHERE labtest_id = :labtest_id";
-            $usageStmt = $this->conn->prepare($usageSql);
-            $usageStmt->bindParam(':labtest_id', $data['labtest_id']);
-            $usageStmt->execute();
-
-            if ($usageStmt->fetchColumn() > 0) {
-                // Instead of deleting, mark as inactive
-                $deactivateSql = "UPDATE tbl_labtest SET is_active = 0 WHERE labtest_id = :labtest_id";
-                $deactivateStmt = $this->conn->prepare($deactivateSql);
-                $deactivateStmt->bindParam(':labtest_id', $data['labtest_id']);
-
-                if ($deactivateStmt->execute()) {
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Lab test is being used in records. It has been deactivated instead of deleted.'
-                    ]);
-                } else {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Failed to deactivate lab test'
-                    ]);
-                }
-                return;
-            }
-
-            // If not used in any records, proceed with deletion
-            $sql = "DELETE FROM tbl_labtest WHERE labtest_id = :labtest_id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':labtest_id', $data['labtest_id']);
-
-            if ($stmt->execute()) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Lab test deleted successfully'
-                ]);
-            } else {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Failed to delete lab test'
-                ]);
-            }
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error deleting lab test: ' . $e->getMessage()
-            ]);
-        }
-    }
-
     // Get single lab test details
     public function getLabtestDetails($data)
     {
@@ -492,9 +415,6 @@ switch ($operation) {
         break;
     case 'updateLabtest':
         $manager->updateLabtest($data);
-        break;
-    case 'deleteLabtest':
-        $manager->deleteLabtest($data);
         break;
     case 'getLabtestDetails':
         $manager->getLabtestDetails($data);
