@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Patients</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous">
     <link rel="stylesheet" href="../css/hospital-theme.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="icon" type="image/png" href="../assets/images/favicon-32.png">
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -18,6 +22,7 @@
     <script src="../js/my-patients.js" defer></script>
     <script src="../js/theme-loader.js" defer></script>
 </head>
+
 <body class="d-flex flex-column vh-100">
     <!-- Header -->
     <div id="header-placeholder"></div>
@@ -31,7 +36,8 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2><i class="fas fa-user-injured me-2"></i>My Patients</h2>
                 <div class="d-flex">
-                    <input type="text" id="mp_searchInput" class="form-control me-2" placeholder="Search by name, phone or reason...">
+                    <input type="text" id="mp_searchInput" class="form-control me-2"
+                        placeholder="Search by name, phone or reason...">
                     <select id="mp_statusFilter" class="form-select me-2">
                         <option value="all">All Status</option>
                         <option value="active">Active</option>
@@ -74,4 +80,5 @@
         </main>
     </div>
 </body>
+
 </html>
