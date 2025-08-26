@@ -1,14 +1,6 @@
 console.log('header-loader.js loaded');
 
 document.addEventListener('DOMContentLoaded', async () => {
-<<<<<<< HEAD
-    // Wait for sidebar to be loaded first
-    await waitForSidebar();
-    await loadHeader();
-    updateModuleName();
-});
-
-=======
     // Load header immediately so hamburger and logout appear fast
     await loadHeader();
     // Try to bind hamburger now and also when sidebar arrives
@@ -17,7 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Kept for backward compatibility but no longer used to block header
->>>>>>> test_merge
 async function waitForSidebar() {
     return new Promise((resolve) => {
         const checkSidebar = () => {
@@ -39,28 +30,6 @@ async function loadHeader() {
 
     try {
         const headerResponse = await axios.get('../components/header.html');
-<<<<<<< HEAD
-        if (!headerResponse?.data) return;
-
-        headerPlaceholder.innerHTML = headerResponse.data;
-
-        // Set up hamburger button functionality
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const sidebarElement = document.getElementById('sidebar');
-
-        if (hamburgerBtn && sidebarElement) {
-            hamburgerBtn.addEventListener('click', () => {
-                sidebarElement.classList.toggle('collapsed');
-                localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
-            });
-        }
-
-        // Restore sidebar collapsed state if it exists
-        if (localStorage.getItem('sidebarCollapsed') === 'true' && sidebarElement) {
-            sidebarElement.classList.add('collapsed');
-        }
-
-=======
         if (!headerResponse?.data) {
             injectFallbackHeader(headerPlaceholder);
         } else {
@@ -82,16 +51,10 @@ async function loadHeader() {
         // Try initial hamburger bind (sidebar may not be present yet)
         tryBindHamburger();
 
->>>>>>> test_merge
         // Set up logout button functionality
         await setupLogoutButton();
     } catch (err) {
         console.error('Failed to load header: ', err);
-<<<<<<< HEAD
-    }
-}
-
-=======
         injectFallbackHeader(headerPlaceholder);
     }
 }
@@ -150,7 +113,6 @@ function bindHamburgerWithRetry() {
     }, 50);
 }
 
->>>>>>> test_merge
 async function setupLogoutButton() {
     const logoutBtn = document.getElementById('logout-btn');
     if (!logoutBtn) return;
@@ -164,15 +126,11 @@ async function setupLogoutButton() {
             window.location.href = '../index.html';
         } catch (error) {
             console.error('Logout failed: ', error);
-<<<<<<< HEAD
-            alert('Logout failed. Please try again.');
-=======
             Swal.fire({
                 title: 'Logout Failed',
                 text: 'Logout failed. Please try again.',
                 icon: 'error'
             });
->>>>>>> test_merge
         }
     });
 }
