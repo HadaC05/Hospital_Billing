@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Hospital Billing System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .stat-card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .recent-activity {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <h4 class="text-center mb-4">
+                        <i class="bi bi-hospital-fill"></i> HBS
+                    </h4>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a href="dashboard.html" class="nav-link active" id="nav-dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="patients.html" class="nav-link" id="nav-patients">
+                                <i class="bi bi-people-fill me-2"></i> Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="admissions.html" class="nav-link" id="nav-admissions">
+                                <i class="bi bi-house-add-fill me-2"></i> Admissions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="billing.html" class="nav-link" id="nav-billing">
+                                <i class="bi bi-receipt-cutoff me-2"></i> Billing
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="reports.html" class="nav-link" id="nav-reports">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link" id="nav-settings">
+                                <i class="bi bi-gear-fill me-2"></i> Settings
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <strong class="user-info">User Name</strong>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                            <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logout-btn">Sign out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Dashboard</h2>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3 text-muted">Welcome, <strong class="user-info">User Name</strong></span>
+                        <span class="badge bg-secondary user-role">Role</span>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stat-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-muted">Total Patients</h6>
+                                        <h3 class="mt-2" id="total-patients">0</h3>
+                                    </div>
+                                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stat-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-muted">Active Admissions</h6>
+                                        <h3 class="mt-2" id="active-admissions">0</h3>
+                                    </div>
+                                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                                        <i class="bi bi-house-add-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stat-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-muted">Total Revenue</h6>
+                                        <h3 class="mt-2" id="total-revenue">₱0</h3>
+                                    </div>
+                                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-currency-dollar"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card stat-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="text-muted">Outstanding Bills</h6>
+                                        <h3 class="mt-2" id="outstanding-bills">0</h3>
+                                    </div>
+                                    <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-lg-8">
+                        <div class="card recent-activity">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Revenue Trend</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="revenueChart" height="100"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card recent-activity">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Payment Methods</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="paymentMethodsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card recent-activity">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Recent Activity</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Patient</th>
+                                                <th>Action</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recent-activity-tbody">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">Loading recent activity...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/patient.js"></script>
+    <script src="js/admission.js"></script>
+    <script src="js/billing.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            setActiveNav('nav-dashboard');
+            loadDashboardStats();
+            loadRecentActivity();
+            initializeCharts();
+        });
+
+        async function loadDashboardStats() {
+            try {
+                // Get active admissions count
+                const admissions = await AdmissionAPI.getActiveAdmissions();
+                document.getElementById('active-admissions').textContent = admissions.length;
+
+                // Get billing summary for current month
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                
+                const billingSummary = await BillingAPI.getBillingSummary(firstDay, lastDay);
+                if (billingSummary) {
+                    document.getElementById('total-revenue').textContent = formatCurrency(billingSummary.summary.total_billed || 0);
+                }
+
+                // Get outstanding invoices
+                const outstandingInvoices = await BillingAPI.getOutstandingInvoices();
+                document.getElementById('outstanding-bills').textContent = outstandingInvoices.length;
+
+                // Get patients count (you'll need to implement this in PatientAPI)
+                const patients = await PatientAPI.getPatients();
+                document.getElementById('total-patients').textContent = patients.length;
+
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            const tbody = document.getElementById('recent-activity-tbody');
+            try {
+                // Get recent admissions
+                const admissions = await AdmissionAPI.getActiveAdmissions();
+                tbody.innerHTML = '';
+                
+                admissions.slice(0, 5).forEach(admission => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formatDate(admission.admission_date)}</td>
+                        <td>${admission.patient_fname} ${admission.patient_lname}</td>
+                        <td>Patient Admitted</td>
+                        <td><span class="badge bg-success">Active</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                if (admissions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No recent activity</td></tr>';
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading activity</td></tr>';
+            }
+        }
+
+        function initializeCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [120000, 190000, 150000, 250000, 220000, 300000],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Payment Methods Chart
+            const paymentCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+            new Chart(paymentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cash', 'Credit Card', 'Insurance', 'Check'],
+                    datasets: [{
+                        data: [30, 25, 35, 10],
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#f5576c'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
