@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
                 }
                 if (editTypeSelect) {
-                    editTypeSelect.innerHTML = `<option value="">Select Type</option>` + allOptions;
+                    editTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
                 }
                 if (filterTypeSelect) {
                     filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;

@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
                 }
                 if (editCategorySelect) {
-                    editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
+                    editCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
                 }
                 if (filterCategorySelect) {
                     filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;

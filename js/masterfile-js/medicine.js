@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const filterTypeSelect = document.getElementById('medTypeFilter');
 
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + allOptions;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
                 if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
             } else {
 
