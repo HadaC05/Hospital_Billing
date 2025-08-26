@@ -1,37 +1,35 @@
 <?php
 
-// require_once __DIR__ . '/require_auth.php';
+// require_once __DIR__ . 'require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Labtest_Types
+class Room_Types
 {
-    // get types
+    // get room types
     function getTypes($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // Get pagination parameters
+        // get parameters 
         $page = isset($params['page']) ? (int)$params['page'] : 1;
         $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
-        // $search = isset($params['search']) ? $params['search'] : '';
 
         // Calculate offset
         $offset = ($page - 1) * $itemsPerPage;
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_labtest_category";
+        $countSql = "SELECT COUNT(*) as total FROM tbl_room_type";
         $countStmt = $conn->prepare($countSql);
-
         $countStmt->execute();
 
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         $sql = "
             SELECT *
-            FROM tbl_labtest_category
-            ORDER BY labtest_category_name ASC
+            FROM tbl_room_type
+            ORDER BY room_type_name ASC
             LIMIT :limit OFFSET :offset
         ";
 
@@ -61,19 +59,20 @@ class Labtest_Types
         ]);
     }
 
-    // add new type
-    function addType($data)
+    // add room type
+    function addRoomType($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // check duplicate name
         $checkSql = "
             SELECT COUNT(*) 
-            FROM tbl_labtest_category 
-            WHERE labtest_category_name = :labtest_category_name
+            FROM tbl_room_type
+            WHERE room_type_name = :room_type_name
         ";
+
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
+        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -85,58 +84,60 @@ class Labtest_Types
         }
 
         $sql = "
-            INSERT INTO tbl_labtest_category (labtest_category_name, labtest_category_desc, is_active)
-            VALUES (:labtest_category_name, :labtest_category_desc, 1)
+            INSERT INTO tbl_room_type (room_type_name, room_description, is_active)
+            VALUES (:room_type_name, :room_description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':labtest_category_name', $data['labtest_category_name']);
-        $stmt->bindParam(':labtest_category_desc', $data['labtest_category_desc']);
+        $stmt->bindParam(':room_type_name', $data['room_type_name']);
+        $stmt->bindParam(':room_description', $data['room_description']);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Labtest type added']);
+            echo json_encode(['success' => true, 'message' => 'Room type added']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
-    // update existing type 
-    function updateType($labtest_category_name, $labtest_category_id, $labtest_category_desc, $is_active)
+    // update room type
+    function updateRoomType($room_type_name, $room_description, $room_type_id, $is_active)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check duplicate
+        // check duplicate name
         $checkSql = "
-        SELECT COUNT(*) 
-        FROM tbl_labtest_category 
-        WHERE labtest_category_name = :labtest_category_name AND labtest_category_id != :labtest_category_id";
+            SELECT COUNT(*)
+            FROM tbl_room_type
+            WHERE room_type_name = :room_type_name AND room_type_id != :room_type_id
+        ";
 
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':labtest_category_name', $labtest_category_name);
-        $checkStmt->bindParam(':labtest_category_id', $labtest_category_id);
+        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
+        $checkStmt->bindParam(':room_type_id', $data['room_type_id']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Another type with this name already exists'
+                'message' => 'A type with this name already exists'
             ]);
             return;
         }
 
         $sql = "
-            UPDATE tbl_labtest_category
-            SET labtest_category_name = :labtest_category_name,
-                labtest_category_desc = :labtest_category_desc,
+            UPDATE tbl_room_type
+            SET room_type_name = :room_type_name,
+                room_description = :room_description,
                 is_active = :is_active
-            WHERE labtest_category_id = :labtest_category_id
+            WHERE room_type_id = :room_type_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':labtest_category_name', $labtest_category_name);
-        $stmt->bindParam(':labtest_category_id', $labtest_category_id);
-        $stmt->bindParam(':labtest_category_desc', $labtest_category_desc);
-        $stmt->bindParam(':is_active', $is_active);
+        $stmt->bindParam(':room_type_name', $room_type_name);
+        $stmt->bindParam(':room_description', $room_description);
+        $stmt->bindParam(':room_type_id', $room_type_id);
+        $stmt->bindParam('is_active', $is_active);
+
 
         $success = $stmt->execute();
 
@@ -153,7 +154,6 @@ if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
 
-    // get pagination parameters
     $page = $_GET['page'] ?? 1;
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
@@ -164,7 +164,7 @@ if ($method === 'GET') {
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
 
-    // Get pagination parameters from POST request
+    // Get pagination parameters
     $page = $payload['page'] ?? 1;
     $itemsPerPage = $payload['itemsPerPage'] ?? 10;
     $search = $payload['search'] ?? '';
@@ -172,25 +172,25 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
-$labtestType = new Labtest_Types();
+$roomType = new Room_Types;
 
 switch ($operation) {
-    case 'getTypes':
+    case 'getTypes';
         $params = [
             'page' => $page,
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $labtestType->getTypes($params);
+        $roomType->getTypes($params);
         break;
-    case 'addType':
-        $labtestType->addType($data);
+    case 'addRoomType':
+        $roomType->addRoomType($data);
         break;
-    case 'updateType':
-        $labtestType->updateType(
-            $data['labtest_category_name'],
-            $data['labtest_category_id'],
-            $data['labtest_category_desc'],
+    case 'updateRoomType':
+        $roomType->updateRoomType(
+            $data['room_type_name'],
+            $data['room_description'],
+            $data['room_type_id'],
             $data['is_active']
         );
         break;

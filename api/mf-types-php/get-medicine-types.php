@@ -5,23 +5,22 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Treatment_Types
+class Medicine_Types
 {
-    // get types
+    // function to display all types from database
     function getTypes($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
         $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
-        // $search = isset($params['search']) ? $params['search'] : '';
 
         // Calculate offset
         $offset = ($page - 1) * $itemsPerPage;
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_treatment_category";
+        $countSql = "SELECT COUNT(*) as total FROM tbl_medicine_type";
         $countStmt = $conn->prepare($countSql);
 
         $countStmt->execute();
@@ -30,8 +29,8 @@ class Treatment_Types
 
         $sql = "
             SELECT *
-            FROM tbl_treatment_category
-            ORDER BY category_name ASC
+            FROM tbl_medicine_type
+            ORDER BY med_type_name ASC
             LIMIT :limit OFFSET :offset
         ";
 
@@ -61,90 +60,90 @@ class Treatment_Types
         ]);
     }
 
-    // add new type
-    function addType($data)
+    // function to add new medicine type
+    function addMedicineType($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // check duplicate name
         $checkSql = "
             SELECT COUNT(*) 
-            FROM tbl_treatment_category 
-            WHERE category_name = :category_name
+            FROM tbl_medicine_type 
+            WHERE med_type_name = :med_type_name
         ";
+
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':category_name', $data['category_name']);
+        $checkStmt->bindParam(':med_type_name', $data['med_type_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'A type with this name already exists'
+                'message' => 'A type with this  name already exists'
             ]);
             return;
         }
 
-        $sql = "
-            INSERT INTO tbl_treatment_category (category_name, description, is_active)
-            VALUES (:category_name, :description, 1)
-        ";
+        $sql = '
+            INSERT INTO tbl_medicine_type (med_type_name, description, is_active)
+            VALUES (:med_type_name, :description, 1)
+        ';
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':category_name', $data['category_name']);
+        $stmt->bindParam(':med_type_name', $data['med_type_name']);
         $stmt->bindParam(':description', $data['description']);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Treatmetn type added']);
+            echo json_encode(['success' => true, 'message' => 'Medicine type added']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
-    // update existing type 
-    function updateType($category_name, $description, $treatment_category_id, $is_active)
+    // function to update existing medicine type
+    function updateMedType($med_type_name, $description, $med_type_id, $is_active)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check duplicate name
+        // check for duplicate name
         $checkSql = "
-            SELECT COUNT(*) 
-            FROM tbl_treatment_category 
-            WHERE category_name = :category_name
-            AND treatment_category_id != :treatment_category_id
+            SELECT COUNT(*)
+            FROM tbl_medicine_type
+            WHERE med_type_name = :med_type_name AND med_type_id != :med_type_id
         ";
-        $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':category_name', $data['category_name']);
-        $checkStmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
 
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bindParam(':med_type_name', $med_type_name);
+        $checkStmt->bindParam(':med_type_id', $med_type_id);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'A type with this name already exists'
+                'message' => 'Another type with this name already exists'
             ]);
             return;
         }
 
         $sql = "
-            UPDATE tbl_treatment_category
-            SET category_name = :category_name,
+            UPDATE tbl_medicine_type
+            SET med_type_name = :med_type_name,
                 description = :description,
                 is_active = :is_active
-            WHERE treatment_category_id = :treatment_category_id
+            WHERE med_type_id = :med_type_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':category_name', $category_name);
+        $stmt->bindParam(':med_type_name', $med_type_name);
         $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':treatment_category_id', $treatment_category_id);
+        $stmt->bindParam(':med_type_id', $med_type_id);
         $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
         echo json_encode([
             'success' => $success,
-            'message' => $success ? 'Updated succesfully' : 'Failed to update'
+            'message' => $success ? 'Updated successfully' : 'Failed to update'
         ]);
     }
 }
@@ -159,13 +158,13 @@ if ($method === 'GET') {
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
-    $body = file_get_contents('php://input');
+    $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
 
-    // Get pagination parameters from POST request
+    // Get pagination paramaters from POST request
     $page = $payload['page'] ?? 1;
     $itemsPerPage = $payload['itemsPerPage'] ?? 10;
     $search = $payload['search'] ?? '';
@@ -173,7 +172,7 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
-$treatmentType = new Treatment_Types();
+$medType = new Medicine_Types();
 
 switch ($operation) {
     case 'getTypes':
@@ -182,21 +181,17 @@ switch ($operation) {
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $treatmentType->getTypes($params);
+        $medType->getTypes($params);
         break;
-    case 'addType':
-        $treatmentType->addType($data);
+    case 'addMedicineType':
+        $medType->addMedicineType($data);
         break;
-    case 'updateType':
-        $treatment_category_id = $data['treatment_category_id'];
-        $category_name = $data['category_name'];
-        $description = $data['description'];
-        $is_active = $data['is_active'];
-        $treatmentType->updateType(
-            $category_name,
-            $description,
-            $treatment_category_id,
-            $is_active
+    case 'updateMedType':
+        $medType->updateMedType(
+            $data['med_type_name'],
+            $data['description'],
+            $data['med_type_id'],
+            $data['is_active']
         );
         break;
 }

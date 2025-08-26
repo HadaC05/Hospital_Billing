@@ -1,5 +1,5 @@
 console.log('type-surgery.js is working');
-const baseApiUrl = "http://localhost/hospital_billing/api";
+const baseApiUrl = "http://localhost/hospital_billing/api/mf-types-php";
 
 document.addEventListener("DOMContentLoaded", async () => {
     // Check user authentication

@@ -1,5 +1,5 @@
 console.log('type-room.js is working');
-const baseApiUrl = 'http://localhost/hospital_billing/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api/mf-types-php';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // User authentication

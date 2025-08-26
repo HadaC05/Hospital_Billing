@@ -1,35 +1,37 @@
 <?php
 
-// require_once __DIR__ . 'require_auth.php';
+// require_once __DIR__ . '/require_auth.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Room_Types
+class Surgery_Types
 {
-    // get room types
+    // function to display list of surgery types
     function getTypes($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // get parameters 
+        // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
         $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        // $search = isset($params['search']) ? $params['search'] : '';
 
         // Calculate offset
         $offset = ($page - 1) * $itemsPerPage;
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_room_type";
+        $countSql = "SELECT COUNT(*) as total FROM tbl_surgery_type";
         $countStmt = $conn->prepare($countSql);
+
         $countStmt->execute();
 
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         $sql = "
-            SELECT *
-            FROM tbl_room_type
-            ORDER BY room_type_name ASC
+            SELECT * 
+            FROM tbl_surgery_type
+            ORDER BY surgery_type_name ASC
             LIMIT :limit OFFSET :offset
         ";
 
@@ -59,20 +61,19 @@ class Room_Types
         ]);
     }
 
-    // add room type
-    function addRoomType($data)
+    // function to add new surgery type
+    function addSurgeryType($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check duplicate name
+        // Check duplicate
         $checkSql = "
-            SELECT COUNT(*) 
-            FROM tbl_room_type
-            WHERE room_type_name = :room_type_name
+            SELECT COUNT(*)
+            FROM tbl_surgery_type
+            WHERE surgery_type_name = :surgery_type_name
         ";
-
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
+        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -84,36 +85,36 @@ class Room_Types
         }
 
         $sql = "
-            INSERT INTO tbl_room_type (room_type_name, room_description, is_active)
-            VALUES (:room_type_name, :room_description, 1)
+            INSERT INTO tbl_surgery_type (surgery_type_name, description, is_active)
+            VALUES (:surgery_type_name, :description, 1)
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':room_type_name', $data['room_type_name']);
-        $stmt->bindParam(':room_description', $data['room_description']);
+        $stmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $stmt->bindParam(':description', $data['description']);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Room type added']);
+            echo json_encode(['success' => true, 'message' => 'Surgery type added']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Insert failed']);
+            echo json_encode(['success' => true, 'message' => 'Insert failed']);
         }
     }
 
-    // update room type
-    function updateRoomType($room_type_name, $room_description, $room_type_id, $is_active)
+    // function to update existing surgery type
+    function updateSurgeryType($surgery_type_name, $surgery_type_id, $description, $is_active)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check duplicate name
+        // Check duplicate
         $checkSql = "
             SELECT COUNT(*)
-            FROM tbl_room_type
-            WHERE room_type_name = :room_type_name AND room_type_id != :room_type_id
+            FROM tbl_surgery_type
+            WHERE surgery_type_name = :surgery_type_name
+            AND surgery_type_id != :surgery_type_id
         ";
-
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':room_type_name', $data['room_type_name']);
-        $checkStmt->bindParam(':room_type_id', $data['room_type_id']);
+        $checkStmt->bindParam(':surgery_type_name', $data['surgery_type_name']);
+        $checkStmt->bindParam(':surgery_type_id', $data['surgery_type_id']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
@@ -125,19 +126,18 @@ class Room_Types
         }
 
         $sql = "
-            UPDATE tbl_room_type
-            SET room_type_name = :room_type_name,
-                room_description = :room_description,
+            UPDATE tbl_surgery_type
+            SET surgery_type_name = :surgery_type_name,
+                description = :description,
                 is_active = :is_active
-            WHERE room_type_id = :room_type_id
+            WHERE surgery_type_id = :surgery_type_id
         ";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':room_type_name', $room_type_name);
-        $stmt->bindParam(':room_description', $room_description);
-        $stmt->bindParam(':room_type_id', $room_type_id);
-        $stmt->bindParam('is_active', $is_active);
-
+        $stmt->bindParam(':surgery_type_name', $surgery_type_name);
+        $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':surgery_type_id', $surgery_type_id);
+        $stmt->bindParam(':is_active', $is_active);
 
         $success = $stmt->execute();
 
@@ -158,13 +158,13 @@ if ($method === 'GET') {
     $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
     $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
-    $body = file_get_contents('php://input');
+    $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
 
-    // Get pagination parameters
+    // Get pagination parameters from POST request
     $page = $payload['page'] ?? 1;
     $itemsPerPage = $payload['itemsPerPage'] ?? 10;
     $search = $payload['search'] ?? '';
@@ -172,26 +172,29 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
-$roomType = new Room_Types;
+$surgType = new Surgery_Types();
 
 switch ($operation) {
-    case 'getTypes';
+    case 'getTypes':
         $params = [
             'page' => $page,
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $roomType->getTypes($params);
+        $surgType->getTypes($params);
         break;
-    case 'addRoomType':
-        $roomType->addRoomType($data);
+    case 'addSurgeryType':
+        $surgType->addSurgeryType($data);
         break;
-    case 'updateRoomType':
-        $roomType->updateRoomType(
-            $data['room_type_name'],
-            $data['room_description'],
-            $data['room_type_id'],
-            $data['is_active']
+    case 'updateSurgeryType':
+        $surgery_type_name = $data['surgery_type_name'];
+        $surgery_type_id = $data['surgery_type_id'];
+        $description = $data['description'];
+        $is_active = $data['is_active'];
+        $surgType->updateSurgeryType(
+            $surgery_type_name,
+            $surgery_type_id,
+            $description,
+            $is_active
         );
-        break;
 }
