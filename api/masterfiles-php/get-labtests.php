@@ -17,14 +17,14 @@ class LabTestManager
 
     public function __construct()
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
         $this->conn = $conn;
     }
 
     // Get all lab tests
     public function getLabtests($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;

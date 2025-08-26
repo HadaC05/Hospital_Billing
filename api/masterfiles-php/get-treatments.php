@@ -1,14 +1,12 @@
 <?php
 
-require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
-class Rooms
+class Treatments
 {
-    function getRooms($params = [])
+    function getTreatments($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
@@ -23,14 +21,14 @@ class Rooms
         $searchParams = [];
 
         if (!empty($search)) {
-            $whereClause = "WHERE r.room_number LIKE :search 
-                            OR rt.room_type_name LIKE :search";
+            $whereClause = "WHERE t.treatment_nameLIKE :search 
+                            OR tc.category_name LIKE :search";
             $searchParams[':search'] = "%$search%";
         }
 
         // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_room r
-                        JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id 
+        $countSql = "SELECT COUNT(*) as total FROM tbl_treatment t
+                        JOIN tbl_treatment_category tc ON t.treatment_category_id = tc.treatment_category_id 
                         $whereClause";
         $countStmt = $conn->prepare($countSql);
         if (!empty($searchParams)) {
@@ -42,17 +40,16 @@ class Rooms
 
         $sql = "
             SELECT 
-                r.room_id,
-                r.room_number,
-                r.room_type_id,
-                rt.room_type_name,
-                r.daily_rate,
-                r.max_occupancy,
-                r.is_available
-            FROM tbl_room r
-            JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+                t.treatment_id,
+                t.treatment_name,
+                t.treatment_category_id,
+                t.unit_price,
+                t.is_active,
+                tc.category_name AS treatment_category
+            FROM tbl_treatment t
+            JOIN tbl_treatment_category tc ON t.treatment_category_id = tc.treatment_category_id
             $whereClause
-            ORDER BY r.room_number ASC
+            ORDER BY t.treatment_name ASC
             LIMIT :limit OFFSET :offset
         ";
         $stmt = $conn->prepare($sql);
@@ -66,7 +63,7 @@ class Rooms
         }
 
         $stmt->execute();
-        $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $treatments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Calculate pagination info
         $totalPages = ceil($totalCount / $itemsPerPage);
@@ -75,7 +72,7 @@ class Rooms
 
         $response = [
             'success' => true,
-            'rooms' => $rooms,
+            'treatments' => $treatments,
             'pagination' => [
                 'currentPage' => $page,
                 'itemsPerPage' => $itemsPerPage,
@@ -88,106 +85,100 @@ class Rooms
         echo json_encode($response);
     }
 
-    function addRoom($data)
+    function addTreatment($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check dupicate name 
+        // check duplicate name 
         $checkSql = "
             SELECT COUNT(*)
-            FROM tbl_room
-            WHERE room_number = :room_number
+            FROM tbl_treatment
+            WHERE treatment_name = :treatment_name
         ";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':room_number', $data['room_number']);
+        $checkStmt->bindParam(':treatment_name', $data['treatment_name']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'A room with this name already exists'
+                'message' => 'A treatment with this name already exists'
             ]);
             return;
         }
 
         $sql = "
-            INSERT INTO tbl_room (room_number, room_type_id, daily_rate, max_occupancy, is_available)
-            VALUES (:room_number, :room_type_id, :daily_rate, :max_occupancy, 1)
+            INSERT INTO tbl_treatment (treatment_name, unit_price, treatment_category_id, is_active)
+            VALUES (:treatment_name, :unit_price, :treatment_category_id, 1)
         ";
-
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':room_number', $data['room_number']);
-        $stmt->bindParam(':room_type_id', $data['room_type_id']);
-        $stmt->bindParam(':daily_rate', $data['daily_rate']);
-        $stmt->bindParam(':max_occupancy', $data['max_occupancy']);
-
+        $stmt->bindParam(':treatment_name', $data['treatment_name']);
+        $stmt->bindParam(':unit_price', $data['unit_price']);
+        $stmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Room added']);
+            echo json_encode(['success' => true, 'message' => 'Treatment added']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Insert failed']);
         }
     }
 
-    function getRoomTypes()
+    function getTreatmentCategories()
     {
-        include 'connection-pdo.php';
-
+        include '../connection-pdo.php';
         $sql = "
-            SELECT room_type_id, room_type_name, is_active
-            FROM tbl_room_type
-            ORDER BY room_type_name ASC
+            SELECT treatment_category_id, category_name, is_active
+            FROM tbl_treatment_category
+            ORDER BY category_name ASC
         ";
         $stmt = $conn->prepare($sql);
         $stmt->execute();
-        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode([
             'success' => true,
-            'types' => $types
+            'categories' => $categories
         ]);
     }
 
-    function updateRoom($data)
+    function updateTreatment($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
-        // check duplicate
+        // check dupicate name 
         $checkSql = "
             SELECT COUNT(*)
-            FROM tbl_room
-            WHERE room_number = :room_number AND room_id != :room_id
+            FROM tbl_treatment
+            WHERE treatment_name = :treatment_name AND treatment_id != :treatment_id
         ";
         $checkStmt = $conn->prepare($checkSql);
-        $checkStmt->bindParam(':room_number', $data['room_number']);
-        $checkStmt->bindParam(':room_id', $data['room_id']);
+        $checkStmt->bindParam(':treatment_name', $data['treatment_name']);
+        $checkStmt->bindParam(':treatment_id', $data['treatment_id']);
         $checkStmt->execute();
 
         if ($checkStmt->fetchColumn() > 0) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Another room with this name already exists'
+                'message' => 'A treatment with this name already exists'
             ]);
             return;
         }
 
         $sql = "
-            UPDATE tbl_room 
+            UPDATE tbl_treatment 
             SET 
-                room_number = :room_number,
-                room_type_id = :room_type_id,
-                daily_rate = :daily_rate,
-                max_occupancy = :max_occupancy,
-                is_available = :is_available
-            WHERE room_id = :room_id
+                treatment_name = :treatment_name,
+                unit_price = :unit_price,
+                treatment_category_id = :treatment_category_id,
+                is_active = :is_active
+            WHERE treatment_id = :treatment_id
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':room_id', $data['room_id']);
-        $stmt->bindParam(':room_number', $data['room_number']);
-        $stmt->bindParam(':room_type_id', $data['room_type_id']);
-        $stmt->bindParam(':daily_rate', $data['daily_rate']);
-        $stmt->bindParam(':max_occupancy', $data['max_occupancy']);
-        $stmt->bindParam(':is_available', $data['is_available']);
+        $stmt->bindParam(':treatment_id', $data['treatment_id']);
+        $stmt->bindParam(':treatment_name', $data['treatment_name']);
+        $stmt->bindParam(':unit_price', $data['unit_price']);
+        $stmt->bindParam(':treatment_category_id', $data['treatment_category_id']);
+        $stmt->bindParam(':is_active', $data['is_active']);
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Room updated']);
+            echo json_encode(['success' => true, 'message' => 'Treatment updated']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Update failed']);
         }
@@ -215,23 +206,23 @@ if ($method === 'GET') {
     $search = $payload['search'] ?? '';
 }
 $data = json_decode($json, true);
-$room = new Rooms();
+$treatment = new Treatments();
 switch ($operation) {
-    case 'getRooms':
+    case 'getTreatments':
         $params = [
             'page' => $page,
             'itemsPerPage' => $itemsPerPage,
             'search' => $search
         ];
-        $room->getRooms($params);
+        $treatment->getTreatments($params);
         break;
-    case 'addRoom':
-        $room->addRoom($data);
+    case 'addTreatment':
+        $treatment->addTreatment($data);
         break;
-    case 'getRoomTypes':
-        $room->getRoomTypes();
+    case 'getTreatmentCategories':
+        $treatment->getTreatmentCategories();
         break;
-    case 'updateRoom':
-        $room->updateRoom($data);
+    case 'updateTreatment':
+        $treatment->updateTreatment($data);
         break;
 }

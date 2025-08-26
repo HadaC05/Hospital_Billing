@@ -1,6 +1,6 @@
 console.log('rooms.js is working');
 
-const baseApiUrl = 'http://localhost/hospital_billing/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api/masterfiles-php';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication

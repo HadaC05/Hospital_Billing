@@ -7,7 +7,7 @@ class Medicines
 {
     function getMedicines($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
@@ -102,7 +102,7 @@ class Medicines
 
     function addMedicine($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Check duplicate name
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name";
@@ -139,7 +139,7 @@ class Medicines
 
     function getTypes()
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         $sql = "
             SELECT *
@@ -158,7 +158,7 @@ class Medicines
 
     function getUnits()
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         $sql = '
             SELECT *
@@ -177,7 +177,7 @@ class Medicines
 
     function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $unit_id, $is_active)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Check duplicate name (exclude current record)
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name AND med_id != :med_id";

@@ -1,7 +1,7 @@
 console.log('surgery.js is working');
 console.log('is this currently working');
 
-const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
+const baseApiUrl = `${window.location.origin}/hospital_billing/api/masterfiles-php`;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication

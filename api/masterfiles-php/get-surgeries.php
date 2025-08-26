@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/require_auth.php';
+// require_once __DIR__ . '../require_auth.php';
 
 
 header('Access-Control-Allow-Origin: *');
@@ -10,7 +10,7 @@ class Surgeries
 {
     function getSurgeries($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
@@ -93,7 +93,7 @@ class Surgeries
 
     function addSurgery($data)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Check duplicate
         $checkSql = "SELECT COUNT(*) FROM tbl_surgery WHERE surgery_name = :surgery_name";
@@ -134,7 +134,7 @@ class Surgeries
 
     function getTypes()
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         $sql = "
             SELECT surgery_type_id, surgery_type_name, is_active
@@ -155,7 +155,7 @@ class Surgeries
 
     function updateSurgery($surgery_id, $surgery_name, $surgery_type_id, $surgery_price, $is_available)
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
 
         // Check duplicate name (exclude current record)
         $checkSql = "SELECT COUNT(*) FROM tbl_surgery WHERE surgery_name = :surgery_name AND surgery_id != :surgery_id";

@@ -1,6 +1,6 @@
 console.log('medicine.js is working');
 
-const baseApiUrl = 'http://localhost/hospital_billing/api';
+const baseApiUrl = 'http://localhost/hospital_billing/api/masterfiles-php';
 
 // Global variables
 let allMedicines = [];
