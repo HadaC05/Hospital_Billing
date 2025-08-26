@@ -20,8 +20,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Get admission form elements
     const addAdmissionForm = document.getElementById('addAdmissionForm');
     const editAdmissionForm = document.getElementById('editAdmissionForm');
+    const addDoctorSel = document.getElementById('doctor_id');
+    const editDoctorSel = document.getElementById('edit_doctor_id');
 
-    // Load admissions on page load
+    // Load doctors and admissions on page load
+    await loadDoctors();
     loadAdmissions();
 
     // Add event listener for form submission
@@ -44,7 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 admission_date: document.getElementById('admission_date').value,
                 discharge_date: document.getElementById('discharge_date').value || null,
                 admission_reason: document.getElementById('admission_reason').value,
-                status: document.getElementById('status').value
+                status: document.getElementById('status').value,
+                doctor_id: (addDoctorSel && addDoctorSel.value) ? addDoctorSel.value : ''
             };
 
             // Send data to server
@@ -65,12 +69,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                             icon: 'success'
                         });
                     } else {
-                        alert('Error: ' + response.data.message);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error: ' + response.data.message,
+                            icon: 'error'
+                        });
                     }
                 })
                 .catch(function (error) {
                     console.error('Error:', error);
-                    alert('An error occurred while adding the admission.');
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred while adding the admission.',
+                        icon: 'error'
+                    });
                 });
         });
     }
@@ -97,7 +109,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 admission_date: document.getElementById('edit_admission_date').value,
                 discharge_date: document.getElementById('edit_discharge_date').value || null,
                 admission_reason: document.getElementById('edit_admission_reason').value,
-                status: document.getElementById('edit_status').value
+                status: document.getElementById('edit_status').value,
+                doctor_id: (editDoctorSel && editDoctorSel.value) ? editDoctorSel.value : ''
             };
 
             // Send data to server
@@ -117,12 +130,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                             icon: 'success'
                         });
                     } else {
-                        alert('Error: ' + response.data.message);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error: ' + response.data.message,
+                            icon: 'error'
+                        });
                     }
                 })
                 .catch(function (error) {
                     console.error('Error:', error);
-                    alert('An error occurred while updating the admission.');
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred while updating the admission.',
+                        icon: 'error'
+                    });
                 });
         });
     }
@@ -212,13 +233,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // Add event listeners to delete buttons
+        // Add event listeners to delete buttons with SweetAlert confirmation
         document.querySelectorAll('.delete-btn').forEach(function (button) {
             button.addEventListener('click', function () {
                 const admissionId = this.getAttribute('data-id');
-                if (confirm('Are you sure you want to delete this admission?')) {
-                    deleteAdmission(admissionId);
-                }
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'This will permanently delete the admission record.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        deleteAdmission(admissionId);
+                    }
+                });
             });
         });
     }
@@ -251,39 +281,84 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('edit_discharge_date').value = data.discharge_date || '';
                     document.getElementById('edit_admission_reason').value = data.admission_reason;
                     document.getElementById('edit_status').value = data.status || 'Active';
-
-                    // Open modal
+                    // Set doctor if available
+                    if (editDoctorSel) {
+                        const docId = data.doctor_id ? String(data.doctor_id) : '';
+                        editDoctorSel.value = docId;
+                    }
+                    // Open modal for editing
                     const modal = new bootstrap.Modal(document.getElementById('editAdmissionModal'));
                     modal.show();
                 } else {
-                    alert('Error: ' + response.data.message);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error: ' + response.data.message,
+                        icon: 'error'
+                    });
                 }
             })
             .catch(function (error) {
                 console.error('Error:', error);
-                alert('An error occurred while loading admission details.');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred while loading admission details.',
+                    icon: 'error'
+                });
             });
     }
 
     // Function to delete admission
-    // function deleteAdmission(admissionId) {
-    //     axios.post(localApiUrl + 'get-admissions.php', {
-    //         operation: 'deleteAdmission',
-    //         admission_id: admissionId
-    //     })
-    //         .then(function (response) {
-    //             if (response.data.status === 'success') {
-    //                 loadAdmissions();
-    //                 alert('Admission deleted successfully!');
-    //             } else {
-    //                 alert('Error: ' + response.data.message);
-    //             }
-    //         })
-    //         .catch(function (error) {
-    //             console.error('Error:', error);
-    //             alert('An error occurred while deleting the admission.');
-    //         });
-    // }
+    function deleteAdmission(admissionId) {
+        axios.post(localApiUrl + 'get-admissions.php', {
+            operation: 'deleteAdmission',
+            admission_id: admissionId
+        })
+            .then(function (response) {
+                if (response.data.status === 'success') {
+                    loadAdmissions();
+                    Swal.fire({
+                        title: 'Deleted',
+                        text: 'Admission deleted successfully!',
+                        icon: 'success'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Error: ' + response.data.message,
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(function (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred while deleting the admission.',
+                    icon: 'error'
+                });
+            });
+    }
+
+    // Load doctors for dropdowns
+    async function loadDoctors() {
+        try {
+            const res = await axios.post(baseApiUrl + '/manage-users.php', {
+                operation: 'getDoctors',
+                search: ''
+            });
+            const payload = res?.data;
+            const doctors = payload && payload.success ? (payload.doctors || []) : [];
+            const options = [`<option value="">-- Unassigned --</option>`]
+                .concat(doctors.map(d => {
+                    const name = [d.last_name, ', ', d.first_name, ' ', d.middle_name || ''].join('').trim();
+                    return `<option value="${d.user_id}">${name}</option>`;
+                }));
+            if (addDoctorSel) addDoctorSel.innerHTML = options.join('');
+            if (editDoctorSel) editDoctorSel.innerHTML = options.join('');
+        } catch (e) {
+            console.warn('Failed to load doctors', e);
+        }
+    }
 
     // Check for permissions and render modules
     try {

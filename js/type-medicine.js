@@ -36,14 +36,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            renderCurrentPage(page);
+            loadMedicineTypes(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            renderCurrentPage(1, itemsPerPage);
+            loadMedicineTypes(1, itemsPerPage);
         }
     });
 
-    // Load all Medicine Types once
+    // Load Medicine Type List
     async function loadMedicineTypes() {
         if (!tableBody) {
             console.error('Medicine types table body not found');

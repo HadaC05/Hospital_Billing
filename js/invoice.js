@@ -184,11 +184,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('createdInvoiceId').textContent = lastCreatedInvoiceId;
                 new bootstrap.Modal(document.getElementById('invoiceSuccessModal')).show();
             } else {
-                alert(response.data.message || 'Failed to create invoice');
+                Swal.fire({
+                    title: 'Error',
+                    text: response.data.message || 'Failed to create invoice',
+                    icon: 'error'
+                });
             }
         } catch (e) {
             console.error(e);
-            alert('Network error while creating invoice');
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while creating invoice',
+                icon: 'error'
+            });
         }
     }
 

@@ -147,7 +147,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryId = document.getElementById('treatment_category_id').value;
 
         if (!treatmentName || !unitPrice || !categoryId) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -164,16 +168,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Treatment added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Treatment added successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadTreatments();
             } else {
-                alert(data.message || 'Failed to add treatment.');
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to add treatment.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding treatment:', error);
-            alert('Failed to add treatment. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to add treatment. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -181,7 +197,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.editTreatment = async function (treatmentId) {
         const treatment = treatments.find(t => t.treatment_id == treatmentId);
         if (!treatment) {
-            alert('Treatment not found.');
+            Swal.fire({
+                title: 'Not found',
+                text: 'Treatment not found.',
+                icon: 'info'
+            });
             return;
         }
 
@@ -203,7 +223,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isActive = document.getElementById('edit_is_active').value;
 
         if (!treatmentName || !unitPrice || !categoryId) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -221,15 +245,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
             if (data.success) {
-                alert('Treatment updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Treatment updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadTreatments();
             } else {
-                alert(data.message || 'Failed to update treatment.');
+                Swal.fire({
+                    title: 'Error',
+                    text: data.message || 'Failed to update treatment.',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating treatment:', error);
-            alert('Failed to update treatment. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update treatment. Please try again.',
+                icon: 'error'
+            });
         }
     }
 

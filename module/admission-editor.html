@@ -128,11 +128,32 @@
                                         <label for="status">Status</label>
                                         <select class="form-control" id="status" required>
                                             <option value="Active">Active</option>
-                                            <option value="Discharged">Discharged</option>
                                             <option value="Pending">Pending</option>
                                             <option value="Critical">Critical</option>
                                             <option value="Stable">Stable</option>
                                         </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="room_id">Assign Room</label>
+                                        <select class="form-control" id="room_id">
+                                            <option value="">-- Unassigned --</option>
+                                        </select>
+                                        <small class="text-muted">Optional: assign a room for this admission.</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="er_initial_charge">ER Initial Charge (₱1,500)</label>
+                                        <select class="form-control" id="er_initial_charge">
+                                            <option value="0">Not Applicable</option>
+                                            <option value="1">Applicable</option>
+                                        </select>
+                                        <small class="text-muted">Select "Applicable" if the patient was held in the Emergency Room.</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="doctor_id">Assign Doctor</label>
+                                        <select class="form-control" id="doctor_id">
+                                            <option value="">-- Unassigned --</option>
+                                        </select>
+                                        <small class="text-muted">Optional: link this admission to a doctor.</small>
                                     </div>
                                 </div>
                             </div>
@@ -227,6 +248,25 @@
                                                 <option value="Pending">Pending</option>
                                                 <option value="Critical">Critical</option>
                                                 <option value="Stable">Stable</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="edit_room_id">Assign Room</label>
+                                            <select class="form-control" id="edit_room_id">
+                                                <option value="">-- Unassigned --</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="edit_er_initial_charge">ER Initial Charge (₱1,500)</label>
+                                            <select class="form-control" id="edit_er_initial_charge">
+                                                <option value="0">Not Applicable</option>
+                                                <option value="1">Applicable</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="edit_doctor_id">Assign Doctor</label>
+                                            <select class="form-control" id="edit_doctor_id">
+                                                <option value="">-- Unassigned --</option>
                                             </select>
                                         </div>
                                     </div>

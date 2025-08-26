@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients - Hospital Billing System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .table-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        .search-box input {
+            padding-left: 40px;
+        }
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <h4 class="text-center mb-4">
+                        <i class="bi bi-hospital-fill"></i> HBS
+                    </h4>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a href="dashboard.html" class="nav-link" id="nav-dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="patients.html" class="nav-link active" id="nav-patients">
+                                <i class="bi bi-people-fill me-2"></i> Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="admissions.html" class="nav-link" id="nav-admissions">
+                                <i class="bi bi-house-add-fill me-2"></i> Admissions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="billing.html" class="nav-link" id="nav-billing">
+                                <i class="bi bi-receipt-cutoff me-2"></i> Billing
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="reports.html" class="nav-link" id="nav-reports">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link" id="nav-settings">
+                                <i class="bi bi-gear-fill me-2"></i> Settings
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <strong class="user-info">User Name</strong>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                            <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logout-btn">Sign out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Patients</h2>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3 text-muted">Welcome, <strong class="user-info">User Name</strong></span>
+                        <span class="badge bg-secondary user-role">Role</span>
+                    </div>
+                </div>
+
+                <!-- Search and Add Patient -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control" id="search-patients" placeholder="Search patients...">
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-primary btn-add" data-bs-toggle="modal" data-bs-target="#patientModal">
+                            <i class="bi bi-plus-circle me-2"></i> Add New Patient
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Patients Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h5 class="mb-0">Patient Records</h5>
+                    </div>
+                    <div class="p-3">
+                        <div id="patients-table-div">
+                            <!-- Table will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Modal -->
+    <div class="modal fade" id="patientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Patient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="new-patient-form">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-first-name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="patient-first-name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-last-name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="patient-last-name" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-middle-name" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="patient-middle-name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-birthdate" class="form-label">Birthdate</label>
+                                <input type="date" class="form-control" id="patient-birthdate" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="patient-address" class="form-label">Address</label>
+                            <textarea class="form-control" id="patient-address" rows="2" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-mobile" class="form-label">Mobile Number</label>
+                                <input type="tel" class="form-control" id="patient-mobile" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="patient-email">
+                            </div>
+                        </div>
+                        <h6 class="mt-4 mb-3">Emergency Contact</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-emergency-name" class="form-label">Contact Name</label>
+                                <input type="text" class="form-control" id="patient-emergency-name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="patient-emergency-contact" class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" id="patient-emergency-contact" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="patient-emergency-address" class="form-label">Contact Address</label>
+                            <textarea class="form-control" id="patient-emergency-address" rows="2" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="btn-submit-patient">Save Patient</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Patient Modal -->
+    <div class="modal fade" id="viewPatientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Patient Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Patient ID</label>
+                            <input type="text" class="form-control" id="view-patient-id" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="view-patient-name" readonly>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Birthdate</label>
+                            <input type="text" class="form-control" id="view-patient-birthdate" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mobile Number</label>
+                            <input type="text" class="form-control" id="view-patient-mobile" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="view-patient-address" rows="2" readonly></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="view-patient-email" readonly>
+                    </div>
+                    <h6 class="mt-4 mb-3">Emergency Contact</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Contact Name</label>
+                            <input type="text" class="form-control" id="view-patient-emergency-name" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Contact Number</label>
+                            <input type="text" class="form-control" id="view-patient-emergency-contact" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact Address</label>
+                        <textarea class="form-control" id="view-patient-emergency-address" rows="2" readonly></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/patient.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            setActiveNav('nav-patients');
+            displayPatients();
+            
+            // Search functionality
+            document.getElementById('search-patients').addEventListener('input', function(e) {
+                const searchTerm = e.target.value;
+                if (searchTerm.length > 2 || searchTerm.length === 0) {
+                    searchPatients(searchTerm);
+                }
+            });
+        });
+
+        async function searchPatients(searchTerm) {
+            try {
+                const patients = await PatientAPI.getPatients(searchTerm);
+                displayPatientsTable(patients);
+            } catch (error) {
+                console.error('Error searching patients:', error);
+            }
+        }
+    </script>
+</body>
+</html>

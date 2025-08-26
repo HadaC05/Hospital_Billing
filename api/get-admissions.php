@@ -114,6 +114,15 @@ class Admissions
                 return;
             }
 
+            // Fetch assigned doctor (if any)
+            $docStmt = $conn->prepare("SELECT doctor_id FROM tbl_doctor_fee WHERE admission_id = :admission_id LIMIT 1");
+            $docStmt->bindParam(':admission_id', $admissionId);
+            $docStmt->execute();
+            $docRow = $docStmt->fetch(PDO::FETCH_ASSOC);
+            if ($docRow) {
+                $details['doctor_id'] = (int)$docRow['doctor_id'];
+            }
+
             echo json_encode(['status' => 'success', 'data' => $details]);
         } catch (PDOException $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
@@ -153,7 +162,19 @@ class Admissions
             $stmt->execute();
             $patientId = $conn->lastInsertId();
 
-            // Then, insert admission record
+            // Validate current session user for admitted_by
+            $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+            $chk = $conn->prepare("SELECT user_id FROM users WHERE user_id = :uid LIMIT 1");
+            $chk->bindValue(':uid', $userId, PDO::PARAM_INT);
+            $chk->execute();
+            $validUser = $chk->fetch(PDO::FETCH_ASSOC);
+            if (!$validUser) {
+                $conn->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Your session user is invalid. Please log in again.']);
+                return;
+            }
+
+            // Prepare insert admission record
             $stmt = $conn->prepare(
                 "INSERT INTO patient_admission 
                  (patient_id, admitted_by, admission_date, discharge_date, admission_reason, status) 
@@ -161,16 +182,38 @@ class Admissions
                  (:patient_id, :admitted_by, :admission_date, :discharge_date, :admission_reason, :status)"
             );
 
-            $userId = $_SESSION['user_id'];
+            $stmt->bindValue(':patient_id', (int)$patientId, PDO::PARAM_INT);
+            $stmt->bindValue(':admitted_by', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':admission_date', $data['admission_date']);
 
-            $stmt->bindParam(':patient_id', $patientId);
-            $stmt->bindParam(':admitted_by', $userId);
-            $stmt->bindParam(':admission_date', $data['admission_date']);
-            $stmt->bindParam(':discharge_date', $data['discharge_date']);
-            $stmt->bindParam(':admission_reason', $data['admission_reason']);
-            $stmt->bindParam(':status', $data['status']);
+            // allow NULL discharge_date
+            if (empty($data['discharge_date'])) {
+                $stmt->bindValue(':discharge_date', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':discharge_date', $data['discharge_date']);
+            }
+
+            $stmt->bindValue(':admission_reason', $data['admission_reason']);
+            $stmt->bindValue(':status', $data['status']);
 
             $stmt->execute();
+
+            // Get the new admission id
+            $admissionId = $conn->lastInsertId();
+
+            // If doctor_id is provided, link to tbl_doctor_fee
+            if (!empty($data['doctor_id'])) {
+                $doctorId = (int)$data['doctor_id'];
+                // Remove existing links for safety then insert
+                $del = $conn->prepare("DELETE FROM tbl_doctor_fee WHERE admission_id = :admission_id");
+                $del->bindParam(':admission_id', $admissionId);
+                $del->execute();
+
+                $ins = $conn->prepare("INSERT INTO tbl_doctor_fee (admission_id, doctor_id, fee_amount) VALUES (:admission_id, :doctor_id, 0)");
+                $ins->bindParam(':admission_id', $admissionId);
+                $ins->bindParam(':doctor_id', $doctorId);
+                $ins->execute();
+            }
 
             // Commit transaction
             $conn->commit();
@@ -239,6 +282,23 @@ class Admissions
             $stmt->bindParam(':status', $data['status']);
 
             $stmt->execute();
+
+            // Update assigned doctor if provided
+            if (isset($data['doctor_id'])) {
+                $admissionId = (int)$data['admission_id'];
+                $doctorId = (int)$data['doctor_id'];
+                // Remove existing links for this admission then insert if doctorId > 0
+                $del = $conn->prepare("DELETE FROM tbl_doctor_fee WHERE admission_id = :admission_id");
+                $del->bindParam(':admission_id', $admissionId);
+                $del->execute();
+
+                if ($doctorId > 0) {
+                    $ins = $conn->prepare("INSERT INTO tbl_doctor_fee (admission_id, doctor_id, fee_amount) VALUES (:admission_id, :doctor_id, 0)");
+                    $ins->bindParam(':admission_id', $admissionId);
+                    $ins->bindParam(':doctor_id', $doctorId);
+                    $ins->execute();
+                }
+            }
 
             // Commit transaction
             $conn->commit();

@@ -1,4 +1,9 @@
 /* Base layout */
+:root {
+    /* Adjust if header height changes */
+    --header-height: 56px;
+}
+
 body {
     min-height: 100vh;
     margin: 0;
@@ -8,25 +13,32 @@ body {
 }
 
 header {
-    z-index: 1000;
-    position: sticky;
+    position: fixed; /* ensure it stays on screen on all browsers */
     top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100; /* above sidebar */
+    background: #fff; /* prevent bleed-through when overlapping */
 }
+
+/* The placeholder remains in normal flow; spacing is applied to page container */
 /* Main layout */
 #page-container {
     display: flex;
     flex-grow: 1;
+    margin-top: var(--header-height); /* push content below fixed header */
 }
 
 /* Sidebar */
 .sidebar { /* Let theme override colors; keep layout only */
     width: 280px;
     transition: width 0.3s ease;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    position: relative;
-    height: 100%;
+    position: sticky;            /* Stick within the scrolling area */
+    top: var(--header-height);   /* Start below header */
+    height: calc(100vh - var(--header-height)) !important; /* Override vh-100 from markup */
+    overflow: auto;              /* Sidebar gets its own scroll */
     z-index: 1000;
 }
 
@@ -114,13 +126,26 @@ header #logout-btn:hover {
 /* Content Styles */
 .content {
     margin-left: 0;
-    transition: all 0.3s;
-    width: calc(100% - 250px);
+    transition: all 0.3s ease;
+    width: calc(100% - 280px); /* match sidebar width */
 }
 
 .content.expanded {
     margin-left: 0;
     width: 100%;
+}
+
+/* Fully collapse sidebar */
+.sidebar.collapsed {
+    width: 0 !important;
+    margin-left: -280px !important; /* slide completely off-canvas */
+    overflow: hidden !important;
+    border: 0 !important;
+}
+
+/* When sidebar is collapsed, let content take full width */
+.sidebar-collapsed .content {
+    width: 100% !important;
 }
 
 /* Hamburger Button Styles */

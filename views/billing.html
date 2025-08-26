@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing - Hospital Billing System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .billing-stats {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .billing-stats:hover {
+            transform: translateY(-5px);
+        }
+        .billing-stats i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .billing-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .billing-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+        .invoice-card {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .invoice-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+        }
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <h4 class="text-center mb-4">
+                        <i class="bi bi-hospital-fill"></i> HBS
+                    </h4>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a href="dashboard.html" class="nav-link" id="nav-dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="patients.html" class="nav-link" id="nav-patients">
+                                <i class="bi bi-people-fill me-2"></i> Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="admissions.html" class="nav-link" id="nav-admissions">
+                                <i class="bi bi-house-add-fill me-2"></i> Admissions
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="billing.html" class="nav-link active" id="nav-billing">
+                                <i class="bi bi-receipt-cutoff me-2"></i> Billing
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="reports.html" class="nav-link" id="nav-reports">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="settings.html" class="nav-link" id="nav-settings">
+                                <i class="bi bi-gear-fill me-2"></i> Settings
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <strong class="user-info">User Name</strong>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                            <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logout-btn">Sign out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Billing</h2>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3 text-muted">Welcome, <strong class="user-info">User Name</strong></span>
+                        <span class="badge bg-secondary user-role">Role</span>
+                    </div>
+                </div>
+
+                <!-- Billing Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="billing-stats">
+                            <i class="bi bi-receipt text-primary"></i>
+                            <h3 id="total-invoices">0</h3>
+                            <p class="text-muted mb-0">Total Invoices</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="billing-stats">
+                            <i class="bi bi-cash-stack text-success"></i>
+                            <h3 id="total-revenue">₱0</h3>
+                            <p class="text-muted mb-0">Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="billing-stats">
+                            <i class="bi bi-credit-card text-warning"></i>
+                            <h3 id="insurance-claims">0</h3>
+                            <p class="text-muted mb-0">Insurance Claims</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="billing-stats">
+                            <i class="bi bi-exclamation-triangle text-danger"></i>
+                            <h3 id="outstanding-bills">0</h3>
+                            <p class="text-muted mb-0">Outstanding Bills</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Filter -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">From</span>
+                            <input type="date" class="form-control" id="filter-start-date">
+                            <span class="input-group-text">To</span>
+                            <input type="date" class="form-control" id="filter-end-date">
+                            <button class="btn btn-primary" onclick="filterBilling()">Filter</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-primary btn-generate" onclick="generateSummaryReport()">
+                            <i class="bi bi-file-earmark-text me-2"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Outstanding Invoices -->
+                <div class="billing-container mb-4">
+                    <div class="billing-header">
+                        <h5 class="mb-0">Outstanding Invoices</h5>
+                    </div>
+                    <div class="p-3">
+                        <div id="outstanding-invoices-container">
+                            <!-- Outstanding invoices will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Invoices -->
+                <div class="billing-container">
+                    <div class="billing-header">
+                        <h5 class="mb-0">Recent Invoices</h5>
+                    </div>
+                    <div class="p-3">
+                        <div id="recent-invoices-container">
+                            <!-- Recent invoices will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admission.js"></script>
+    <script src="js/billing.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            setActiveNav('nav-billing');
+            loadBillingStats();
+            loadOutstandingInvoices();
+            loadRecentInvoices();
+            
+            // Set default date range (current month)
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+            
+            document.getElementById('filter-start-date').value = firstDay;
+            document.getElementById('filter-end-date').value = lastDay;
+        });
+
+        async function loadBillingStats() {
+            try {
+                const startDate = document.getElementById('filter-start-date').value;
+                const endDate = document.getElementById('filter-end-date').value;
+                
+                const billingSummary = await BillingAPI.getBillingSummary(startDate, endDate);
+                if (billingSummary && billingSummary.summary) {
+                    document.getElementById('total-invoices').textContent = billingSummary.summary.total_invoices || 0;
+                    document.getElementById('total-revenue').textContent = formatCurrency(billingSummary.summary.total_billed || 0);
+                    document.getElementById('insurance-claims').textContent = billingSummary.summary.total_invoices || 0; // This would need to be calculated differently
+                }
+                
+                const outstandingInvoices = await BillingAPI.getOutstandingInvoices();
+                document.getElementById('outstanding-bills').textContent = outstandingInvoices.length;
+                
+            } catch (error) {
+                console.error('Error loading billing stats:', error);
+            }
+        }
+
+        async function loadOutstandingInvoices() {
+            const container = document.getElementById('outstanding-invoices-container');
+            try {
+                const invoices = await BillingAPI.getOutstandingInvoices();
+                
+                if (invoices.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">No outstanding invoices</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                invoices.slice(0, 5).forEach(invoice => {
+                    const card = document.createElement('div');
+                    card.className = 'invoice-card';
+                    card.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Invoice #${invoice.invoice_id}</h6>
+                                <p class="mb-1 text-muted">${invoice.patient_name}</p>
+                                <small class="text-muted">Due: ${formatDate(invoice.invoice_date)}</small>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="mb-1">${formatCurrency(invoice.amount_due)}</h5>
+                                <span class="status-badge bg-warning">${invoice.status}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+                
+            } catch (error) {
+                container.innerHTML = '<p class="text-center text-danger">Error loading outstanding invoices</p>';
+            }
+        }
+
+        async function loadRecentInvoices() {
+            const container = document.getElementById('recent-invoices-container');
+            try {
+                // This would need to be implemented in your API
+                // For now, we'll show a placeholder
+                container.innerHTML = '<p class="text-center text-muted">Recent invoices feature coming soon</p>';
+                
+            } catch (error) {
+                container.innerHTML = '<p class="text-center text-danger">Error loading recent invoices</p>';
+            }
+        }
+
+        async function filterBilling() {
+            await loadBillingStats();
+            await loadOutstandingInvoices();
+            await loadRecentInvoices();
+        }
+
+        function generateSummaryReport() {
+            const startDate = document.getElementById('filter-start-date').value;
+            const endDate = document.getElementById('filter-end-date').value;
+            
+            // This would generate and download a report
+            alert(`Generating billing summary report from ${startDate} to ${endDate}`);
+        }
+    </script>
+</body>
+</html>

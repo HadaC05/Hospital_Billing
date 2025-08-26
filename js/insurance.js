@@ -86,10 +86,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('approve_amount').value = d.amount_due;
                     new bootstrap.Modal(document.getElementById('approveModal')).show();
                 } else {
-                    alert(resp.data.message || 'Failed to load claim detail');
+                    Swal.fire({
+                        title: 'Error',
+                        text: resp.data.message || 'Failed to load claim detail',
+                        icon: 'error'
+                    });
                 }
             } catch {
-                alert('Error loading claim detail');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error loading claim detail',
+                    icon: 'error'
+                });
             }
         }
 
@@ -111,12 +119,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (resp.data && resp.data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
                 await loadClaims();
-                alert('Claim approved');
+                Swal.fire({
+                    title: 'Approved',
+                    text: 'Claim approved',
+                    icon: 'success'
+                });
             } else {
-                alert(resp.data.message || 'Approval failed');
+                Swal.fire({
+                    title: 'Error',
+                    text: resp.data.message || 'Approval failed',
+                    icon: 'error'
+                });
             }
         } catch {
-            alert('Network error while approving');
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while approving',
+                icon: 'error'
+            });
         }
     });
 
@@ -130,12 +150,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (resp.data && resp.data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('denyModal')).hide();
                 await loadClaims();
-                alert('Claim denied');
+                Swal.fire({
+                    title: 'Denied',
+                    text: 'Claim denied',
+                    icon: 'success'
+                });
             } else {
-                alert(resp.data.message || 'Deny failed');
+                Swal.fire({
+                    title: 'Error',
+                    text: resp.data.message || 'Deny failed',
+                    icon: 'error'
+                });
             }
         } catch {
-            alert('Network error while denying');
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while denying',
+                icon: 'error'
+            });
         }
     });
 

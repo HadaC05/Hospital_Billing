@@ -17,6 +17,36 @@ class UserManager
     }
 
     /**
+     * Get all doctors (users whose role name contains 'doctor')
+     */
+    function getDoctors($params = [])
+    {
+        try {
+            $search = isset($params['search']) ? $params['search'] : '';
+            $where = "WHERE LOWER(r.role_name) LIKE '%doctor%'";
+            $binds = [];
+            if (!empty($search)) {
+                $where .= " AND (u.first_name LIKE :s OR u.last_name LIKE :s OR u.username LIKE :s)";
+                $binds[':s'] = "%$search%";
+            }
+
+            $sql = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name,
+                           u.email, u.mobile_number, u.role_id, r.role_name
+                    FROM users u
+                    JOIN user_roles r ON u.role_id = r.role_id
+                    $where
+                    ORDER BY u.last_name, u.first_name";
+            $stmt = $this->conn->prepare($sql);
+            foreach ($binds as $k => $v) { $stmt->bindValue($k, $v); }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'doctors' => $rows]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Get all users with their roles
      */
     function getAllUsers($params = [])
@@ -382,6 +412,10 @@ switch ($operation) {
     case 'deleteUser':
         $user_id = $data['user_id'] ?? null;
         $userManager->deleteUser($user_id);
+        break;
+    case 'getDoctors':
+        $params = [ 'search' => $search ];
+        $userManager->getDoctors($params);
         break;
     default:
         echo json_encode([

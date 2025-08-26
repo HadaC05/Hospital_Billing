@@ -28,69 +28,76 @@ class Medicines
             $searchParams[':search'] = "%$search%";
         }
 
-        // Get total count
-        $countSql = "SELECT COUNT(*) as total FROM tbl_medicine m 
-                        JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
-                        JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
-                        $whereClause";
-        $countStmt = $conn->prepare($countSql);
-        if (!empty($searchParams)) {
-            $countStmt->execute($searchParams);
-        } else {
-            $countStmt->execute();
-        }
-        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-        // Get paginated data
-        $sql = "
-            SELECT 
-                m.med_id,
-                m.med_name,
-                m.med_type_id,
-                mt.med_type_name,
-                m.unit_price,
-                m.stock_quantity,
-                m.unit_id,
-                mu.unit_name,
-                m.is_active
-            FROM tbl_medicine m
-            JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
-            JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
-            $whereClause
-            ORDER BY m.med_name ASC
-            LIMIT :limit OFFSET :offset
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-
-        if (!empty($searchParams)) {
-            foreach ($searchParams as $key => $value) {
-                $stmt->bindValue($key, $value);
+        try {
+            // Get total count
+            $countSql = "SELECT COUNT(*) as total FROM tbl_medicine m 
+                            LEFT JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
+                            LEFT JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
+                            $whereClause";
+            $countStmt = $conn->prepare($countSql);
+            if (!empty($searchParams)) {
+                $countStmt->execute($searchParams);
+            } else {
+                $countStmt->execute();
             }
+            $totalCount = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+            // Get paginated data
+            $sql = "
+                SELECT 
+                    m.med_id,
+                    m.med_name,
+                    m.med_type_id,
+                    mt.med_type_name,
+                    m.unit_price,
+                    m.stock_quantity,
+                    m.unit_id,
+                    mu.unit_name,
+                    m.is_active
+                FROM tbl_medicine m
+                LEFT JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
+                LEFT JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
+                $whereClause
+                ORDER BY m.med_name ASC
+                LIMIT :limit OFFSET :offset
+            ";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+            if (!empty($searchParams)) {
+                foreach ($searchParams as $key => $value) {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+
+            $stmt->execute();
+            $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculate pagination info
+            $totalPages = $itemsPerPage > 0 ? (int)ceil($totalCount / $itemsPerPage) : 1;
+            $startIndex = $offset + 1;
+            $endIndex = min($offset + $itemsPerPage, $totalCount);
+
+            echo json_encode([
+                'success' => true,
+                'medicines' => $medicines,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'itemsPerPage' => $itemsPerPage,
+                    'totalItems' => $totalCount,
+                    'totalPages' => $totalPages,
+                    'startIndex' => $startIndex,
+                    'endIndex' => $endIndex
+                ]
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch medicines: ' . $e->getMessage()
+            ]);
         }
-
-        $stmt->execute();
-        $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Calculate pagination info
-        $totalPages = ceil($totalCount / $itemsPerPage);
-        $startIndex = $offset + 1;
-        $endIndex = min($offset + $itemsPerPage, $totalCount);
-
-        echo json_encode([
-            'success' => true,
-            'medicines' => $medicines,
-            'pagination' => [
-                'currentPage' => $page,
-                'itemsPerPage' => $itemsPerPage,
-                'totalItems' => $totalCount,
-                'totalPages' => $totalPages,
-                'startIndex' => $startIndex,
-                'endIndex' => $endIndex
-            ]
-        ]);
     }
 
     function addMedicine($data)

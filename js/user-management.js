@@ -28,6 +28,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('updateUserBtn').addEventListener('click', updateUser);
     document.getElementById('confirmDeleteUserBtn').addEventListener('click', deleteUser);
 
+    // Password visibility toggle for modals
+    function setupPasswordToggles() {
+        document.querySelectorAll('.password-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('fa-eye', !isPassword);
+                    icon.classList.toggle('fa-eye-slash', isPassword);
+                }
+                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    }
+    // Run once on load; also when modals show (in case DOM is recreated)
+    setupPasswordToggles();
+    document.getElementById('addUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
+    document.getElementById('editUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
+
     // Function to load all users
     async function loadUsers(page = 1, itemsPerPage = 10, search = '') {
         try {
@@ -49,11 +73,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     pagination.generatePaginationControls('pagination-container');
                 }
             } else {
-                alert('Failed to load users: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load users: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading users:', error);
-            alert('Failed to load users. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load users. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -101,11 +133,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 populateRoleDropdowns(data.roles);
             } else {
-                alert('Failed to load roles: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load roles: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading roles:', error);
-            alert('Failed to load roles. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load roles. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -152,11 +192,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Open edit modal
                 new bootstrap.Modal(document.getElementById('editUserModal')).show();
             } else {
-                alert('Failed to load user details: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load user details: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error loading user details:', error);
-            alert('Failed to load user details. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load user details. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -175,7 +223,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Validate form
         if (!formData.first_name || !formData.last_name || !formData.username || !formData.password || !formData.email || !formData.role_id) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -186,16 +238,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             const data = response.data;
             if (data.success) {
-                alert('User added successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'User added successfully!',
+                    icon: 'success'
+                });
                 document.getElementById('addUserForm').reset();
                 bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
                 loadUsers();
             } else {
-                alert('Failed to add user: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to add user: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error adding user:', error);
-            alert('Failed to add user. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to add user. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -216,7 +280,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Validate form
         if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.role_id) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Validation',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -227,15 +295,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             const data = response.data;
             if (data.success) {
-                alert('User updated successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'User updated successfully!',
+                    icon: 'success'
+                });
                 bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
                 loadUsers();
             } else {
-                alert('Failed to update user: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to update user: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error updating user:', error);
-            alert('Failed to update user. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update user. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
@@ -249,15 +329,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             const data = response.data;
             if (data.success) {
-                alert('User deleted successfully!');
+                Swal.fire({
+                    title: 'Deleted',
+                    text: 'User deleted successfully!',
+                    icon: 'success'
+                });
                 bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
                 loadUsers();
             } else {
-                alert('Failed to delete user: ' + data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to delete user: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error deleting user:', error);
-            alert('Failed to delete user. Please try again.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to delete user. Please try again.',
+                icon: 'error'
+            });
         }
     }
 });

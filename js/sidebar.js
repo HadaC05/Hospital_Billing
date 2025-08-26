@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!sidebarResponse?.data) return;
         sidebarPlaceholder.innerHTML = sidebarResponse.data;
         const sidebarElement = document.getElementById('sidebar');
+        const pageContainer = document.getElementById('page-container');
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const userName = document.getElementById('user-name');
         if (userName) {
@@ -24,12 +25,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Restore sidebar collapsed state
         if (localStorage.getItem('sidebarCollapsed') === 'true' && sidebarElement) {
             sidebarElement.classList.add('collapsed');
+            if (pageContainer) pageContainer.classList.add('sidebar-collapsed');
         }
         // Toggle sidebar
         if (hamburgerBtn && sidebarElement) {
             hamburgerBtn.addEventListener('click', () => {
-                sidebarElement.classList.toggle('collapsed');
-                localStorage.setItem('sidebarCollapsed', sidebarElement.classList.contains('collapsed'));
+                const collapsed = !sidebarElement.classList.contains('collapsed');
+                sidebarElement.classList.toggle('collapsed', collapsed);
+                if (pageContainer) pageContainer.classList.toggle('sidebar-collapsed', collapsed);
+                localStorage.setItem('sidebarCollapsed', collapsed);
             });
         }
         // Load user permissions and build links
@@ -48,6 +52,16 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Administrator Dashboard',
             link: '../components/dashboard.html',
             icon: 'fas fa-tachometer-alt'
+        },
+        doctor_dashboard: {
+            label: 'Doctor Dashboard',
+            link: '../module/doctor-dashboard.html',
+            icon: 'fas fa-user-md'
+        },
+        receptionist_dashboard: {
+            label: 'Receptionist Dashboard',
+            link: '../module/receptionist-dashboard.html',
+            icon: 'fas fa-handshake-angle'
         },
         manage_users: {
             label: 'Manage Users',
@@ -93,6 +107,31 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Doctor Prescription',
             link: '../module/doctor-prescription.html',
             icon: 'fas fa-prescription-bottle'
+        },
+        doctor_my_patients: {
+            label: 'My Patients',
+            link: '../module/my-patients.html',
+            icon: 'fas fa-user-injured'
+        },
+        biller_dashboard: {
+            label: 'Biller Dashboard',
+            link: '../module/biller-dashboard.html',
+            icon: 'fas fa-file-invoice-dollar'
+        },
+        lab_dashboard: {
+            label: 'Laboratory Dashboard',
+            link: '../module/lab-dashboard.html',
+            icon: 'fas fa-vial'
+        },
+        nurse_dashboard: {
+            label: 'Nurse Dashboard',
+            link: '../module/nurse-dashboard.html',
+            icon: 'fas fa-user-nurse'
+        },
+        pharmacist_dashboard: {
+            label: 'Pharmacist Dashboard',
+            link: '../module/pharmacist-dashboard.html',
+            icon: 'fas fa-pills'
         },
     };
 
@@ -187,7 +226,14 @@ async function buildSidebarLinks(baseApiUrl, user) {
         });
 
         // Add admin-only type modules
-        const isAdmin = (user?.role || '').toString().toLowerCase().includes('admin');
+        const roleStr = (user?.role || '').toString().toLowerCase();
+        const isAdmin = roleStr.includes('admin');
+        const isDoctor = roleStr.includes('doctor');
+        const isReceptionist = roleStr.includes('receptionist');
+        const isBiller = roleStr.includes('biller') || roleStr.includes('billing');
+        const isLab = roleStr.includes('lab') || roleStr.includes('laboratory');
+        const isNurse = roleStr.includes('nurse');
+        const isPharmacist = roleStr.includes('pharmacist') || roleStr.includes('pharmacy');
         if (isAdmin) {
             const alwaysShow = [
                 inventoryMap.manage_treatment_types,
@@ -204,6 +250,72 @@ async function buildSidebarLinks(baseApiUrl, user) {
                     if (!exists) {
                         inventoryLinks.push(cfg);
                     }
+                }
+            });
+        }
+
+        // Add doctor-only links
+        if (isDoctor) {
+            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_my_patients];
+            doctorLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add receptionist-only links
+        if (isReceptionist) {
+            const recLinks = [moduleMap.receptionist_dashboard];
+            recLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add biller-only links
+        if (isBiller) {
+            const bLinks = [moduleMap.biller_dashboard];
+            bLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add lab-only links
+        if (isLab) {
+            const lLinks = [moduleMap.lab_dashboard];
+            lLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add nurse-only links
+        if (isNurse) {
+            const nLinks = [moduleMap.nurse_dashboard];
+            nLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add pharmacist-only links
+        if (isPharmacist) {
+            const pLinks = [moduleMap.pharmacist_dashboard];
+            pLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
                 }
             });
         }

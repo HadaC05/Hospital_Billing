@@ -5,6 +5,27 @@ document.addEventListener('DOMContentLoaded', function () {
     const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
     const loginForm = document.getElementById('loginForm');
 
+    // Password visibility toggle
+    function setupPasswordToggles() {
+        document.querySelectorAll('.password-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('fa-eye', !isPassword);
+                    icon.classList.toggle('fa-eye-slash', isPassword);
+                }
+                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        });
+    }
+    setupPasswordToggles();
+
     if (!loginForm) {
         console.error('Login form not found');
         return;

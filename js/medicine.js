@@ -58,8 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const typeVal = typeFilter?.value || 'all';
         const unitVal = unitFilter?.value || 'all';
         const statusVal = statusFilter?.value || 'all';
-        const fieldVal = sortField?.value || 'name';
-        const orderVal = sortOrder?.value || 'asc';
+        const sortVal = sortBy?.value || 'name-asc';
 
         filteredMedicines = allMedicines.filter(m => {
             const matchesSearch = term === '' ||
@@ -78,32 +77,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         filteredMedicines.sort((a, b) => {
-            const dir = orderVal === 'asc' ? 1 : -1;
-            if (fieldVal === 'name') {
-                const A = String(a.med_name || '').toLowerCase();
-                const B = String(b.med_name || '').toLowerCase();
-                if (A < B) return -1 * dir;
-                if (A > B) return 1 * dir;
-                return 0;
+            switch (sortVal) {
+                case 'name-asc':
+                case 'name-desc': {
+                    const A = String(a.med_name || '').toLowerCase();
+                    const B = String(b.med_name || '').toLowerCase();
+                    if (A < B) return sortVal === 'name-asc' ? -1 : 1;
+                    if (A > B) return sortVal === 'name-asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'type-asc':
+                case 'type-desc': {
+                    const A = String(a.med_type_name || '').toLowerCase();
+                    const B = String(b.med_type_name || '').toLowerCase();
+                    if (A < B) return sortVal === 'type-asc' ? -1 : 1;
+                    if (A > B) return sortVal === 'type-asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'stock-asc':
+                case 'stock-desc': {
+                    const A = Number(a.stock_quantity) || 0;
+                    const B = Number(b.stock_quantity) || 0;
+                    return sortVal === 'stock-asc' ? (A - B) : (B - A);
+                }
+                case 'price-asc':
+                case 'price-desc': {
+                    const A = Number(a.unit_price) || 0;
+                    const B = Number(b.unit_price) || 0;
+                    return sortVal === 'price-asc' ? (A - B) : (B - A);
+                }
+                default:
+                    return 0;
             }
-            if (fieldVal === 'type') {
-                const A = String(a.med_type_name || '').toLowerCase();
-                const B = String(b.med_type_name || '').toLowerCase();
-                if (A < B) return -1 * dir;
-                if (A > B) return 1 * dir;
-                return 0;
-            }
-            if (fieldVal === 'stock') {
-                const A = Number(a.stock_quantity) || 0;
-                const B = Number(b.stock_quantity) || 0;
-                return (A - B) * dir;
-            }
-            if (fieldVal === 'price') {
-                const A = Number(a.unit_price) || 0;
-                const B = Number(b.unit_price) || 0;
-                return (A - B) * dir;
-            }
-            return 0;
         });
     }
 
@@ -121,8 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const typeFilter = document.getElementById('medTypeFilter');
     const unitFilter = document.getElementById('medUnitFilter');
     const statusFilter = document.getElementById('medStatusFilter');
-    const sortField = document.getElementById('medSortField');
-    const sortOrder = document.getElementById('medSortOrder');
+    const sortBy = document.getElementById('medSortBy');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
@@ -168,15 +172,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return `<option value="${type.med_type_id}">${type.med_type_name}</option>`;
                 }).join('');
 
-                // Populate add/edit with ACTIVE types only
+                // Populate all category dropdowns
                 const addTypeSelect = document.getElementById('med_type_id');
                 const editTypeSelect = document.getElementById('edit_med_type_id');
-                // Populate filter with ALL types for list filtering
                 const filterTypeSelect = document.getElementById('medTypeFilter');
 
-                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
-                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + options;
             } else {
 
                 const addTypeSelect = document.getElementById('med_type_id');
@@ -436,14 +439,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderCurrentPage(1);
         });
     }
-    if (sortField) {
-        sortField.addEventListener('change', () => {
-            applyFiltersAndSort();
-            renderCurrentPage(1);
-        });
-    }
-    if (sortOrder) {
-        sortOrder.addEventListener('change', () => {
+    if (sortBy) {
+        sortBy.addEventListener('change', () => {
             applyFiltersAndSort();
             renderCurrentPage(pagination.currentPage);
         });
