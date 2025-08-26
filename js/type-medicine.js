@@ -36,10 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadMedicineTypes(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadMedicineTypes(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
