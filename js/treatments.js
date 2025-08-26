@@ -12,18 +12,119 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function renderTable(items, paginationData = null) {
+        if (!tableBody) return;
+
+        if (!items || items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        items.forEach(t => {
+            const status = t.is_active == 1 ? 'Active' : 'Inactive';
+            const statusBadge = t.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
+            const row = `
+                <tr>
+                    <td>${t.treatment_name}</td>
+                    <td>₱${parseFloat(t.unit_price).toFixed(2)}</td>
+                    <td>${t.treatment_category}</td>
+                    <td><span class="${statusBadge}">${status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editTreatment(${t.treatment_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
+    }
+
+    function applyFiltersAndSort() {
+        const term = (searchInput?.value || '').toLowerCase().trim();
+        const categoryVal = categoryFilter?.value || 'all';
+        const statusVal = statusFilter?.value || 'all';
+        const sortFieldVal = sortField?.value || 'name';
+        const sortOrderVal = sortOrder?.value || 'asc';
+
+        filteredTreatments = allTreatments.filter(t => {
+            const matchesSearch = term === '' ||
+                String(t.treatment_name || '').toLowerCase().includes(term) ||
+                String(t.treatment_category || '').toLowerCase().includes(term);
+
+            const matchesCategory = categoryVal === 'all' || String(t.treatment_category_id) === String(categoryVal);
+            const isActive = Number(t.is_active) === 1;
+            const matchesStatus = statusVal === 'all' ||
+                (statusVal === 'active' && isActive) ||
+                (statusVal === 'inactive' && !isActive);
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        filteredTreatments.sort((a, b) => {
+            switch (sortFieldVal) {
+                case 'name': {
+                    const A = String(a.treatment_name || '').toLowerCase();
+                    const B = String(b.treatment_name || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'price': {
+                    const A = Number(a.unit_price) || 0;
+                    const B = Number(b.unit_price) || 0;
+                    return sortOrderVal === 'asc' ? (A - B) : (B - A);
+                }
+                case 'category': {
+                    const A = String(a.treatment_category || '').toLowerCase();
+                    const B = String(b.treatment_category || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredTreatments, page, itemsPerPage);
+        renderTable(data, pageData);
+    }
+
     // Treatment management functionality
     const tableBody = document.getElementById('treatment-list');
-    let treatments = [];
+    let allTreatments = [];
+    let filteredTreatments = [];
+
+    // Controls
+    const searchInput = document.getElementById('treatmentSearchInput');
+    const categoryFilter = document.getElementById('treatmentCategoryFilter');
+    const statusFilter = document.getElementById('treatmentStatusFilter');
+    const sortField = document.getElementById('treatmentSortField');
+    const sortOrder = document.getElementById('treatmentSortOrder');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadTreatments(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadTreatments(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
@@ -49,30 +150,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.categories)) {
-                const options = data.categories.map(c => {
+                const allCategories = data.categories;
+                const activeCategories = allCategories.filter(c => Number(c.is_active) === 1);
+
+                const activeOptions = activeCategories.map(c => {
+                    return `<option value="${c.treatment_category_id}">${c.category_name}</option>`;
+                }).join('');
+
+                const allOptions = allCategories.map(c => {
                     return `<option value="${c.treatment_category_id}">${c.category_name}</option>`;
                 }).join('');
 
                 // Populate dropdowns
                 const addCategorySelect = document.getElementById('treatment_category_id');
                 const editCategorySelect = document.getElementById('edit_treatment_category_id');
+                const filterCategorySelect = document.getElementById('treatmentCategoryFilter');
 
-                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
-                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + options;
+                if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">Select Category</option>` + activeOptions;
+                if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">Select Category</option>` + allOptions;
+                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>` + allOptions;
             } else {
                 const addCategorySelect = document.getElementById('treatment_category_id');
                 const editCategorySelect = document.getElementById('edit_treatment_category_id');
+                const filterCategorySelect = document.getElementById('treatmentCategoryFilter');
 
                 if (addCategorySelect) addCategorySelect.innerHTML = `<option value="">No categories available</option>`;
                 if (editCategorySelect) editCategorySelect.innerHTML = `<option value="">No categories available</option>`;
+                if (filterCategorySelect) filterCategorySelect.innerHTML = `<option value="all">All Categories</option>`;
             }
         } catch (error) {
             console.error('Failed to load treatment categories', error);
         }
     }
 
-    // Load treatments
-    async function loadTreatments(page = 1, itemsPerPage = 10, search = '') {
+    // Load all treatments once for full-list search
+    async function loadAllTreatments() {
         if (!tableBody) {
             console.error('Treatment table body not found');
             return;
@@ -84,53 +196,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-treatments.php`, {
                 params: {
                     operation: 'getTreatments',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: ''
                 }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.treatments)) {
-                treatments = data.treatments;
-                const paginationData = data.pagination;
-
-
-                if (treatments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5">No treatments found</td></tr>';
-                    const paginationContainer = document.getElementById('pagination-container');
-                    if (paginationContainer) {
-                        paginationContainer.innerHTML = '';
-                    }
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                treatments.forEach(t => {
-                    const status = t.is_active == 1 ? 'Active' : 'Inactive';
-                    const statusBadge = t.is_active == 1 ? 'badge bg-success' : 'badge bg-secondary';
-
-                    const row = `
-                        <tr>
-                            <td>${t.treatment_name}</td>
-                            <td>₱${parseFloat(t.unit_price).toFixed(2)}</td>
-                            <td>${t.treatment_category}</td>
-                            <td><span class="${statusBadge}">${status}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTreatment(${t.treatment_id})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-                // Update pagination controls
-                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
-                pagination.generatePaginationControls('pagination-container');
+                allTreatments = data.treatments;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
             }
@@ -175,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 addModal.hide();
                 addForm.reset();
-                await loadTreatments();
+                await loadAllTreatments();
             } else {
                 Swal.fire({
                     title: 'Error',
@@ -195,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit treatment
     window.editTreatment = async function (treatmentId) {
-        const treatment = treatments.find(t => t.treatment_id == treatmentId);
+        const treatment = allTreatments.find(t => t.treatment_id == treatmentId);
         if (!treatment) {
             Swal.fire({
                 title: 'Not found',
@@ -251,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 editModal.hide();
-                await loadTreatments();
+                await loadAllTreatments();
             } else {
                 Swal.fire({
                     title: 'Error',
@@ -269,7 +346,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Initialize
+    // Initialize the module
     await loadTreatmentCategories();
-    await loadTreatments();
+
+    // Wire control events
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (sortField) {
+        sortField.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+    if (sortOrder) {
+        sortOrder.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+
+    await loadAllTreatments();
 });
