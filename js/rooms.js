@@ -11,18 +11,125 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    function renderTable(items, paginationData = null) {
+        if (!tableBody) return;
+
+        if (!items || items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6">No rooms found</td></tr>';
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        items.forEach(room => {
+            const availability = room.is_available == 1 ? 'Available' : 'Not Available';
+            const statusBadge = room.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
+            const row = `
+                <tr>
+                    <td>${room.room_number}</td>
+                    <td>${room.room_type_name}</td>
+                    <td>₱${parseFloat(room.daily_rate).toFixed(2)}</td>
+                    <td>${room.max_occupancy}</td>
+                    <td><span class="${statusBadge}">${availability}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editRoom(${room.room_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        if (paginationData) {
+            pagination.calculatePagination(
+                paginationData.totalItems,
+                paginationData.currentPage,
+                paginationData.itemsPerPage
+            );
+            pagination.generatePaginationControls('pagination-container');
+        }
+    }
+
+    function applyFiltersAndSort() {
+        const term = (searchInput?.value || '').toLowerCase().trim();
+        const typeVal = typeFilter?.value || 'all';
+        const statusVal = statusFilter?.value || 'all';
+        const sortFieldVal = sortField?.value || 'number';
+        const sortOrderVal = sortOrder?.value || 'asc';
+
+        filteredRooms = allRooms.filter(room => {
+            const matchesSearch = term === '' ||
+                String(room.room_number || '').toLowerCase().includes(term) ||
+                String(room.room_type_name || '').toLowerCase().includes(term);
+
+            const matchesType = typeVal === 'all' || String(room.room_type_id) === String(typeVal);
+            const isAvailable = Number(room.is_available) === 1;
+            const matchesStatus = statusVal === 'all' ||
+                (statusVal === 'available' && isAvailable) ||
+                (statusVal === 'unavailable' && !isAvailable);
+
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        filteredRooms.sort((a, b) => {
+            switch (sortFieldVal) {
+                case 'number': {
+                    const A = String(a.room_number || '').toLowerCase();
+                    const B = String(b.room_number || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'type': {
+                    const A = String(a.room_type_name || '').toLowerCase();
+                    const B = String(b.room_type_name || '').toLowerCase();
+                    if (A < B) return sortOrderVal === 'asc' ? -1 : 1;
+                    if (A > B) return sortOrderVal === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                case 'rate': {
+                    const A = Number(a.daily_rate) || 0;
+                    const B = Number(b.daily_rate) || 0;
+                    return sortOrderVal === 'asc' ? (A - B) : (B - A);
+                }
+                case 'occupancy': {
+                    const A = Number(a.max_occupancy) || 0;
+                    const B = Number(b.max_occupancy) || 0;
+                    return sortOrderVal === 'asc' ? (A - B) : (B - A);
+                }
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    function renderCurrentPage(page = pagination.currentPage, itemsPerPage = pagination.itemsPerPage) {
+        const { data, pagination: pageData } = pagination.getPaginatedData(filteredRooms, page, itemsPerPage);
+        renderTable(data, pageData);
+    }
+
     // Room management functionality
     const tableBody = document.getElementById('room-list');
-    let rooms = [];
+    let allRooms = [];
+    let filteredRooms = [];
+
+    // Controls
+    const searchInput = document.getElementById('roomSearchInput');
+    const typeFilter = document.getElementById('roomTypeFilter');
+    const statusFilter = document.getElementById('roomStatusFilter');
+    const sortField = document.getElementById('roomSortField');
+    const sortOrder = document.getElementById('roomSortOrder');
 
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
         onPageChange: (page) => {
-            loadRooms(page);
+            renderCurrentPage(page);
         },
         onItemsPerPageChange: (itemsPerPage) => {
-            loadRooms(1, itemsPerPage);
+            renderCurrentPage(1, itemsPerPage);
         }
     });
 
@@ -48,30 +155,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success && Array.isArray(data.types)) {
-                const options = data.types.map(type => {
+                const allTypes = data.types;
+                const activeTypes = allTypes.filter(t => Number(t.is_active) === 1);
+
+                const activeOptions = activeTypes.map(type => {
+                    return `<option value="${type.room_type_id}">${type.room_type_name}</option>`;
+                }).join('');
+
+                const allOptions = allTypes.map(type => {
                     return `<option value="${type.room_type_id}">${type.room_type_name}</option>`;
                 }).join('');
 
                 // Populate dropdowns
                 const addTypeSelect = document.getElementById('room_type_id');
                 const editTypeSelect = document.getElementById('edit_room_type_id');
+                const filterTypeSelect = document.getElementById('roomTypeFilter');
 
-                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
-                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + options;
+                if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">Select Type</option>` + activeOptions;
+                if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">Select Type</option>` + allOptions;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>` + allOptions;
             } else {
                 const addTypeSelect = document.getElementById('room_type_id');
                 const editTypeSelect = document.getElementById('edit_room_type_id');
+                const filterTypeSelect = document.getElementById('roomTypeFilter');
 
                 if (addTypeSelect) addTypeSelect.innerHTML = `<option value="">No types available</option>`;
                 if (editTypeSelect) editTypeSelect.innerHTML = `<option value="">No types available</option>`;
+                if (filterTypeSelect) filterTypeSelect.innerHTML = `<option value="all">All Types</option>`;
             }
         } catch (error) {
             console.error('Failed to load room types', error);
         }
     }
 
-    // Load room list
-    async function loadRooms(page = 1, itemsPerPage = 10, search = '') {
+    // Load all rooms once for full-list search
+    async function loadAllRooms() {
         if (!tableBody) {
             console.error('Room table body not found');
             return;
@@ -83,53 +201,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await axios.get(`${baseApiUrl}/get-rooms.php`, {
                 params: {
                     operation: 'getRooms',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search
+                    page: 1,
+                    itemsPerPage: 100000,
+                    search: ''
                 }
             });
 
             const data = response.data;
 
             if (data.success && Array.isArray(data.rooms)) {
-                rooms = data.rooms;
-                const paginationData = data.pagination;
-
-
-                if (rooms.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="6">No rooms found</td></tr>';
-                    const paginationContainer = document.getElementById('pagination-container');
-                    if (paginationContainer) {
-                        paginationContainer.innerHTML = '';
-                    }
-                    return;
-                }
-
-                tableBody.innerHTML = '';
-
-                rooms.forEach(room => {
-                    const availability = room.is_available == 1 ? 'Available' : 'Not Available';
-                    const statusBadge = room.is_available == 1 ? 'badge bg-success' : 'badge bg-secondary';
-
-                    const row = `
-                        <tr>
-                            <td>${room.room_number}</td>
-                            <td>${room.room_type_name}</td>
-                            <td>₱${parseFloat(room.daily_rate).toFixed(2)}</td>
-                            <td>${room.max_occupancy}</td>
-                            <td><span class="${statusBadge}">${availability}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editRoom(${room.room_id})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-                // Update pagination controls
-                pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
-                pagination.generatePaginationControls('pagination-container');
+                allRooms = data.rooms;
+                applyFiltersAndSort();
+                renderCurrentPage(1);
             } else {
                 tableBody.innerHTML = `<tr><td colspan="6">${data.message || 'No data found'}</td></tr>`;
             }
@@ -176,11 +259,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 addModal.hide();
                 addForm.reset();
-                await loadRooms();
+                await loadAllRooms();
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to add room.',
+                    text: data.message || 'Failed to add room.',
                     icon: 'error'
                 });
             }
@@ -196,7 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit room
     window.editRoom = async function (roomId) {
-        const room = rooms.find(r => r.room_id == roomId);
+        const room = allRooms.find(r => r.room_id == roomId);
         if (!room) {
             Swal.fire({
                 title: 'Warning',
@@ -255,11 +338,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 editModal.hide();
-                await loadRooms();
+                await loadAllRooms();
             } else {
                 Swal.fire({
                     title: 'Failed',
-                    text: 'Failed to update room.',
+                    text: data.message || 'Failed to update room.',
                     icon: 'error'
                 });
             }
@@ -273,7 +356,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Initialize
+    // Initialize the module
     await loadRoomTypes();
-    await loadRooms();
+
+    // Wire control events
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            pagination.resetToFirstPage();
+            applyFiltersAndSort();
+            renderCurrentPage(1);
+        });
+    }
+    if (sortField) {
+        sortField.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+    if (sortOrder) {
+        sortOrder.addEventListener('change', () => {
+            applyFiltersAndSort();
+            renderCurrentPage(pagination.currentPage);
+        });
+    }
+
+    await loadAllRooms();
 });
