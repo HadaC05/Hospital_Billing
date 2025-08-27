@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +24,7 @@
     <script src="../js/patients.js" defer></script>
     <script src="../js/theme-loader.js" defer></script>
 </head>
+
 <body class="d-flex flex-column vh-100">
     <!-- Header -->
     <div id="header-placeholder"></div>
@@ -134,7 +136,7 @@
                             <div id="admission-info" class="row mb-4">
                                 <!-- Admission info will be loaded here -->
                             </div>
-                            
+
                             <!-- Room Stay History Table -->
                             <div class="row mb-4">
                                 <div class="col-md-12">
@@ -162,7 +164,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
@@ -284,30 +286,39 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Agreement Section -->
                             <div class="row mt-4">
                                 <div class="col-md-12">
                                     <div class="card">
                                         <div class="card-header bg-warning text-white">
-                                            <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Agreement and Consent</h5>
+                                            <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Agreement and
+                                                Consent</h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="patientAgreement" disabled>
+                                                <input class="form-check-input" type="checkbox" id="patientAgreement"
+                                                    disabled>
                                                 <label class="form-check-label" for="patientAgreement">
-                                                    I hereby authorize the hospital to provide necessary medical treatment and care. 
-                                                    I understand that I am financially responsible for all charges incurred. 
-                                                    I consent to the release of medical information to insurance companies or other 
-                                                    healthcare providers as necessary for treatment and billing purposes.
+                                                    I hereby authorize the hospital to provide necessary medical
+                                                    treatment and care.
+                                                    I understand that I am financially responsible for all charges
+                                                    incurred.
+                                                    I consent to the release of medical information to insurance
+                                                    companies or other
+                                                    healthcare providers as necessary for treatment and billing
+                                                    purposes.
                                                 </label>
                                             </div>
                                             <div class="mt-3">
-                                                <p><strong>Signed by:</strong> <span id="consentSignedBy">Not available</span></p>
-                                                <p><strong>Date:</strong> <span id="consentDate">Not available</span></p>
+                                                <p><strong>Signed by:</strong> <span id="consentSignedBy">Not
+                                                        available</span></p>
+                                                <p><strong>Date:</strong> <span id="consentDate">Not available</span>
+                                                </p>
                                             </div>
                                             <div class="mt-3">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#termsAndConditionsModal">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#termsAndConditionsModal">
                                                     <i class="fas fa-file-alt me-1"></i> View Terms and Conditions
                                                 </button>
                                             </div>
@@ -321,7 +332,7 @@
             </div>
         </main>
     </div>
-    
+
     <!-- Dispense Medicine Modal -->
     <div class="modal fade" id="dispenseMedicineModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -392,7 +403,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Transfer Room Modal -->
     <div class="modal fade" id="transferRoomModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -426,7 +437,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Terms and Conditions Modal -->
     <div class="modal fade" id="termsAndConditionsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -437,22 +448,37 @@
                 </div>
                 <div class="modal-body">
                     <h6>1. Consent to Treatment</h6>
-                    <p>I hereby authorize the hospital and its medical staff to provide necessary medical treatment, care, and services deemed advisable by the attending physician. This consent includes, but is not limited to, diagnostic procedures, medical treatments, surgical procedures, and anesthesia.</p>
-                    
+                    <p>I hereby authorize the hospital and its medical staff to provide necessary medical treatment,
+                        care, and services deemed advisable by the attending physician. This consent includes, but is
+                        not limited to, diagnostic procedures, medical treatments, surgical procedures, and anesthesia.
+                    </p>
+
                     <h6>2. Financial Responsibility</h6>
-                    <p>I understand that I am financially responsible for all charges incurred for my treatment, care, and services provided by the hospital. This includes charges for physicians, surgeons, anesthesiologists, radiologists, pathologists, and other professional services, as well as charges for hospital accommodations, medications, supplies, and equipment.</p>
-                    
+                    <p>I understand that I am financially responsible for all charges incurred for my treatment, care,
+                        and services provided by the hospital. This includes charges for physicians, surgeons,
+                        anesthesiologists, radiologists, pathologists, and other professional services, as well as
+                        charges for hospital accommodations, medications, supplies, and equipment.</p>
+
                     <h6>3. Release of Medical Information</h6>
-                    <p>I consent to the release of my medical information to insurance companies, healthcare providers, and other third parties as necessary for treatment, payment, and healthcare operations. I understand that this information will be handled in accordance with applicable privacy laws and regulations.</p>
-                    
+                    <p>I consent to the release of my medical information to insurance companies, healthcare providers,
+                        and other third parties as necessary for treatment, payment, and healthcare operations. I
+                        understand that this information will be handled in accordance with applicable privacy laws and
+                        regulations.</p>
+
                     <h6>4. Hospital Policies</h6>
-                    <p>I agree to abide by all hospital policies and regulations, including those related to patient conduct, visitation, and property. I understand that failure to comply with these policies may result in discharge from the hospital.</p>
-                    
+                    <p>I agree to abide by all hospital policies and regulations, including those related to patient
+                        conduct, visitation, and property. I understand that failure to comply with these policies may
+                        result in discharge from the hospital.</p>
+
                     <h6>5. Discharge Planning</h6>
-                    <p>I understand that the hospital will begin discharge planning upon admission and that I will be expected to participate in this process. I agree to make arrangements for my discharge as recommended by my healthcare team.</p>
-                    
+                    <p>I understand that the hospital will begin discharge planning upon admission and that I will be
+                        expected to participate in this process. I agree to make arrangements for my discharge as
+                        recommended by my healthcare team.</p>
+
                     <h6>6. Acknowledgment</h6>
-                    <p>I acknowledge that I have read and understood these terms and conditions, and I agree to be bound by them. I understand that this consent is valid for the duration of my hospital stay unless revoked in writing.</p>
+                    <p>I acknowledge that I have read and understood these terms and conditions, and I agree to be bound
+                        by them. I understand that this consent is valid for the duration of my hospital stay unless
+                        revoked in writing.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -460,7 +486,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add Surgeries Modal -->
     <div class="modal fade" id="addSurgeriesModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -531,7 +557,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add Treatments Modal -->
     <div class="modal fade" id="addTreatmentsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -602,7 +628,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add Lab Tests Modal -->
     <div class="modal fade" id="addLabTestsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -674,4 +700,5 @@
         </div>
     </div>
 </body>
+
 </html>

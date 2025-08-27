@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,16 +12,16 @@
     <link rel="stylesheet" href="../css/hospital-theme.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="icon" type="image/png" href="../assets/images/favicon-32.png">
-    
+
     <style>
         .admission-form {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             padding: 15px;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
-        
+
         .form-section {
             background-color: white;
             border: 1px solid #dee2e6;
@@ -28,7 +29,7 @@
             padding: 12px;
             margin-bottom: 15px;
         }
-        
+
         .form-section-title {
             font-weight: bold;
             color: #0c63e4;
@@ -37,68 +38,69 @@
             margin-bottom: 12px;
             font-size: 1rem;
         }
-        
+
         .form-header {
             text-align: center;
             margin-bottom: 20px;
         }
-        
+
         .form-header h3 {
             color: #0c63e4;
             font-weight: bold;
             font-size: 1.25rem;
         }
-        
+
         .radio-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 3px;
         }
-        
+
         .radio-option {
             display: flex;
             align-items: center;
         }
-        
+
         .radio-option input {
             margin-right: 3px;
         }
-        
+
         .form-label {
             font-size: 0.9rem;
             margin-bottom: 3px;
         }
-        
-        .form-control, .form-select {
+
+        .form-control,
+        .form-select {
             font-size: 0.9rem;
             padding: 0.375rem 0.75rem;
         }
-        
+
         .modal-body {
             padding: 15px;
         }
-        
+
         .modal-header {
             padding: 10px 15px;
         }
-        
+
         .modal-footer {
             padding: 10px 15px;
         }
-        
+
         .mb-2 {
             margin-bottom: 0.75rem !important;
         }
-        
+
         .row {
             margin-bottom: 5px;
         }
-        
+
         .under-18-section {
             display: none;
         }
-        
+
         .under-18-section.active {
             display: block;
         }
@@ -113,6 +115,7 @@
     <script src="../js/admission.js" defer></script>
     <script src="../js/theme-loader.js" defer></script>
 </head>
+
 <body class="d-flex flex-column vh-100">
     <!-- Header -->
     <div id="header-placeholder"></div>
@@ -149,77 +152,6 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-<<<<<<< HEAD
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <h6>Patient Information</h6>
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="use_existing_patient">
-                                        <label class="form-check-label" for="use_existing_patient">Use Existing
-                                            Patient</label>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="existing_patient_select">Select Patient</label>
-                                        <select class="form-control" id="existing_patient_select" disabled>
-                                            <option value="">-- Search/Select patient --</option>
-                                        </select>
-                                        <small class="text-muted">Toggle on to select an existing patient. Fields below
-                                            will be auto-filled.</small>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="patient_fname">First Name</label>
-                                        <input type="text" class="form-control" id="patient_fname"
-                                            placeholder="e.g., Juan" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="patient_lname">Last Name</label>
-                                        <input type="text" class="form-control" id="patient_lname"
-                                            placeholder="e.g., Dela Cruz" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="patient_mname">Middle Name</label>
-                                        <input type="text" class="form-control" id="patient_mname"
-                                            placeholder="Optional">
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="birthdate">Birthdate</label>
-                                        <input type="date" class="form-control" id="birthdate" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="address">Address</label>
-                                        <input type="text" class="form-control" id="address"
-                                            placeholder="Street, City, Province" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="mobile_number">Mobile Number</label>
-                                        <input type="text" class="form-control" id="mobile_number"
-                                            placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
-                                            title="Use 11-digit PH format starting with 09 or +639" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="email">Email</label>
-                                        <input type="email" class="form-control" id="email"
-                                            placeholder="name@example.com">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Emergency Contact</h6>
-                                    <div class="mb-2">
-                                        <label for="em_contact_name">Contact Name</label>
-                                        <input type="text" class="form-control" id="em_contact_name"
-                                            placeholder="Parent/Guardian" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="em_contact_number">Contact Number</label>
-                                        <input type="text" class="form-control" id="em_contact_number"
-                                            placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
-                                            title="Use 11-digit PH format starting with 09 or +639" required>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label for="em_contact_address">Contact Address</label>
-                                        <input type="text" class="form-control" id="em_contact_address"
-                                            placeholder="Street, City, Province" required>
-=======
                             <div class="admission-form">
                                 <!-- Form Header -->
                                 <div class="form-header">
@@ -241,17 +173,19 @@
                                         </div>
                                         <div class="col-md-4 text-end">
                                             <div class="mb-2">
-                                                <label for="admission_reason" class="form-label">Reason for Admission</label>
-                                                <textarea class="form-control" id="admission_reason" rows="1" required></textarea>
+                                                <label for="admission_reason" class="form-label">Reason for
+                                                    Admission</label>
+                                                <textarea class="form-control" id="admission_reason" rows="1"
+                                                    required></textarea>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Patient Information Section -->
                                 <div class="form-section">
                                     <div class="form-section-title">PATIENT INFORMATION</div>
-                                    
+
                                     <!-- Name Fields -->
                                     <div class="row mb-2">
                                         <div class="col-md-3">
@@ -275,11 +209,12 @@
                                         <div class="col-md-3">
                                             <div class="mb-2">
                                                 <label for="patient_suffix" class="form-label">Suffix (Optional)</label>
-                                                <input type="text" class="form-control" id="patient_suffix" placeholder="e.g., Jr., Sr., III">
+                                                <input type="text" class="form-control" id="patient_suffix"
+                                                    placeholder="e.g., Jr., Sr., III">
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="row mb-2">
                                         <div class="col-md-4">
                                             <div class="mb-2">
@@ -292,15 +227,18 @@
                                                 <label class="form-label">Gender</label>
                                                 <div class="radio-group">
                                                     <div class="radio-option">
-                                                        <input type="radio" id="gender_male" name="gender" value="Male" required>
+                                                        <input type="radio" id="gender_male" name="gender" value="Male"
+                                                            required>
                                                         <label for="gender_male">Male</label>
                                                     </div>
                                                     <div class="radio-option">
-                                                        <input type="radio" id="gender_female" name="gender" value="Female">
+                                                        <input type="radio" id="gender_female" name="gender"
+                                                            value="Female">
                                                         <label for="gender_female">Female</label>
                                                     </div>
                                                     <div class="radio-option">
-                                                        <input type="radio" id="gender_other" name="gender" value="Other">
+                                                        <input type="radio" id="gender_other" name="gender"
+                                                            value="Other">
                                                         <label for="gender_other">Other</label>
                                                     </div>
                                                 </div>
@@ -323,16 +261,17 @@
                                         <div class="col-md-6">
                                             <div class="mb-2">
                                                 <label for="mobile_number" class="form-label">Mobile Number</label>
-                                                <input type="text" class="form-control" id="mobile_number" placeholder="09XXXXXXXXX" pattern="^(09|\+639)\d{9}$" required>
+                                                <input type="text" class="form-control" id="mobile_number"
+                                                    placeholder="09XXXXXXXXX" pattern="^(09|\+639)\d{9}$" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-2">
                                                 <label for="email" class="form-label">Email (Optional)</label>
-                                                <input type="email" class="form-control" id="email" placeholder="name@example.com">
+                                                <input type="email" class="form-control" id="email"
+                                                    placeholder="name@example.com">
                                             </div>
                                         </div>
->>>>>>> 3rd_branch
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-12">
@@ -340,32 +279,36 @@
                                             <input type="text" class="form-control" id="address" required>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Under 18 Section -->
                                     <div class="form-check form-switch mt-2">
                                         <input class="form-check-input" type="checkbox" id="under_18_toggle">
-                                        <label class="form-check-label" for="under_18_toggle">Patient is under 18 years old</label>
+                                        <label class="form-check-label" for="under_18_toggle">Patient is under 18 years
+                                            old</label>
                                     </div>
-                                    
+
                                     <div class="under-18-section" id="under_18_section">
                                         <div class="form-section-title mt-3">PARENT/GUARDIAN INFORMATION</div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
                                                 <div class="mb-2">
-                                                    <label for="parent_name" class="form-label">Parent/Guardian Name</label>
+                                                    <label for="parent_name" class="form-label">Parent/Guardian
+                                                        Name</label>
                                                     <input type="text" class="form-control" id="parent_name">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-2">
-                                                    <label for="parent_contact" class="form-label">Parent/Guardian Contact</label>
-                                                    <input type="text" class="form-control" id="parent_contact" pattern="^(09|\+639)\d{9}$">
+                                                    <label for="parent_contact" class="form-label">Parent/Guardian
+                                                        Contact</label>
+                                                    <input type="text" class="form-control" id="parent_contact"
+                                                        pattern="^(09|\+639)\d{9}$">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Emergency Contact Section -->
                                 <div class="form-section">
                                     <div class="form-section-title">EMERGENCY CONTACT</div>
@@ -378,30 +321,20 @@
                                         </div>
                                         <div class="col-md-4">
                                             <div class="mb-2">
-                                                <label for="em_contact_relationship" class="form-label">Relationship</label>
-                                                <input type="text" class="form-control" id="em_contact_relationship" required>
+                                                <label for="em_contact_relationship"
+                                                    class="form-label">Relationship</label>
+                                                <input type="text" class="form-control" id="em_contact_relationship"
+                                                    required>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="mb-2">
                                                 <label for="em_contact_number" class="form-label">Contact Number</label>
-                                                <input type="text" class="form-control" id="em_contact_number" pattern="^(09|\+639)\d{9}$" required>
+                                                <input type="text" class="form-control" id="em_contact_number"
+                                                    pattern="^(09|\+639)\d{9}$" required>
                                             </div>
                                         </div>
                                     </div>
-<<<<<<< HEAD
-                                    <div class="mb-2">
-                                        <label for="er_initial_charge">ER Initial Charge (₱1,500)</label>
-                                        <select class="form-control" id="er_initial_charge">
-                                            <option value="0">Not Applicable</option>
-                                            <option value="1">Applicable</option>
-                                        </select>
-                                        <small class="text-muted d-block">Select "Applicable" if the patient was held in
-                                            the Emergency Room.</small>
-                                        <small id="er_charge_preview" class="text-success fw-semibold"
-                                            style="display:none;">ER initial charge will add ₱1,500 to the bill
-                                            preview.</small>
-=======
                                     <div class="row mb-2">
                                         <div class="col-md-6">
                                             <label for="em_contact_address" class="form-label">Contact Address</label>
@@ -409,12 +342,12 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label for="em_contact_email" class="form-label">Email (Optional)</label>
-                                            <input type="email" class="form-control" id="em_contact_email" placeholder="name@example.com">
+                                            <input type="email" class="form-control" id="em_contact_email"
+                                                placeholder="name@example.com">
                                         </div>
->>>>>>> 3rd_branch
                                     </div>
                                 </div>
-                                
+
                                 <!-- Room Details Section -->
                                 <div class="form-section">
                                     <div class="form-section-title">ROOM DETAILS</div>
@@ -429,7 +362,8 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-2">
-                                                <label for="er_initial_charge" class="form-label">ER Initial Charge (₱1,500)</label>
+                                                <label for="er_initial_charge" class="form-label">ER Initial Charge
+                                                    (₱1,500)</label>
                                                 <select class="form-control" id="er_initial_charge">
                                                     <option value="0">Not Applicable</option>
                                                     <option value="1">Applicable</option>
@@ -438,7 +372,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Agreement Section -->
                                 <div class="form-section">
                                     <div class="form-section-title">AGREEMENT AND CONSENT</div>
@@ -446,14 +380,17 @@
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="agreement" required>
                                             <label class="form-check-label" for="agreement">
-                                                I hereby authorize the hospital to provide necessary medical treatment and care. 
-                                                I understand that I am financially responsible for all charges incurred. 
-                                                I consent to the release of medical information to insurance companies or other 
+                                                I hereby authorize the hospital to provide necessary medical treatment
+                                                and care.
+                                                I understand that I am financially responsible for all charges incurred.
+                                                I consent to the release of medical information to insurance companies
+                                                or other
                                                 healthcare providers as necessary for treatment and billing purposes.
                                             </label>
                                         </div>
                                         <div class="mt-2">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#termsAndConditionsModal">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="modal" data-bs-target="#termsAndConditionsModal">
                                                 <i class="fas fa-file-alt me-1"></i> View Terms and Conditions
                                             </button>
                                         </div>
@@ -479,7 +416,7 @@
                             <div class="modal-body">
                                 <input type="hidden" id="edit_admission_id">
                                 <input type="hidden" id="edit_patient_id">
-                                
+
                                 <div class="admission-form">
                                     <!-- Form Header -->
                                     <div class="form-header">
@@ -495,63 +432,67 @@
                                             </div>
                                             <div class="col-md-4 text-center">
                                                 <div class="mb-2">
-                                                    <label for="edit_admission_date" class="form-label">Admission Date</label>
-                                                    <input type="date" class="form-control" id="edit_admission_date" required>
+                                                    <label for="edit_admission_date" class="form-label">Admission
+                                                        Date</label>
+                                                    <input type="date" class="form-control" id="edit_admission_date"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-4 text-end">
                                                 <div class="mb-2">
-                                                    <label for="edit_admission_reason" class="form-label">Reason for Admission</label>
-                                                    <textarea class="form-control" id="edit_admission_reason" rows="1" required></textarea>
+                                                    <label for="edit_admission_reason" class="form-label">Reason for
+                                                        Admission</label>
+                                                    <textarea class="form-control" id="edit_admission_reason" rows="1"
+                                                        required></textarea>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Patient Information Section -->
                                     <div class="form-section">
                                         <div class="form-section-title">PATIENT INFORMATION</div>
-                                        
+
                                         <!-- Name Fields -->
                                         <div class="row mb-2">
                                             <div class="col-md-3">
                                                 <div class="mb-2">
-                                                    <label for="edit_patient_fname" class="form-label">First Name</label>
-                                                    <input type="text" class="form-control" id="edit_patient_fname" required>
+                                                    <label for="edit_patient_fname" class="form-label">First
+                                                        Name</label>
+                                                    <input type="text" class="form-control" id="edit_patient_fname"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="mb-2">
-                                                    <label for="edit_patient_mname" class="form-label">Middle Name</label>
+                                                    <label for="edit_patient_mname" class="form-label">Middle
+                                                        Name</label>
                                                     <input type="text" class="form-control" id="edit_patient_mname">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="mb-2">
                                                     <label for="edit_patient_lname" class="form-label">Last Name</label>
-                                                    <input type="text" class="form-control" id="edit_patient_lname" required>
+                                                    <input type="text" class="form-control" id="edit_patient_lname"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="mb-2">
-                                                    <label for="edit_patient_suffix" class="form-label">Suffix (Optional)</label>
-                                                    <input type="text" class="form-control" id="edit_patient_suffix" placeholder="e.g., Jr., Sr., III">
+                                                    <label for="edit_patient_suffix" class="form-label">Suffix
+                                                        (Optional)</label>
+                                                    <input type="text" class="form-control" id="edit_patient_suffix"
+                                                        placeholder="e.g., Jr., Sr., III">
                                                 </div>
                                             </div>
                                         </div>
-<<<<<<< HEAD
-                                        <div class="mb-2">
-                                            <label for="edit_em_contact_number">Contact Number</label>
-                                            <input type="text" class="form-control" id="edit_em_contact_number"
-                                                placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
-                                                title="Use 11-digit PH format starting with 09 or +639" required>
-=======
-                                        
+
                                         <div class="row mb-2">
                                             <div class="col-md-4">
                                                 <div class="mb-2">
                                                     <label for="edit_birthdate" class="form-label">Date of Birth</label>
-                                                    <input type="date" class="form-control" id="edit_birthdate" required>
+                                                    <input type="date" class="form-control" id="edit_birthdate"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
@@ -559,15 +500,18 @@
                                                     <label class="form-label">Gender</label>
                                                     <div class="radio-group">
                                                         <div class="radio-option">
-                                                            <input type="radio" id="edit_gender_male" name="edit_gender" value="Male" required>
+                                                            <input type="radio" id="edit_gender_male" name="edit_gender"
+                                                                value="Male" required>
                                                             <label for="edit_gender_male">Male</label>
                                                         </div>
                                                         <div class="radio-option">
-                                                            <input type="radio" id="edit_gender_female" name="edit_gender" value="Female">
+                                                            <input type="radio" id="edit_gender_female"
+                                                                name="edit_gender" value="Female">
                                                             <label for="edit_gender_female">Female</label>
                                                         </div>
                                                         <div class="radio-option">
-                                                            <input type="radio" id="edit_gender_other" name="edit_gender" value="Other">
+                                                            <input type="radio" id="edit_gender_other"
+                                                                name="edit_gender" value="Other">
                                                             <label for="edit_gender_other">Other</label>
                                                         </div>
                                                     </div>
@@ -575,7 +519,8 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="mb-2">
-                                                    <label for="edit_marital_status" class="form-label">Marital Status</label>
+                                                    <label for="edit_marital_status" class="form-label">Marital
+                                                        Status</label>
                                                     <select class="form-control" id="edit_marital_status" required>
                                                         <option value="">-- Select Status --</option>
                                                         <option value="Single">Single</option>
@@ -585,19 +530,21 @@
                                                     </select>
                                                 </div>
                                             </div>
->>>>>>> 3rd_branch
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
                                                 <div class="mb-2">
-                                                    <label for="edit_mobile_number" class="form-label">Mobile Number</label>
-                                                    <input type="text" class="form-control" id="edit_mobile_number" pattern="^(09|\+639)\d{9}$" required>
+                                                    <label for="edit_mobile_number" class="form-label">Mobile
+                                                        Number</label>
+                                                    <input type="text" class="form-control" id="edit_mobile_number"
+                                                        pattern="^(09|\+639)\d{9}$" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-2">
                                                     <label for="edit_email" class="form-label">Email (Optional)</label>
-                                                    <input type="email" class="form-control" id="edit_email" placeholder="name@example.com">
+                                                    <input type="email" class="form-control" id="edit_email"
+                                                        placeholder="name@example.com">
                                                 </div>
                                             </div>
                                         </div>
@@ -607,78 +554,81 @@
                                                 <input type="text" class="form-control" id="edit_address" required>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Under 18 Section -->
                                         <div class="form-check form-switch mt-2">
                                             <input class="form-check-input" type="checkbox" id="edit_under_18_toggle">
-                                            <label class="form-check-label" for="edit_under_18_toggle">Patient is under 18 years old</label>
+                                            <label class="form-check-label" for="edit_under_18_toggle">Patient is under
+                                                18 years old</label>
                                         </div>
-                                        
+
                                         <div class="under-18-section" id="edit_under_18_section">
                                             <div class="form-section-title mt-3">PARENT/GUARDIAN INFORMATION</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-6">
                                                     <div class="mb-2">
-                                                        <label for="edit_parent_name" class="form-label">Parent/Guardian Name</label>
+                                                        <label for="edit_parent_name" class="form-label">Parent/Guardian
+                                                            Name</label>
                                                         <input type="text" class="form-control" id="edit_parent_name">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="mb-2">
-                                                        <label for="edit_parent_contact" class="form-label">Parent/Guardian Contact</label>
-                                                        <input type="text" class="form-control" id="edit_parent_contact" pattern="^(09|\+639)\d{9}$">
+                                                        <label for="edit_parent_contact"
+                                                            class="form-label">Parent/Guardian Contact</label>
+                                                        <input type="text" class="form-control" id="edit_parent_contact"
+                                                            pattern="^(09|\+639)\d{9}$">
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Emergency Contact Section -->
                                     <div class="form-section">
                                         <div class="form-section-title">EMERGENCY CONTACT</div>
                                         <div class="row mb-2">
                                             <div class="col-md-4">
                                                 <div class="mb-2">
-                                                    <label for="edit_em_contact_name" class="form-label">Contact Name</label>
-                                                    <input type="text" class="form-control" id="edit_em_contact_name" required>
+                                                    <label for="edit_em_contact_name" class="form-label">Contact
+                                                        Name</label>
+                                                    <input type="text" class="form-control" id="edit_em_contact_name"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="mb-2">
-                                                    <label for="edit_em_contact_relationship" class="form-label">Relationship</label>
-                                                    <input type="text" class="form-control" id="edit_em_contact_relationship" required>
+                                                    <label for="edit_em_contact_relationship"
+                                                        class="form-label">Relationship</label>
+                                                    <input type="text" class="form-control"
+                                                        id="edit_em_contact_relationship" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="mb-2">
-                                                    <label for="edit_em_contact_number" class="form-label">Contact Number</label>
-                                                    <input type="text" class="form-control" id="edit_em_contact_number" pattern="^(09|\+639)\d{9}$" required>
+                                                    <label for="edit_em_contact_number" class="form-label">Contact
+                                                        Number</label>
+                                                    <input type="text" class="form-control" id="edit_em_contact_number"
+                                                        pattern="^(09|\+639)\d{9}$" required>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
-                                                <label for="edit_em_contact_address" class="form-label">Contact Address</label>
-                                                <input type="text" class="form-control" id="edit_em_contact_address" required>
+                                                <label for="edit_em_contact_address" class="form-label">Contact
+                                                    Address</label>
+                                                <input type="text" class="form-control" id="edit_em_contact_address"
+                                                    required>
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="edit_em_contact_email" class="form-label">Email (Optional)</label>
-                                                <input type="email" class="form-control" id="edit_em_contact_email" placeholder="name@example.com">
+                                                <label for="edit_em_contact_email" class="form-label">Email
+                                                    (Optional)</label>
+                                                <input type="email" class="form-control" id="edit_em_contact_email"
+                                                    placeholder="name@example.com">
                                             </div>
                                         </div>
-<<<<<<< HEAD
-                                        <div class="mb-2">
-                                            <label for="edit_er_initial_charge">ER Initial Charge (₱1,500)</label>
-                                            <select class="form-control" id="edit_er_initial_charge">
-                                                <option value="0">Not Applicable</option>
-                                                <option value="1">Applicable</option>
-                                            </select>
-                                            <small id="edit_er_charge_preview" class="text-success fw-semibold"
-                                                style="display:none;">ER initial charge will add ₱1,500 to the bill
-                                                preview.</small>
-=======
                                     </div>
-                                    
+
                                     <!-- Room Details Section -->
                                     <div class="form-section">
                                         <div class="form-section-title">ROOM DETAILS</div>
@@ -693,40 +643,48 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-2">
-                                                    <label for="edit_er_initial_charge" class="form-label">ER Initial Charge (₱1,500)</label>
+                                                    <label for="edit_er_initial_charge" class="form-label">ER Initial
+                                                        Charge (₱1,500)</label>
                                                     <select class="form-control" id="edit_er_initial_charge">
                                                         <option value="0">Not Applicable</option>
                                                         <option value="1">Applicable</option>
                                                     </select>
                                                 </div>
                                             </div>
->>>>>>> 3rd_branch
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-md-6">
                                                 <div class="mb-2">
-                                                    <label for="edit_discharge_date" class="form-label">Discharge Date</label>
+                                                    <label for="edit_discharge_date" class="form-label">Discharge
+                                                        Date</label>
                                                     <input type="date" class="form-control" id="edit_discharge_date">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Agreement Section -->
                                     <div class="form-section">
                                         <div class="form-section-title">AGREEMENT AND CONSENT</div>
                                         <div class="mb-3">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="edit_agreement" required>
+                                                <input class="form-check-input" type="checkbox" id="edit_agreement"
+                                                    required>
                                                 <label class="form-check-label" for="edit_agreement">
-                                                    I hereby authorize the hospital to provide necessary medical treatment and care. 
-                                                    I understand that I am financially responsible for all charges incurred. 
-                                                    I consent to the release of medical information to insurance companies or other 
-                                                    healthcare providers as necessary for treatment and billing purposes.
+                                                    I hereby authorize the hospital to provide necessary medical
+                                                    treatment and care.
+                                                    I understand that I am financially responsible for all charges
+                                                    incurred.
+                                                    I consent to the release of medical information to insurance
+                                                    companies or other
+                                                    healthcare providers as necessary for treatment and billing
+                                                    purposes.
                                                 </label>
                                             </div>
                                             <div class="mt-2">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editTermsAndConditionsModal">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editTermsAndConditionsModal">
                                                     <i class="fas fa-file-alt me-1"></i> View Terms and Conditions
                                                 </button>
                                             </div>
@@ -741,7 +699,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Terms and Conditions Modal -->
             <div class="modal fade" id="termsAndConditionsModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -752,22 +710,38 @@
                         </div>
                         <div class="modal-body">
                             <h6>1. Consent to Treatment</h6>
-                            <p>I hereby authorize the hospital and its medical staff to provide necessary medical treatment, care, and services deemed advisable by the attending physician. This consent includes, but is not limited to, diagnostic procedures, medical treatments, surgical procedures, and anesthesia.</p>
-                            
+                            <p>I hereby authorize the hospital and its medical staff to provide necessary medical
+                                treatment, care, and services deemed advisable by the attending physician. This consent
+                                includes, but is not limited to, diagnostic procedures, medical treatments, surgical
+                                procedures, and anesthesia.</p>
+
                             <h6>2. Financial Responsibility</h6>
-                            <p>I understand that I am financially responsible for all charges incurred for my treatment, care, and services provided by the hospital. This includes charges for physicians, surgeons, anesthesiologists, radiologists, pathologists, and other professional services, as well as charges for hospital accommodations, medications, supplies, and equipment.</p>
-                            
+                            <p>I understand that I am financially responsible for all charges incurred for my treatment,
+                                care, and services provided by the hospital. This includes charges for physicians,
+                                surgeons, anesthesiologists, radiologists, pathologists, and other professional
+                                services, as well as charges for hospital accommodations, medications, supplies, and
+                                equipment.</p>
+
                             <h6>3. Release of Medical Information</h6>
-                            <p>I consent to the release of my medical information to insurance companies, healthcare providers, and other third parties as necessary for treatment, payment, and healthcare operations. I understand that this information will be handled in accordance with applicable privacy laws and regulations.</p>
-                            
+                            <p>I consent to the release of my medical information to insurance companies, healthcare
+                                providers, and other third parties as necessary for treatment, payment, and healthcare
+                                operations. I understand that this information will be handled in accordance with
+                                applicable privacy laws and regulations.</p>
+
                             <h6>4. Hospital Policies</h6>
-                            <p>I agree to abide by all hospital policies and regulations, including those related to patient conduct, visitation, and property. I understand that failure to comply with these policies may result in discharge from the hospital.</p>
-                            
+                            <p>I agree to abide by all hospital policies and regulations, including those related to
+                                patient conduct, visitation, and property. I understand that failure to comply with
+                                these policies may result in discharge from the hospital.</p>
+
                             <h6>5. Discharge Planning</h6>
-                            <p>I understand that the hospital will begin discharge planning upon admission and that I will be expected to participate in this process. I agree to make arrangements for my discharge as recommended by my healthcare team.</p>
-                            
+                            <p>I understand that the hospital will begin discharge planning upon admission and that I
+                                will be expected to participate in this process. I agree to make arrangements for my
+                                discharge as recommended by my healthcare team.</p>
+
                             <h6>6. Acknowledgment</h6>
-                            <p>I acknowledge that I have read and understood these terms and conditions, and I agree to be bound by them. I understand that this consent is valid for the duration of my hospital stay unless revoked in writing.</p>
+                            <p>I acknowledge that I have read and understood these terms and conditions, and I agree to
+                                be bound by them. I understand that this consent is valid for the duration of my
+                                hospital stay unless revoked in writing.</p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -775,7 +749,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Edit Terms and Conditions Modal -->
             <div class="modal fade" id="editTermsAndConditionsModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -786,22 +760,38 @@
                         </div>
                         <div class="modal-body">
                             <h6>1. Consent to Treatment</h6>
-                            <p>I hereby authorize the hospital and its medical staff to provide necessary medical treatment, care, and services deemed advisable by the attending physician. This consent includes, but is not limited to, diagnostic procedures, medical treatments, surgical procedures, and anesthesia.</p>
-                            
+                            <p>I hereby authorize the hospital and its medical staff to provide necessary medical
+                                treatment, care, and services deemed advisable by the attending physician. This consent
+                                includes, but is not limited to, diagnostic procedures, medical treatments, surgical
+                                procedures, and anesthesia.</p>
+
                             <h6>2. Financial Responsibility</h6>
-                            <p>I understand that I am financially responsible for all charges incurred for my treatment, care, and services provided by the hospital. This includes charges for physicians, surgeons, anesthesiologists, radiologists, pathologists, and other professional services, as well as charges for hospital accommodations, medications, supplies, and equipment.</p>
-                            
+                            <p>I understand that I am financially responsible for all charges incurred for my treatment,
+                                care, and services provided by the hospital. This includes charges for physicians,
+                                surgeons, anesthesiologists, radiologists, pathologists, and other professional
+                                services, as well as charges for hospital accommodations, medications, supplies, and
+                                equipment.</p>
+
                             <h6>3. Release of Medical Information</h6>
-                            <p>I consent to the release of my medical information to insurance companies, healthcare providers, and other third parties as necessary for treatment, payment, and healthcare operations. I understand that this information will be handled in accordance with applicable privacy laws and regulations.</p>
-                            
+                            <p>I consent to the release of my medical information to insurance companies, healthcare
+                                providers, and other third parties as necessary for treatment, payment, and healthcare
+                                operations. I understand that this information will be handled in accordance with
+                                applicable privacy laws and regulations.</p>
+
                             <h6>4. Hospital Policies</h6>
-                            <p>I agree to abide by all hospital policies and regulations, including those related to patient conduct, visitation, and property. I understand that failure to comply with these policies may result in discharge from the hospital.</p>
-                            
+                            <p>I agree to abide by all hospital policies and regulations, including those related to
+                                patient conduct, visitation, and property. I understand that failure to comply with
+                                these policies may result in discharge from the hospital.</p>
+
                             <h6>5. Discharge Planning</h6>
-                            <p>I understand that the hospital will begin discharge planning upon admission and that I will be expected to participate in this process. I agree to make arrangements for my discharge as recommended by my healthcare team.</p>
-                            
+                            <p>I understand that the hospital will begin discharge planning upon admission and that I
+                                will be expected to participate in this process. I agree to make arrangements for my
+                                discharge as recommended by my healthcare team.</p>
+
                             <h6>6. Acknowledgment</h6>
-                            <p>I acknowledge that I have read and understood these terms and conditions, and I agree to be bound by them. I understand that this consent is valid for the duration of my hospital stay unless revoked in writing.</p>
+                            <p>I acknowledge that I have read and understood these terms and conditions, and I agree to
+                                be bound by them. I understand that this consent is valid for the duration of my
+                                hospital stay unless revoked in writing.</p>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -812,4 +802,5 @@
         </main>
     </div>
 </body>
+
 </html>

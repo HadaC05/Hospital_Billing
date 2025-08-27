@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const transferReasonInput = document.getElementById('transfer-reason');
     const transferRoomSubmitBtn = document.getElementById('btn-transfer-room-submit');
     const roomStayListElement = document.getElementById('room-stay-list');
-    
+
     let medicinesCache = [];
     let dispenseCart = [];
     let labTestsCache = [];
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let treatmentsCache = [];
     let treatmentsCart = [];
     let roomsCache = [];
-    
+
     // Load rooms for transfer modal
     async function loadRoomsForTransfer() {
         try {
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({ title: 'Error', text: 'Failed to load rooms', icon: 'error' });
         }
     }
-    
+
     // Handle room transfer
     if (transferRoomSubmitBtn) {
         transferRoomSubmitBtn.addEventListener('click', async () => {
@@ -333,26 +333,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Swal.fire({ title: 'Error', text: 'No admission selected.', icon: 'error' });
                     return;
                 }
-                
+
                 const roomId = newRoomSelect ? Number(newRoomSelect.value) : 0;
                 const transferDate = transferDateInput ? transferDateInput.value : '';
                 const transferReason = transferReasonInput ? transferReasonInput.value : '';
-                
+
                 if (!roomId) {
                     Swal.fire({ title: 'Validation', text: 'Please select a room.', icon: 'warning' });
                     return;
                 }
-                
+
                 if (!transferDate) {
                     Swal.fire({ title: 'Validation', text: 'Please select a transfer date.', icon: 'warning' });
                     return;
                 }
-                
+
                 if (!transferReason) {
                     Swal.fire({ title: 'Validation', text: 'Please provide a reason for transfer.', icon: 'warning' });
                     return;
                 }
-                
+
                 const payload = {
                     operation: 'transferRoom',
                     json: JSON.stringify({
@@ -363,9 +363,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         transferred_by: Number(user.user_id)
                     })
                 };
-                
+
                 const { data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload);
-                
+
                 if (data && data.status === 'success') {
                     Swal.fire({ title: 'Success', text: 'Room transferred successfully.', icon: 'success' });
                     const modal = bootstrap.Modal.getInstance(transferRoomModalEl);
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    
+
     // Set up transfer room modal
     if (transferRoomModalEl) {
         transferRoomModalEl.addEventListener('show.bs.modal', async () => {
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await loadRoomsForTransfer();
         });
     }
-    
+
     async function loadMedicinesForDispense() {
         try {
             // Fetch a generous page to cover most lists; adjust if needed
@@ -632,12 +632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             date_performed: dateInput || new Date().toISOString().slice(0, 10),
                             performed_by: Number(user.user_id)
                         })
-<<<<<<< HEAD
                     };
-
-=======
-                      };
->>>>>>> 3rd_branch
                 const { data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload);
                 if (data && data.status === 'success') {
                     Swal.fire({ title: 'Success', text: isDoctor ? 'Lab tests requested successfully.' : 'Lab tests added successfully.', icon: 'success' });
@@ -951,7 +946,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const patient = data.patient;
                 const admissions = data.admissions;
                 const insurance = data.insurance;
-                
+
                 // Calculate age and check if under 18
                 const birthDate = new Date(patient.birthdate);
                 const today = new Date();
@@ -961,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     age--;
                 }
                 const isUnder18 = age < 18;
-                
+
                 // Display patient info
                 const patientInfoElement = document.getElementById('patient-info');
                 patientInfoElement.innerHTML = `
@@ -989,7 +984,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ` : ''}
                     </div>
                 `;
-                
+
                 // Display admissions
                 const admissionListElement = document.getElementById('admission-list');
                 if (admissions.length === 0) {
@@ -1015,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         admissionListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Display insurance policies
                 const insuranceListElement = document.getElementById('insurance-list');
                 if (insurance.length === 0) {
@@ -1037,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         insuranceListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Show patient details section and hide other sections
                 patientDetailsSection.style.display = 'block';
                 admissionDetailsSection.style.display = 'none';
@@ -1077,14 +1072,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const treatments = services.treatments || [];
                 const invoices = data.invoices || [];
                 const roomStays = data.room_stays || [];
-                
+
                 // Display admission info
                 const admissionInfoElement = document.getElementById('admission-info');
                 const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                 const dischargeDate = (admission.discharge_date && admission.discharge_date !== '0000-00-00')
                     ? new Date(admission.discharge_date).toLocaleDateString()
                     : 'Not discharged';
-                    
+
                 admissionInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>Admission #${admission.admission_id}</h4>
@@ -1098,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <p><strong>ER Initial Charge:</strong> ${admission.er_initial_charge === '1' ? 'Applied' : 'Not Applied'}</p>
                     </div>
                 `;
-                
+
                 // Display room stays
                 if (roomStayListElement) {
                     if (roomStays.length === 0) {
@@ -1120,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         });
                     }
                 }
-                
+
                 // Display medications
                 const medicationsListElement = document.getElementById('medications-list');
                 if (medications.length === 0) {
@@ -1140,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         medicationsListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Display lab tests
                 const labtestsListElement = document.getElementById('labtests-list');
                 if (labtests.length === 0) {
@@ -1161,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         labtestsListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Display surgeries
                 const surgeriesListElement = document.getElementById('surgeries-list');
                 if (surgeries.length === 0) {
@@ -1182,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         surgeriesListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Display treatments
                 const treatmentsListElement = document.getElementById('treatments-list');
                 if (treatments.length === 0) {
@@ -1203,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         treatmentsListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Display invoices
                 const invoicesListElement = document.getElementById('invoices-list');
                 if (invoices.length === 0) {
@@ -1224,12 +1219,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         invoicesListElement.innerHTML += row;
                     });
                 }
-                
+
                 // Show agreement and consent information if available
                 const consentCheckbox = document.getElementById('patientAgreement');
                 const consentSignedBy = document.getElementById('consentSignedBy');
                 const consentDate = document.getElementById('consentDate');
-                
+
                 if (admission.agreement_signed === '1') {
                     consentCheckbox.checked = true;
                     consentSignedBy.textContent = admission.agreement_signed_by || 'Not available';
@@ -1239,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     consentSignedBy.textContent = 'Not available';
                     consentDate.textContent = 'Not available';
                 }
-                
+
                 // Show admission details section and hide other sections
                 patientDetailsSection.style.display = 'none';
                 admissionDetailsSection.style.display = 'block';

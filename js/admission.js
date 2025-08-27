@@ -85,14 +85,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (addAdmissionForm) {
         addAdmissionForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             // Validate required fields
             const requiredFields = [
-                'patient_fname', 'patient_lname', 'birthdate', 'address', 
-                'mobile_number', 'em_contact_name', 'em_contact_number', 
+                'patient_fname', 'patient_lname', 'birthdate', 'address',
+                'mobile_number', 'em_contact_name', 'em_contact_number',
                 'em_contact_address', 'admission_date', 'admission_reason'
             ];
-            
+
             let isValid = true;
             requiredFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     field.classList.remove('is-invalid');
                 }
             });
-            
+
             // Validate gender
             const genderSelected = document.querySelector('input[name="gender"]:checked');
             if (!genderSelected) {
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const genderGroup = document.querySelector('.radio-group');
                 if (genderGroup) genderGroup.classList.remove('is-invalid');
             }
-            
+
             // Validate marital status
             const maritalStatus = document.getElementById('marital_status');
             if (maritalStatus && !maritalStatus.value) {
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (maritalStatus) {
                 maritalStatus.classList.remove('is-invalid');
             }
-            
+
             // Validate agreement
             const agreement = document.getElementById('agreement');
             if (agreement && !agreement.checked) {
@@ -133,20 +133,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (agreement) {
                 agreement.classList.remove('is-invalid');
             }
-            
+
             // Validate parent/guardian if under 18
             const under18Toggle = document.getElementById('under_18_toggle');
             if (under18Toggle && under18Toggle.checked) {
                 const parentName = document.getElementById('parent_name');
                 const parentContact = document.getElementById('parent_contact');
-                
+
                 if (parentName && !parentName.value.trim()) {
                     parentName.classList.add('is-invalid');
                     isValid = false;
                 } else if (parentName) {
                     parentName.classList.remove('is-invalid');
                 }
-                
+
                 if (parentContact && !parentContact.value.trim()) {
                     parentContact.classList.add('is-invalid');
                     isValid = false;
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     parentContact.classList.remove('is-invalid');
                 }
             }
-            
+
             if (!isValid) {
                 Swal.fire({
                     title: 'Validation Error',
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 return;
             }
-            
+
             // Get form data
             const formData = {
                 patient_fname: document.getElementById('patient_fname').value,
@@ -183,18 +183,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 marital_status: document.getElementById('marital_status').value,
                 gender: document.querySelector('input[name="gender"]:checked')?.value || ''
             };
-            
+
             // Add parent/guardian info if under 18
             if (under18Toggle && under18Toggle.checked) {
                 formData.parent_name = document.getElementById('parent_name').value;
                 formData.parent_contact = document.getElementById('parent_contact').value;
             }
-            
+
             // If using existing patient, include the patient_id so backend reuses it
             if (useExistingCbx && useExistingCbx.checked && existingPatientSel && existingPatientSel.value) {
                 formData.patient_id = Number(existingPatientSel.value);
             }
-            
+
             // Send data to server
             axios.post(localApiUrl + 'get-admissions.php', {
                 operation: 'addAdmission',
@@ -236,14 +236,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (editAdmissionForm) {
         editAdmissionForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            
+
             // Validate required fields
             const requiredFields = [
-                'edit_patient_fname', 'edit_patient_lname', 'edit_birthdate', 'edit_address', 
-                'edit_mobile_number', 'edit_em_contact_name', 'edit_em_contact_number', 
+                'edit_patient_fname', 'edit_patient_lname', 'edit_birthdate', 'edit_address',
+                'edit_mobile_number', 'edit_em_contact_name', 'edit_em_contact_number',
                 'edit_em_contact_address', 'edit_admission_date', 'edit_admission_reason'
             ];
-            
+
             let isValid = true;
             requiredFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     field.classList.remove('is-invalid');
                 }
             });
-            
+
             // Validate gender
             const genderSelected = document.querySelector('input[name="edit_gender"]:checked');
             if (!genderSelected) {
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const genderGroup = document.querySelector('#editAdmissionModal .radio-group');
                 if (genderGroup) genderGroup.classList.remove('is-invalid');
             }
-            
+
             // Validate marital status
             const maritalStatus = document.getElementById('edit_marital_status');
             if (maritalStatus && !maritalStatus.value) {
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (maritalStatus) {
                 maritalStatus.classList.remove('is-invalid');
             }
-            
+
             // Validate agreement
             const agreement = document.getElementById('edit_agreement');
             if (agreement && !agreement.checked) {
@@ -284,20 +284,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (agreement) {
                 agreement.classList.remove('is-invalid');
             }
-            
+
             // Validate parent/guardian if under 18
             const editUnder18Toggle = document.getElementById('edit_under_18_toggle');
             if (editUnder18Toggle && editUnder18Toggle.checked) {
                 const parentName = document.getElementById('edit_parent_name');
                 const parentContact = document.getElementById('edit_parent_contact');
-                
+
                 if (parentName && !parentName.value.trim()) {
                     parentName.classList.add('is-invalid');
                     isValid = false;
                 } else if (parentName) {
                     parentName.classList.remove('is-invalid');
                 }
-                
+
                 if (parentContact && !parentContact.value.trim()) {
                     parentContact.classList.add('is-invalid');
                     isValid = false;
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     parentContact.classList.remove('is-invalid');
                 }
             }
-            
+
             if (!isValid) {
                 Swal.fire({
                     title: 'Validation Error',
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 return;
             }
-            
+
             // Get form data
             const formData = {
                 admission_id: document.getElementById('edit_admission_id').value,
@@ -337,13 +337,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 marital_status: document.getElementById('edit_marital_status').value,
                 gender: document.querySelector('input[name="edit_gender"]:checked')?.value || ''
             };
-            
+
             // Add parent/guardian info if under 18
             if (editUnder18Toggle && editUnder18Toggle.checked) {
                 formData.parent_name = document.getElementById('edit_parent_name').value;
                 formData.parent_contact = document.getElementById('edit_parent_contact').value;
             }
-            
+
             // Send data to server
             axios.post(localApiUrl + 'get-admissions.php', {
                 operation: 'updateAdmission',
@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .then(function (response) {
                 if (response.data.status === 'success') {
                     const data = response.data.data;
-                    
+
                     // Check if required elements exist before setting values
                     const editAdmissionId = document.getElementById('edit_admission_id');
                     const editPatientId = document.getElementById('edit_patient_id');
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const editMaritalStatus = document.getElementById('edit_marital_status');
                     const editParentName = document.getElementById('edit_parent_name');
                     const editParentContact = document.getElementById('edit_parent_contact');
-                    
+
                     // Set form values only if elements exist
                     if (editAdmissionId) editAdmissionId.value = data.admission_id || '';
                     if (editPatientId) editPatientId.value = data.patient_id || '';
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (editAdmissionReason) editAdmissionReason.value = data.admission_reason || '';
                     if (editStatus) editStatus.value = data.status || 'Active';
                     if (editMaritalStatus) editMaritalStatus.value = data.marital_status || '';
-                    
+
                     // Set parent/guardian info if exists
                     if (editParentName && data.parent_name) {
                         editParentName.value = data.parent_name;
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (editParentContact && data.parent_contact) {
                         editParentContact.value = data.parent_contact;
                     }
-                    
+
                     // Set gender
                     const genderRadios = document.querySelectorAll('input[name="edit_gender"]');
                     if (genderRadios.length > 0) {
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             radio.checked = (radio.value === data.gender);
                         });
                     }
-                    
+
                     // Calculate age to determine if under 18
                     let age = 18; // Default to 18 or over
                     try {
@@ -555,11 +555,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } catch (e) {
                         console.warn('Error calculating age:', e);
                     }
-                    
+
                     // Set under 18 toggle based on age
                     const editUnder18Toggle = document.getElementById('edit_under_18_toggle');
                     const editUnder18Section = document.getElementById('edit_under_18_section');
-                    
+
                     if (editUnder18Toggle && editUnder18Section) {
                         if (age < 18) {
                             editUnder18Toggle.checked = true;
@@ -569,13 +569,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                             editUnder18Section.classList.remove('active');
                         }
                     }
-                    
+
                     // Set doctor if available
                     if (editDoctorSel) {
                         const docId = data.doctor_id ? String(data.doctor_id) : '';
                         editDoctorSel.value = docId;
                     }
-                    
+
                     // Open modal for editing
                     const modal = new bootstrap.Modal(document.getElementById('editAdmissionModal'));
                     modal.show();
@@ -747,12 +747,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         set('em_contact_number', p.em_contact_number);
         set('em_contact_address', p.em_contact_address);
     }
-    
+
     // Reset add form function
     function resetAddForm() {
         if (addAdmissionForm) {
             addAdmissionForm.reset();
-            
+
             // Reset under 18 toggle and section
             const under18Toggle = document.getElementById('under_18_toggle');
             const under18Section = document.getElementById('under_18_section');
@@ -760,7 +760,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 under18Toggle.checked = false;
                 under18Section.classList.remove('active');
             }
-            
+
             // Reset existing patient checkbox and select
             if (useExistingCbx) {
                 useExistingCbx.checked = false;
@@ -769,23 +769,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     existingPatientSel.value = '';
                 }
             }
-            
+
             // Reset patient inputs to not readonly
             setPatientInputsReadonly(false);
-            
+
             // Clear validation classes
             document.querySelectorAll('.is-invalid').forEach(el => {
                 el.classList.remove('is-invalid');
             });
         }
     }
-    
+
     // Toggle under 18 section for add modal
     const under18Toggle = document.getElementById('under_18_toggle');
     const under18Section = document.getElementById('under_18_section');
-    
+
     if (under18Toggle) {
-        under18Toggle.addEventListener('change', function() {
+        under18Toggle.addEventListener('change', function () {
             if (this.checked) {
                 under18Section.classList.add('active');
             } else {
@@ -793,13 +793,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    
+
     // Toggle under 18 section for edit modal
     const editUnder18Toggle = document.getElementById('edit_under_18_toggle');
     const editUnder18Section = document.getElementById('edit_under_18_section');
-    
+
     if (editUnder18Toggle) {
-        editUnder18Toggle.addEventListener('change', function() {
+        editUnder18Toggle.addEventListener('change', function () {
             if (this.checked) {
                 editUnder18Section.classList.add('active');
             } else {
@@ -807,7 +807,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-    
+
     // Check for permissions and render modules
     try {
         // Set welcome message regardless of permissions
