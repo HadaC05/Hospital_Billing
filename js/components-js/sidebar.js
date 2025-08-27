@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
-        window.location.href = '../index.html';
+        window.location.href = '../../index.html';
         return;
     }
     const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return; // page without sidebar
     }
     try {
-        const sidebarResponse = await axios.get('../components/sidebar.html');
+        const sidebarResponse = await axios.get('../../components/sidebar.html');
         if (!sidebarResponse?.data) return;
         sidebarPlaceholder.innerHTML = sidebarResponse.data;
         const sidebarElement = document.getElementById('sidebar');
@@ -143,52 +143,52 @@ async function buildSidebarLinks(baseApiUrl, user) {
     const inventoryMap = {
         manage_medicine: {
             label: 'Medicine Module',
-            link: '../module/masterfile-html/inv-medicine.html',
+            link: '../masterfile-html/inv-medicine.html',
             icon: 'fas fa-pills'
         },
         manage_surgeries: {
             label: 'Surgical Module',
-            link: '../module/masterfile-html/inv-surgery.html',
+            link: '../masterfile-html/inv-surgery.html',
             icon: 'fas fa-procedures'
         },
         manage_labtests: {
             label: 'Laboratory Module',
-            link: '../module/masterfile-html/inv-labtest.html',
+            link: '../masterfile-html/inv-labtest.html',
             icon: 'fas fa-vial'
         },
         manage_treatments: {
             label: 'Treatment Module',
-            link: '../module/masterfile-html/inv-treatments.html',
+            link: '../masterfile-html/inv-treatments.html',
             icon: 'fas fa-stethoscope'
         },
         manage_rooms: {
             label: 'Room Management',
-            link: '../module/masterfile-html/inv-rooms.html',
+            link: '../masterfile-html/inv-rooms.html',
             icon: 'fas fa-bed'
         },
         manage_medicine_types: {
             label: 'Medicine Type Module',
-            link: '../module/mf-types-html/type-medicine.html',
+            link: '../mf-types-html/type-medicine.html',
             icon: 'fas fa-pills'
         },
         manage_room_types: {
             label: 'Room Type Module',
-            link: '../module/mf-types-html/type-room.html',
+            link: '../mf-types-html/type-room.html',
             icon: 'fas fa-bed'
         },
         manage_surgery_types: {
             label: 'Surgery Type Module',
-            link: '../module/mf-types-html/type-surgery.html',
+            link: '../mf-types-html/type-surgery.html',
             icon: 'fas fa-procedures'
         },
         manage_treatment_types: {
             label: 'Treatment Type Module',
-            link: '../module/mf-types-html/type-treatment.html',
+            link: '../mf-types-html/type-treatment.html',
             icon: 'fas fa-stethoscope'
         },
         manage_labtest_types: {
             label: 'Labtest Type Module',
-            link: '../module/mf-types-html/type-labtest.html',
+            link: '../mf-types-html/type-labtest.html',
             icon: 'fas fa-vial'
         },
     };

@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 localStorage.setItem('user', JSON.stringify(data));
                 console.log('User data stored, redirecting to dashboard...');
-                window.location.href = './components/dashboard.html';
+                window.location.href = './module/dashboard-html/admin-dashboard.html';
             } else {
                 // Handle unsuccessful login
                 document.getElementById('error-message').textContent = data.message || 'Login failed';

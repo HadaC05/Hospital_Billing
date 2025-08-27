@@ -46,7 +46,7 @@ async function loadHeader() {
     }
 
     try {
-        const headerResponse = await axios.get('../components/header.html');
+        const headerResponse = await axios.get('../../components/header.html');
         if (!headerResponse?.data) {
             injectFallbackHeader(headerPlaceholder);
         } else {
@@ -140,7 +140,7 @@ async function setupLogoutButton() {
         try {
             await axios.post(`${baseApiUrl}/logout.php`);
             localStorage.removeItem('user');
-            window.location.href = '../index.html';
+            window.location.href = '../../index.html';
         } catch (error) {
             console.error('Logout failed: ', error);
             if (window.Swal && typeof Swal.fire === 'function') {
