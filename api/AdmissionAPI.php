@@ -1,19 +1,21 @@
 <?php
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
-class AdmissionAPI {
-    function createAdmission($patientId, $admittedBy, $admissionDate, $admissionReason, $roomId = null) {
+class AdmissionAPI
+{
+    function createAdmission($patientId, $admittedBy, $admissionDate, $admissionReason, $roomId = null)
+    {
         include 'connection-pdo.php';
         try {
             $pdo->beginTransaction();
-            
+
             // Insert admission record
             $sql = "INSERT INTO patient_admission (patient_id, admitted_by, admission_date, discharge_date, admission_reason, status) 
                     VALUES (?, ?, ?, '0000-00-00', ?, 'Admitted')";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$patientId, $admittedBy, $admissionDate, $admissionReason]);
             $admissionId = $pdo->lastInsertId();
-            
+
             // If room is assigned, create room assignment and stay record
             if ($roomId) {
                 // Create room assignment
@@ -21,21 +23,21 @@ class AdmissionAPI {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$admissionId, $admissionDate]);
                 $assignmentId = $pdo->lastInsertId();
-                
+
                 // Create room stay record
                 $sql = "INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, end_date, charge, assigned_by) 
                         VALUES (?, ?, ?, '0000-00-00', 0, ?)";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$assignmentId, $roomId, $admissionDate, $admittedBy]);
-                
+
                 // Update room availability
                 $sql = "UPDATE tbl_room SET is_available = 0 WHERE room_id = ?";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$roomId]);
             }
-            
+
             $pdo->commit();
-            
+
             $response = [
                 'status' => 'success',
                 'message' => 'Admission created successfully',
@@ -51,8 +53,9 @@ class AdmissionAPI {
         }
         echo json_encode($response);
     }
-    
-    function getAdmission($admissionId) {
+
+    function getAdmission($admissionId)
+    {
         include 'connection-pdo.php';
         try {
             // Get admission details
@@ -65,11 +68,11 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $admission = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if (!$admission) {
                 throw new Exception("Admission not found");
             }
-            
+
             // Get current room assignment
             $sql = "SELECT rs.*, r.room_number, rt.room_type_name, r.daily_rate
                     FROM tbl_room_stay rs
@@ -80,7 +83,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $currentRoom = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             // Get all services during admission
             $services = [
                 'lab_tests' => [],
@@ -88,7 +91,7 @@ class AdmissionAPI {
                 'surgeries' => [],
                 'treatments' => []
             ];
-            
+
             // Get lab tests
             $sql = "SELECT pli.*, lt.test_name, u.username AS performed_by_name
                     FROM tbl_labtest_item pli
@@ -99,7 +102,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $services['lab_tests'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             // Get medications
             $sql = "SELECT mi.*, m.med_name, u.username AS administered_by_name
                     FROM tbl_medication_item mi
@@ -110,7 +113,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $services['medications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             // Get surgeries
             $sql = "SELECT sp.*, s.surgery_name, u.username AS performed_by_name
                     FROM tbl_surgery_procedure sp
@@ -121,7 +124,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $services['surgeries'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             // Get treatments
             $sql = "SELECT ts.*, t.treatment_name, u.username AS performed_by_name
                     FROM tbl_treatment_session ts
@@ -132,7 +135,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $services['treatments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             // Get doctor fees
             $sql = "SELECT df.*, u.username AS doctor_name
                     FROM tbl_doctor_fee df
@@ -141,7 +144,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $doctorFees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             // Get invoices
             $sql = "SELECT bi.*, u.username AS created_by_name
                     FROM bill_invoice bi
@@ -150,7 +153,7 @@ class AdmissionAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$admissionId]);
             $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             $response = [
                 'status' => 'success',
                 'admission' => $admission,
@@ -167,38 +170,39 @@ class AdmissionAPI {
         }
         echo json_encode($response);
     }
-    
-    function updateAdmission($admissionId, $dischargeDate = null, $status = null, $admissionReason = null) {
+
+    function updateAdmission($admissionId, $dischargeDate = null, $status = null, $admissionReason = null)
+    {
         include 'connection-pdo.php';
         try {
             $updateFields = [];
             $params = [];
-            
+
             if ($dischargeDate) {
                 $updateFields[] = "discharge_date = ?";
                 $params[] = $dischargeDate;
             }
-            
+
             if ($status) {
                 $updateFields[] = "status = ?";
                 $params[] = $status;
             }
-            
+
             if ($admissionReason) {
                 $updateFields[] = "admission_reason = ?";
                 $params[] = $admissionReason;
             }
-            
+
             if (empty($updateFields)) {
                 throw new Exception("No fields to update");
             }
-            
+
             $sql = "UPDATE patient_admission SET " . implode(", ", $updateFields) . " WHERE admission_id = ?";
             $params[] = $admissionId;
-            
+
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            
+
             // If patient is discharged, release the room
             if ($status == 'Discharged') {
                 $sql = "UPDATE tbl_room_stay rs
@@ -207,7 +211,7 @@ class AdmissionAPI {
                         WHERE ra.admission_id = ? AND rs.end_date = '0000-00-00'";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$dischargeDate, $admissionId]);
-                
+
                 // Update room availability
                 $sql = "UPDATE tbl_room r
                         SET r.is_available = 1
@@ -220,7 +224,7 @@ class AdmissionAPI {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([$admissionId, $dischargeDate]);
             }
-            
+
             $response = [
                 'status' => 'success',
                 'message' => 'Admission updated successfully'
@@ -233,7 +237,7 @@ class AdmissionAPI {
         }
         echo json_encode($response);
     }
-    
+
     /**
      * Add multiple lab tests for an admission in a single transaction.
      * @param int $admissionId
@@ -427,7 +431,7 @@ class AdmissionAPI {
             foreach ($rows as $r) {
                 if (isset($r['status']) && $r['status'] !== 'requested') {
                     $pdo->rollBack();
-                    echo json_encode(['status' => 'error', 'message' => 'Item '.$r['labtest_item_id'].' is not in requested status']);
+                    echo json_encode(['status' => 'error', 'message' => 'Item ' . $r['labtest_item_id'] . ' is not in requested status']);
                     return;
                 }
                 $charge = ((float)$r['unit_price']) * ((int)$r['quantity']);
@@ -817,7 +821,6 @@ class AdmissionAPI {
             echo json_encode(['status' => 'error', 'message' => 'Failed to get admissions: ' . $ex->getMessage()]);
         }
     }
-
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -843,12 +846,12 @@ switch ($operation) {
         $roomId = $data['room_id'] ?? null;
         $obj->createAdmission($patientId, $admittedBy, $admissionDate, $admissionReason, $roomId);
         break;
-        
+
     case "getAdmission":
         $admissionId = $data['admission_id'] ?? 0;
         $obj->getAdmission($admissionId);
         break;
-        
+
     case "updateAdmission":
         $admissionId = $data['admission_id'] ?? 0;
         $dischargeDate = $data['discharge_date'] ?? null;
@@ -856,7 +859,7 @@ switch ($operation) {
         $admissionReason = $data['admission_reason'] ?? null;
         $obj->updateAdmission($admissionId, $dischargeDate, $status, $admissionReason);
         break;
-        
+
     case "assignRoom":
         $admissionId = $data['admission_id'] ?? 0;
         $roomId = $data['room_id'] ?? 0;
@@ -873,7 +876,7 @@ switch ($operation) {
         $administeredBy = $data['administered_by'] ?? 0;
         $obj->dispenseMedicine((int)$admissionId, (int)$medId, (int)$quantity, $dateGiven, (int)$administeredBy);
         break;
-    
+
     case "dispenseMedicinesBatch":
         $admissionId = $data['admission_id'] ?? 0;
         $items = $data['items'] ?? [];
@@ -881,7 +884,7 @@ switch ($operation) {
         $administeredBy = $data['administered_by'] ?? 0;
         $obj->dispenseMedicinesBatch((int)$admissionId, $items, $dateGiven, (int)$administeredBy);
         break;
-        
+
     case "addLabTestsBatch":
         $admissionId = $data['admission_id'] ?? 0;
         $items = $data['items'] ?? [];
@@ -904,7 +907,7 @@ switch ($operation) {
         $performedBy = $data['performed_by'] ?? 0;
         $obj->performLabTests($labtestItemIds, $datePerformed, (int)$performedBy);
         break;
-    
+
     case "addSurgeriesBatch":
         $admissionId = $data['admission_id'] ?? 0;
         $items = $data['items'] ?? [];
@@ -920,14 +923,13 @@ switch ($operation) {
         $performedBy = $data['performed_by'] ?? 0;
         $obj->addTreatmentsBatch((int)$admissionId, $items, $datePerformed, (int)$performedBy);
         break;
-        
+
     case "getAdmissionsByPatient":
         $patientId = $data['patient_id'] ?? 0;
         $obj->getAdmissionsByPatient($patientId);
         break;
-        
+
     case "getActiveAdmissions":
         $obj->getActiveAdmissions();
         break;
 }
-?>

@@ -39,7 +39,9 @@ class UserManager
                     $where
                     ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')";
             $stmt = $this->conn->prepare($sql);
-            foreach ($binds as $k => $v) { $stmt->bindValue($k, $v); }
+            foreach ($binds as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['success' => true, 'doctors' => $rows]);
@@ -413,7 +415,7 @@ switch ($operation) {
         $userManager->deleteUser($user_id);
         break;
     case 'getDoctors':
-        $params = [ 'search' => $search ];
+        $params = ['search' => $search];
         $userManager->getDoctors($params);
         break;
     default:

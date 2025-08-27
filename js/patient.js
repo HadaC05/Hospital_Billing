@@ -4,7 +4,7 @@ const displayPatients = async () => {
   const response = await axios.get(`${baseApiUrl}/PatientAPI.php`, {
     params: { operation: "getPatients" }
   });
-  
+
   if (response.status == 200) {
     displayPatientsTable(response.data.patients);
   } else {
@@ -21,7 +21,7 @@ const displayPatientsTable = (patients) => {
   tableDiv.innerHTML = "";
   const table = document.createElement("table");
   table.className = "table table-striped";
-  
+
   const thead = document.createElement("thead");
   thead.innerHTML = `
     <tr>  
@@ -35,7 +35,7 @@ const displayPatientsTable = (patients) => {
     </tr>
   `;
   table.appendChild(thead);
-  
+
   const tbody = document.createElement("tbody");
   patients.forEach(patient => {
     let row = document.createElement("tr");
@@ -53,20 +53,20 @@ const displayPatientsTable = (patients) => {
     `;
     tbody.appendChild(row);
   });
-  
+
   table.appendChild(tbody);
   tableDiv.appendChild(table);
-  
+
   // Add event listeners to buttons
   document.querySelectorAll(".view-patient").forEach(button => {
-    button.addEventListener("click", function() {
+    button.addEventListener("click", function () {
       const patientId = this.getAttribute("data-id");
       viewPatient(patientId);
     });
   });
-  
+
   document.querySelectorAll(".admit-patient").forEach(button => {
-    button.addEventListener("click", function() {
+    button.addEventListener("click", function () {
       const patientId = this.getAttribute("data-id");
       document.getElementById("admission-patient-id").value = patientId;
       // Show admission modal
@@ -78,15 +78,15 @@ const displayPatientsTable = (patients) => {
 
 const viewPatient = async (patientId) => {
   const response = await axios.get(`${baseApiUrl}/PatientAPI.php`, {
-    params: { 
+    params: {
       operation: "getPatient",
       patient_id: patientId
     }
   });
-  
+
   if (response.status == 200 && response.data.status == "success") {
     const patient = response.data.patient;
-    
+
     // Populate patient details modal
     document.getElementById("view-patient-id").value = patient.patient_id;
     document.getElementById("view-patient-name").value = `${patient.patient_fname} ${patient.patient_mname} ${patient.patient_lname}`;
@@ -97,7 +97,7 @@ const viewPatient = async (patientId) => {
     document.getElementById("view-patient-emergency-name").value = patient.em_contact_name;
     document.getElementById("view-patient-emergency-contact").value = patient.em_contact_number;
     document.getElementById("view-patient-emergency-address").value = patient.em_contact_address;
-    
+
     // Show modal
     const viewPatientModal = new bootstrap.Modal(document.getElementById('viewPatientModal'));
     viewPatientModal.show();
@@ -123,18 +123,18 @@ const insertPatient = async () => {
     em_contact_number: document.getElementById("patient-emergency-contact").value,
     em_contact_address: document.getElementById("patient-emergency-address").value
   };
-  
+
   const formData = new FormData();
   formData.append("operation", "createPatient");
   formData.append("json", JSON.stringify(jsonData));
   formData.append("token", localStorage.getItem("authToken"));
-  
+
   const response = await axios({
     url: `${baseApiUrl}/PatientAPI.php`,
     method: "POST",
     data: formData
   });
-  
+
   console.log(response);
   if (response.data.status == "success") {
     displayPatients();

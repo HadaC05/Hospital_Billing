@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
   const dateEl = document.getElementById('recdash-date');
-  try { if (dateEl) dateEl.textContent = new Date().toLocaleString(); } catch {}
+  try { if (dateEl) dateEl.textContent = new Date().toLocaleString(); } catch { }
   loadReceptionistDashboard();
 });
 

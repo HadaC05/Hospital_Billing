@@ -4,16 +4,18 @@ header('Content-Type: application/json');
 // Use session-based auth guard (exits with JSON if not authenticated)
 include 'require_auth.php';
 
-class PatientAPI {
-    function createPatient($token, $firstName, $lastName, $middleName, $birthdate, $address, $mobileNumber, $email, $emContactName, $emContactNumber, $emContactAddress) {
-        
+class PatientAPI
+{
+    function createPatient($token, $firstName, $lastName, $middleName, $birthdate, $address, $mobileNumber, $email, $emContactName, $emContactNumber, $emContactAddress)
+    {
+
         include 'connection-pdo.php';
         try {
             $sql = "INSERT INTO patients (patient_fname, patient_lname, patient_mname, birthdate, address, mobile_number, email, em_contact_name, em_contact_number, em_contact_address) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$firstName, $lastName, $middleName, $birthdate, $address, $mobileNumber, $email, $emContactName, $emContactNumber, $emContactAddress]);
-            
+
             $response = [
                 'status' => 'success',
                 'message' => 'Patient created successfully',
@@ -27,14 +29,15 @@ class PatientAPI {
         }
         echo json_encode($response);
     }
-    
-    function updatePatient($token, $patientId, $firstName = null, $lastName = null, $middleName = null, $birthdate = null, $address = null, $mobileNumber = null, $email = null, $emContactName = null, $emContactNumber = null, $emContactAddress = null) {
-        
+
+    function updatePatient($token, $patientId, $firstName = null, $lastName = null, $middleName = null, $birthdate = null, $address = null, $mobileNumber = null, $email = null, $emContactName = null, $emContactNumber = null, $emContactAddress = null)
+    {
+
         include 'connection-pdo.php';
         try {
             $updateFields = [];
             $params = [];
-            
+
             if ($firstName !== null) {
                 $updateFields[] = "patient_fname = ?";
                 $params[] = $firstName;
@@ -75,17 +78,17 @@ class PatientAPI {
                 $updateFields[] = "em_contact_address = ?";
                 $params[] = $emContactAddress;
             }
-            
+
             if (empty($updateFields)) {
                 throw new Exception("No fields to update");
             }
-            
+
             $sql = "UPDATE patients SET " . implode(", ", $updateFields) . " WHERE patient_id = ?";
             $params[] = $patientId;
-            
+
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            
+
             $response = [
                 'status' => 'success',
                 'message' => 'Patient updated successfully'
@@ -98,20 +101,21 @@ class PatientAPI {
         }
         echo json_encode($response);
     }
-    
-    function getPatient($token, $patientId) {
-        
+
+    function getPatient($token, $patientId)
+    {
+
         include 'connection-pdo.php';
         try {
             $sql = "SELECT * FROM patients WHERE patient_id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$patientId]);
             $patient = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if (!$patient) {
                 throw new Exception("Patient not found");
             }
-            
+
             $response = [
                 'status' => 'success',
                 'patient' => $patient
@@ -124,9 +128,10 @@ class PatientAPI {
         }
         echo json_encode($response);
     }
-    
-    function getPatients($token, $search = null) {
-        
+
+    function getPatients($token, $search = null)
+    {
+
         include 'connection-pdo.php';
         try {
             if ($search) {
@@ -140,9 +145,9 @@ class PatientAPI {
                 $sql = "SELECT * FROM patients ORDER BY patient_lname, patient_fname";
                 $stmt = $pdo->query($sql);
             }
-            
+
             $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             $response = [
                 'status' => 'success',
                 'patients' => $patients
@@ -155,9 +160,10 @@ class PatientAPI {
         }
         echo json_encode($response);
     }
-    
-    function getPatientInsurancePolicies($token, $patientId) {
-        
+
+    function getPatientInsurancePolicies($token, $patientId)
+    {
+
         include 'connection-pdo.php';
         try {
             $sql = "SELECT ip.*, prov.provider_name 
@@ -168,7 +174,7 @@ class PatientAPI {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$patientId]);
             $policies = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
             $response = [
                 'status' => 'success',
                 'policies' => $policies
@@ -213,7 +219,7 @@ switch ($operation) {
         $emContactAddress = $data['em_contact_address'] ?? '';
         $obj->createPatient($token, $firstName, $lastName, $middleName, $birthdate, $address, $mobileNumber, $email, $emContactName, $emContactNumber, $emContactAddress);
         break;
-        
+
     case "updatePatient":
         $patientId = $data['patient_id'] ?? 0;
         $firstName = $data['patient_fname'] ?? null;
@@ -228,20 +234,19 @@ switch ($operation) {
         $emContactAddress = $data['em_contact_address'] ?? null;
         $obj->updatePatient($token, $patientId, $firstName, $lastName, $middleName, $birthdate, $address, $mobileNumber, $email, $emContactName, $emContactNumber, $emContactAddress);
         break;
-        
+
     case "getPatient":
         $patientId = $data['patient_id'] ?? 0;
         $obj->getPatient($token, $patientId);
         break;
-        
+
     case "getPatients":
         $search = $data['search'] ?? null;
         $obj->getPatients($token, $search);
         break;
-        
+
     case "getPatientInsurancePolicies":
         $patientId = $data['patient_id'] ?? 0;
         $obj->getPatientInsurancePolicies($token, $patientId);
         break;
 }
-?>

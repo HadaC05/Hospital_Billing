@@ -167,7 +167,8 @@ class Invoices
             $conn->beginTransaction();
 
             // Compute totals
-            $total = 0; $covered = 0;
+            $total = 0;
+            $covered = 0;
             foreach ($items as $it) {
                 $line = (float)$it['unit_price'] * (float)$it['quantity'];
                 $cov = isset($it['coverage_amount']) ? (float)$it['coverage_amount'] : 0.0;
@@ -255,5 +256,3 @@ switch ($operation) {
         echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
-
-

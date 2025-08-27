@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = '../index.html';
     return;
   }
-  try { document.getElementById('biller-date').textContent = new Date().toLocaleString(); } catch {}
+  try { document.getElementById('biller-date').textContent = new Date().toLocaleString(); } catch { }
   attachFilterHandlers();
   loadBillerDashboard();
 });
@@ -82,7 +82,7 @@ function renderBillerRecent(rows) {
 }
 
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = `${v}`; }
-function currency(n) { const num = Number(n||0); return num.toLocaleString(undefined, { style: 'currency', currency: 'USD' }); }
+function currency(n) { const num = Number(n || 0); return num.toLocaleString(undefined, { style: 'currency', currency: 'USD' }); }
 function formatDate(d) { try { return new Date(d).toLocaleDateString(); } catch { return ''; } }
-function escapeHtml(str) { return (str==null?'':String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-function statusBadge(status){ const s=(status||'').toUpperCase(); let cls='secondary'; if(s==='PAID') cls='success'; else if(s==='UNPAID') cls='warning'; else if(s==='PENDING') cls='info'; return `<span class="badge bg-${cls}">${escapeHtml(status||'')}</span>`; }
+function escapeHtml(str) { return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+function statusBadge(status) { const s = (status || '').toUpperCase(); let cls = 'secondary'; if (s === 'PAID') cls = 'success'; else if (s === 'UNPAID') cls = 'warning'; else if (s === 'PENDING') cls = 'info'; return `<span class="badge bg-${cls}">${escapeHtml(status || '')}</span>`; }

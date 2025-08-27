@@ -549,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             requested_date: dateInput || new Date().toISOString().slice(0, 10),
                             requested_by: Number(user.user_id)
                         })
-                      }
+                    }
                     : {
                         operation: 'addLabTestsBatch',
                         json: JSON.stringify({
@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             date_performed: dateInput || new Date().toISOString().slice(0, 10),
                             performed_by: Number(user.user_id)
                         })
-                      };
+                    };
 
                 const { data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload);
                 if (data && data.status === 'success') {

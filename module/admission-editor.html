@@ -70,26 +70,31 @@
                                     <h6>Patient Information</h6>
                                     <div class="form-check form-switch mb-2">
                                         <input class="form-check-input" type="checkbox" id="use_existing_patient">
-                                        <label class="form-check-label" for="use_existing_patient">Use Existing Patient</label>
+                                        <label class="form-check-label" for="use_existing_patient">Use Existing
+                                            Patient</label>
                                     </div>
                                     <div class="mb-3">
                                         <label for="existing_patient_select">Select Patient</label>
                                         <select class="form-control" id="existing_patient_select" disabled>
                                             <option value="">-- Search/Select patient --</option>
                                         </select>
-                                        <small class="text-muted">Toggle on to select an existing patient. Fields below will be auto-filled.</small>
+                                        <small class="text-muted">Toggle on to select an existing patient. Fields below
+                                            will be auto-filled.</small>
                                     </div>
                                     <div class="mb-2">
                                         <label for="patient_fname">First Name</label>
-                                        <input type="text" class="form-control" id="patient_fname" placeholder="e.g., Juan" required>
+                                        <input type="text" class="form-control" id="patient_fname"
+                                            placeholder="e.g., Juan" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="patient_lname">Last Name</label>
-                                        <input type="text" class="form-control" id="patient_lname" placeholder="e.g., Dela Cruz" required>
+                                        <input type="text" class="form-control" id="patient_lname"
+                                            placeholder="e.g., Dela Cruz" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="patient_mname">Middle Name</label>
-                                        <input type="text" class="form-control" id="patient_mname" placeholder="Optional">
+                                        <input type="text" class="form-control" id="patient_mname"
+                                            placeholder="Optional">
                                     </div>
                                     <div class="mb-2">
                                         <label for="birthdate">Birthdate</label>
@@ -97,30 +102,38 @@
                                     </div>
                                     <div class="mb-2">
                                         <label for="address">Address</label>
-                                        <input type="text" class="form-control" id="address" placeholder="Street, City, Province" required>
+                                        <input type="text" class="form-control" id="address"
+                                            placeholder="Street, City, Province" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="mobile_number">Mobile Number</label>
-                                        <input type="text" class="form-control" id="mobile_number" placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$" title="Use 11-digit PH format starting with 09 or +639" required>
+                                        <input type="text" class="form-control" id="mobile_number"
+                                            placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
+                                            title="Use 11-digit PH format starting with 09 or +639" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="email">Email</label>
-                                        <input type="email" class="form-control" id="email" placeholder="name@example.com">
+                                        <input type="email" class="form-control" id="email"
+                                            placeholder="name@example.com">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <h6>Emergency Contact</h6>
                                     <div class="mb-2">
                                         <label for="em_contact_name">Contact Name</label>
-                                        <input type="text" class="form-control" id="em_contact_name" placeholder="Parent/Guardian" required>
+                                        <input type="text" class="form-control" id="em_contact_name"
+                                            placeholder="Parent/Guardian" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="em_contact_number">Contact Number</label>
-                                        <input type="text" class="form-control" id="em_contact_number" placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$" title="Use 11-digit PH format starting with 09 or +639" required>
+                                        <input type="text" class="form-control" id="em_contact_number"
+                                            placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
+                                            title="Use 11-digit PH format starting with 09 or +639" required>
                                     </div>
                                     <div class="mb-2">
                                         <label for="em_contact_address">Contact Address</label>
-                                        <input type="text" class="form-control" id="em_contact_address" placeholder="Street, City, Province" required>
+                                        <input type="text" class="form-control" id="em_contact_address"
+                                            placeholder="Street, City, Province" required>
                                     </div>
 
                                     <h6 class="mt-4">Admission Details</h6>
@@ -153,8 +166,11 @@
                                             <option value="0">Not Applicable</option>
                                             <option value="1">Applicable</option>
                                         </select>
-                                        <small class="text-muted d-block">Select "Applicable" if the patient was held in the Emergency Room.</small>
-                                        <small id="er_charge_preview" class="text-success fw-semibold" style="display:none;">ER initial charge will add ₱1,500 to the bill preview.</small>
+                                        <small class="text-muted d-block">Select "Applicable" if the patient was held in
+                                            the Emergency Room.</small>
+                                        <small id="er_charge_preview" class="text-success fw-semibold"
+                                            style="display:none;">ER initial charge will add ₱1,500 to the bill
+                                            preview.</small>
                                     </div>
                                     <div class="mb-2">
                                         <label for="doctor_id">Assign Doctor</label>
@@ -225,7 +241,9 @@
                                         </div>
                                         <div class="mb-2">
                                             <label for="edit_em_contact_number">Contact Number</label>
-                                            <input type="text" class="form-control" id="edit_em_contact_number" placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$" title="Use 11-digit PH format starting with 09 or +639" required>
+                                            <input type="text" class="form-control" id="edit_em_contact_number"
+                                                placeholder="09XXXXXXXXX or +639XXXXXXXXX" pattern="^(09|\+639)\d{9}$"
+                                                title="Use 11-digit PH format starting with 09 or +639" required>
                                         </div>
                                         <div class="mb-2">
                                             <label for="edit_em_contact_address">Contact Address</label>
@@ -271,7 +289,9 @@
                                                 <option value="0">Not Applicable</option>
                                                 <option value="1">Applicable</option>
                                             </select>
-                                            <small id="edit_er_charge_preview" class="text-success fw-semibold" style="display:none;">ER initial charge will add ₱1,500 to the bill preview.</small>
+                                            <small id="edit_er_charge_preview" class="text-success fw-semibold"
+                                                style="display:none;">ER initial charge will add ₱1,500 to the bill
+                                                preview.</small>
                                         </div>
                                         <div class="mb-2">
                                             <label for="edit_doctor_id">Assign Doctor</label>
