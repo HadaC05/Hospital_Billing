@@ -378,6 +378,157 @@ class UserManager
         }
     }
 
+    /**
+     * Update role-specific data for existing user
+     */
+    private function updateRoleSpecificData($userId, $userData)
+    {
+        $roleId = $userData['role_id'];
+        
+        // Debug logging
+        error_log("Updating role-specific data for user ID: $userId, role ID: $roleId");
+        error_log("User data: " . print_r($userData, true));
+        
+        switch ($roleId) {
+            case '2': // Doctor
+                $query = "UPDATE user_doctor SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          license_number = :license_number, 
+                          specialty_id = :specialty_id 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '4': // Nurse
+                $query = "UPDATE user_nurse SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          license_number = :license_number, 
+                          department_id = :department_id 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '5': // Lab Technician
+                $query = "UPDATE user_lab_technician SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          license_number = :license_number, 
+                          department_id = :department_id 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '6': // Pharmacist
+                $query = "UPDATE user_pharmacist SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          license_number = :license_number 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->execute();
+                break;
+
+            case '7': // Therapist
+                $query = "UPDATE user_therapist SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          license_number = :license_number, 
+                          specialty_id = :specialty_id 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '8': // Cashier
+                $query = "UPDATE user_cashier SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          employee_number = :employee_number 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
+                $stmt->execute();
+                break;
+
+            case '9': // Billing Staff
+                $query = "UPDATE user_billing_officer SET 
+                          first_name = :first_name, 
+                          middle_name = :middle_name, 
+                          last_name = :last_name, 
+                          suffix = :suffix, 
+                          employee_number = :employee_number 
+                          WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
+                $stmt->execute();
+                break;
+
+            default:
+                // For roles without specific tables, do nothing
+                return;
+        }
+    }
 
     /**
      * Update an existing user
@@ -427,6 +578,10 @@ class UserManager
             }
 
             $stmt->execute();
+            
+            // Update role-specific data
+            $this->updateRoleSpecificData($userData['user_id'], $userData);
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'User updated successfully'

@@ -388,9 +388,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 const user = data.user;
                 document.getElementById('editUserId').value = user.user_id;
-                document.getElementById('editFirstName').value = user.first_name;
+                document.getElementById('editFirstName').value = user.first_name || '';
                 document.getElementById('editMiddleName').value = user.middle_name || '';
-                document.getElementById('editLastName').value = user.last_name;
+                document.getElementById('editLastName').value = user.last_name || '';
+                document.getElementById('editSuffix').value = user.suffix || '';
                 document.getElementById('editUsername').value = user.username;
                 document.getElementById('editPassword').value = '';
                 document.getElementById('editEmail').value = user.email || '';
@@ -531,6 +532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             first_name: document.getElementById('editFirstName').value.trim(),
             middle_name: document.getElementById('editMiddleName').value.trim(),
             last_name: document.getElementById('editLastName').value.trim(),
+            suffix: document.getElementById('editSuffix').value.trim(),
             username: document.getElementById('editUsername').value.trim(),
             password: document.getElementById('editPassword').value,
             email: document.getElementById('editEmail').value.trim(),
@@ -538,11 +540,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             role_id: document.getElementById('editRoleId').value
         };
 
-        // Validate form
-        if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.role_id) {
+        // Validate basic required fields
+        if (!formData.username || !formData.role_id || !formData.first_name || !formData.last_name) {
             Swal.fire({
                 title: 'Validation',
-                text: 'Please fill in all required fields.',
+                text: 'Please fill in username, role, first name, and last name.',
                 icon: 'warning'
             });
             return;
