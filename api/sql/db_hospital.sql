@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 25, 2025 at 04:19 AM
+-- Generation Time: Aug 27, 2025 at 07:12 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -323,8 +323,8 @@ INSERT INTO `tbl_labtest` (`labtest_id`, `test_name`, `labtest_category_id`, `un
 (2, 'Hemoglobin', 1, 180.00, 1),
 (3, 'Urinalysis', 2, 250.00, 1),
 (4, 'Pregnancy Test (Urine)', 2, 350.00, 1),
-(5, 'Hepatitis B Screening', 27, 1000.00, 1),
-(6, 'HIV Antibody Test', 3, 1200.00, 1),
+(5, 'Hepatitis B Screening', 6, 1000.00, 1),
+(6, 'HIV Antibody Test', 5, 1200.00, 1),
 (7, 'Sputum Culture and Sensitivity', 4, 850.00, 1),
 (8, 'Blood Culture', 4, 1200.00, 1),
 (9, 'Fasting Blood Sugar (FBS)', 5, 250.00, 1),
@@ -341,7 +341,9 @@ INSERT INTO `tbl_labtest` (`labtest_id`, `test_name`, `labtest_category_id`, `un
 (20, 'sample labtest', 5, 1000.00, 0),
 (21, 'lab test 1', 3, 1000.00, 1),
 (22, 'test', 10, 1000.00, 0),
-(23, 'teset', 10, 100.00, 1);
+(23, 'teset', 10, 100.00, 1),
+(24, 'z', 10, 111.00, 0),
+(25, 'zz', 4, 111.00, 0);
 
 -- --------------------------------------------------------
 
@@ -363,36 +365,38 @@ CREATE TABLE `tbl_labtest_category` (
 INSERT INTO `tbl_labtest_category` (`labtest_category_id`, `labtest_category_name`, `labtest_category_desc`, `is_active`) VALUES
 (1, 'Hematology', 'Tests related to blood and blood-forming organs', 1),
 (2, 'Urinalysis', 'Tests on urine for diagnosis of kidney and urinary tract disorders', 1),
-(3, '30', 'a', 0),
+(3, 'zzzz', 'a', 0),
 (4, 'Microbiology', 'Culture and sensitivity tests for infection detection', 1),
 (5, 'Biochemistry', 'Blood chemistry for liver, kidney, and metabolic function', 1),
 (6, 'Serology', 'Blood serum tests for disease detection', 1),
 (7, 'Imaging', 'Diagnostic radiology and scans', 1),
-(8, 'test', 'test', 1),
+(8, 'test', 'test', 0),
 (9, 'Toxicology', 'Drug screening, poisoning, and toxic substance detection', 1),
 (10, 'Allergy Testing', 'Evaluation of allergic reactions via IgE or allergen-specific tests', 1),
 (11, 'Histopathology', 'Microscopic examination of tissue samples from biopsy or surgery', 1),
 (12, 'Cytology', 'Examination of cells for abnormalities, such as Pap smear', 1),
-(13, 'Virology', 'Detection and quantification of viral infections', 1),
+(13, 'Virology', 'Detection and quantification of viral infections', 0),
 (14, 'Genetic Testing', 'Analysis of genetic material for inherited or chromosomal disorders', 1),
-(15, 'labtests name', 'description', 1),
+(15, 'xxxxxxx', 'description', 0),
 (16, 'Endocrinology', 'Tests for hormone levels and endocrine gland function', 1),
 (17, 'Arterial Blood Gas Analysis', 'Measures oxygen, carbon dioxide, and acid-base status in the blood', 1),
-(18, 'testest', 'desc', 1),
-(19, 'aaample', 'test', 0),
-(20, 'sample', 'sample', 1),
-(21, 'samsam', 'descr', 1),
-(22, 'test3', 'desc', 1),
-(23, 'test5', 'desc', 1),
-(24, 'test4', 'ss', 1),
-(25, 'test6', 'ss', 1),
-(26, 'test7', '11', 1),
-(27, '6', 'ss', 0),
-(28, '5', 'a', 0),
-(29, '4', 'a', 0),
-(30, '3', 'a', 0),
-(31, '1', 'This is one', 0),
-(32, '2', '2', 0);
+(18, 'testest', 'desc', 0),
+(19, 'xxxx', 'test', 0),
+(20, 'sample', 'sample', 0),
+(21, 'samsam', 'descr', 0),
+(22, 'test3', 'desc', 0),
+(23, 'test5', 'desc', 0),
+(24, 'test4', 'ss', 0),
+(25, 'test6', 'ss', 0),
+(26, 'test7', '11', 0),
+(27, 'xx', 'ss', 0),
+(28, 'x', 'a', 0),
+(29, 'zzzzz', 'a', 0),
+(30, 'zzz', 'a', 0),
+(31, 'z', 'This is one', 0),
+(32, 'zz', '2', 0),
+(33, 'testtest', 'test', 0),
+(34, 'xxx', '1', 0);
 
 -- --------------------------------------------------------
 
@@ -459,11 +463,20 @@ INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `
 (10, 12.00, 'Acyclovir', 8, 1, 35, 1),
 (11, 5.00, 'Metformin', 3, 1, 50, 1),
 (12, 5.00, 'Omeprazole', 4, 1, 25, 1),
-(13, 25.00, 'test22', 1, 1, 25, 1),
-(14, 10.00, 'test', 2, 1, 10, 1),
-(15, 10.00, 'sample', 7, 1, 10, 1),
-(16, 10.00, 'sample2', 4, 1, 10, 1),
-(17, 11.00, 'sample3', 1, 1, 11, 1);
+(13, 25.00, 'test22', 1, 0, 25, 1),
+(14, 10.00, 'test', 2, 0, 10, 1),
+(15, 10.00, 'sample', 7, 0, 10, 1),
+(16, 10.00, 'sample2', 4, 0, 10, 1),
+(17, 11.00, 'sample3', 1, 0, 11, 1),
+(18, 11.00, 'z', 37, 0, 25, 5),
+(19, 1.00, 'testtesttest', 2, 0, 12, 4),
+(20, 12.00, 'zz', 4, 0, 33, 3),
+(21, 111.00, 'zzz', 37, 0, 2, 7),
+(22, 12.00, 'zzzz', 25, 0, 44, 3),
+(23, 11.00, 'zzzzz', 12, 0, 22, 2),
+(24, 11.00, 'x', 1, 0, 22, 6),
+(25, 11.00, 'xx', 37, 0, 22, 4),
+(26, 7.00, 'xxx', 1, 0, 11, 4);
 
 -- --------------------------------------------------------
 
@@ -491,7 +504,7 @@ INSERT INTO `tbl_medicine_type` (`med_type_id`, `med_type_name`, `description`, 
 (6, 'Antiseptic', 'Prevents wound infections', 1),
 (7, 'Bronchodilator', 'Opens airways for easier breathing', 1),
 (8, 'Antiviral', 'Treats viral infections', 1),
-(9, 'test', 'desc', 1),
+(9, 'test', 'desc', 0),
 (10, 'IV Fluids', 'Sterile intravenous solutions for hydration and electrolyte balance', 1),
 (11, 'Antidiabetics', 'Medicines for controlling blood sugar levels in diabetic patients', 1),
 (12, 'Anticoagulants', 'Drugs that prevent or reduce blood clotting', 1),
@@ -520,7 +533,8 @@ INSERT INTO `tbl_medicine_type` (`med_type_id`, `med_type_name`, `description`, 
 (35, 'Reproductive Health Drugs', 'Contraceptives, fertility treatments, pregnancy-related drugs', 1),
 (36, 'Emergency Drugs', 'Critical drugs used in ER and ICU, such as epinephrine, atropine', 1),
 (37, 'Anesthetics', 'Local and general anesthetic agents used during procedures', 1),
-(38, '1', '1', 0);
+(38, '1', '1', 0),
+(39, '2', '2', 0);
 
 -- --------------------------------------------------------
 
@@ -578,7 +592,8 @@ INSERT INTO `tbl_room` (`room_id`, `room_number`, `room_type_id`, `daily_rate`, 
 (9, 'ER1', 5, 1500.00, 1, 1),
 (10, 'test3', 2, 1000.00, 2, 1),
 (11, 'sample', 5, 1000.00, 2, 1),
-(12, 'sample2', 5, 1000.00, 1, 0);
+(12, 'sample2', 5, 1000.00, 1, 0),
+(13, '1', 1, 1111.00, 1, 0);
 
 -- --------------------------------------------------------
 
@@ -632,7 +647,8 @@ INSERT INTO `tbl_room_type` (`room_type_id`, `room_type_name`, `room_description
 (4, 'ICU', 'Intensive Care Unit for critical patients', 1),
 (5, 'Emergency Holding', 'Temporary room while awaiting full admissions', 1),
 (6, 'test', 'test', 0),
-(7, '1', '1', 0);
+(7, '1', '1', 0),
+(8, '2', '2', 0);
 
 -- --------------------------------------------------------
 
@@ -691,7 +707,8 @@ INSERT INTO `tbl_surgery` (`surgery_id`, `surgery_name`, `surgery_type_id`, `sur
 (12, 'Hernia Repair', 1, 15000.00, 1),
 (13, 'test4', 3, 10000.00, 0),
 (15, 'test', 3, 10000.00, 1),
-(16, 'test2', 3, 10000.00, 1);
+(16, 'test2', 3, 10000.00, 1),
+(17, '1', 6, 2222.00, 1);
 
 -- --------------------------------------------------------
 
@@ -740,7 +757,8 @@ INSERT INTO `tbl_surgery_type` (`surgery_type_id`, `surgery_type_name`, `descrip
 (12, 'Oncologic Surgery', 'Surgeries for cancer diagnosis, staging, and treatment', 1),
 (13, 'Transplant Surgery', 'Organ transplant operations such as kidney or liver transplant', 1),
 (14, 'Emergency / Trauma Surgery', 'Surgeries for trauma patients including internal bleeding and wound repair', 1),
-(15, '1', '1', 0);
+(15, '1', '1', 0),
+(16, '2', '2', 0);
 
 -- --------------------------------------------------------
 
@@ -775,7 +793,8 @@ INSERT INTO `tbl_treatment` (`treatment_id`, `treatment_name`, `unit_price`, `tr
 (12, 'Individual Counseling', 800.00, 6, 1),
 (13, 'Psychiatric Evaluation', 1200.00, 6, 1),
 (14, 'sampple treatment', 10000.00, 6, 1),
-(15, 'test', 100.00, 7, 1);
+(15, 'test', 100.00, 7, 1),
+(16, '1', 222.00, 5, 1);
 
 -- --------------------------------------------------------
 
@@ -801,8 +820,9 @@ INSERT INTO `tbl_treatment_category` (`treatment_category_id`, `category_name`, 
 (4, 'Wound Care', 'Cleaning, dressing, and managing wounds', 1),
 (5, 'Dialysis', 'Blood filtration for kidney failure', 1),
 (6, 'Counseling', 'Mental health support and therapy sessions', 1),
-(7, 'test', 'test', 1),
-(8, '1', '1', 0);
+(7, 'test', 'test', 0),
+(8, '1', '1', 0),
+(9, '2', '2', 0);
 
 -- --------------------------------------------------------
 
@@ -843,17 +863,59 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`user_id`, `username`, `password`, `email`, `mobile_number`, `role_id`, `status`) VALUES
 (1, 'admin1', 'admin123', 'admin@email.com', '', 1, 1),
 (2, 'doctor1', 'doctor123', 'doctor@email.com', '', 2, 1),
-(3, 'nurse1', 'nurse123', 'nurse@email.com', '', 3, 1),
-(4, 'technician1', 'technician123', 'technician@email.com', '', 4, 1),
-(5, 'pharmacist1', 'pharmacist123', 'pharmacist@email.com', '', 5, 1),
-(6, 'surgeon1', 'surgeon123', 'surgeon@email.com', '', 6, 1),
+(4, 'technician1', 'technician123', 'technician@email.com', '', 5, 1),
+(5, 'pharmacist1', 'pharmacist123', 'pharmacist@email.com', '', 6, 1),
 (7, 'therapist1', 'therapist123', 'therapist@email.com', '', 7, 1),
 (8, 'cashier1', 'cashier123', 'cashier@email.com', '', 8, 1),
 (9, 'biller1', 'biller123', 'biller@email.com', '', 9, 1),
-(10, 'insurance1', 'insurance123', 'insurance@email.com', '', 10, 1),
-(11, 'er1', 'er123', 'er@email.com', '', 11, 1),
-(12, 'doctor1st', 'pass1223', 'doc@email.com', '', 2, 1),
-(13, 'user1', '$2y$10$.oghmPHNldFjYh9/cxKu.euB2rBXHGqb11j0jjCgzfb', 'user@email.com', '', 4, 1);
+(11, 'er1', 'er123', 'er@email.com', '', 4, 1),
+(12, 'doctor1st', 'pass1223', 'doc@email.com', '', 2, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_billing_officer`
+--
+
+CREATE TABLE `user_billing_officer` (
+  `billing_officer_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `employee_number` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_billing_officer`
+--
+
+INSERT INTO `user_billing_officer` (`billing_officer_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `employee_number`) VALUES
+(1, 9, 'biller_f', 'biller_mid', 'biller_l', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_cashier`
+--
+
+CREATE TABLE `user_cashier` (
+  `cashier_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `employee_number` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_cashier`
+--
+
+INSERT INTO `user_cashier` (`cashier_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `employee_number`) VALUES
+(1, 8, 'cash_f', 'cash_mid', 'cash_l', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -920,6 +982,56 @@ INSERT INTO `user_doctor_specialty` (`specialty_id`, `specialty_name`, `descript
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_labtech_department`
+--
+
+CREATE TABLE `user_labtech_department` (
+  `department_id` int(11) NOT NULL,
+  `department_name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_labtech_department`
+--
+
+INSERT INTO `user_labtech_department` (`department_id`, `department_name`, `description`, `is_active`) VALUES
+(1, 'Hematology', 'Blood analysis and blood disorder testing', 1),
+(2, 'Clinical Chemistry', 'Analysis of blood serum, plasma, and other fluids', 1),
+(3, 'Microbiology', 'Culture and identification of bacteria, viruses, and fungi', 1),
+(4, 'Immunology/Serology', 'Tests related to immune system and antibodies', 1),
+(5, 'Pathology', 'Examination of tissues and biopsy samples', 1),
+(6, 'Radiology/Imaging', 'X-rays, CT, MRI, and ultrasound imaging', 1),
+(7, 'Histopathology', 'Microscopic examination of tissues for disease', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_lab_technician`
+--
+
+CREATE TABLE `user_lab_technician` (
+  `technician_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `license_number` varchar(50) NOT NULL,
+  `department_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_lab_technician`
+--
+
+INSERT INTO `user_lab_technician` (`technician_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `department_id`) VALUES
+(1, 4, 'lab_f', 'lab_mid', 'lab_l', NULL, '', 1);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `user_log`
 --
 
@@ -929,6 +1041,57 @@ CREATE TABLE `user_log` (
   `login_date` date NOT NULL,
   `user_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_nurse`
+--
+
+CREATE TABLE `user_nurse` (
+  `nurse_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `license_number` varchar(50) NOT NULL,
+  `department_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_nurse`
+--
+
+INSERT INTO `user_nurse` (`nurse_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `department_id`) VALUES
+(1, 11, 'er_f', 'er_mid', 'er_l', NULL, '', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_nurse_department`
+--
+
+CREATE TABLE `user_nurse_department` (
+  `department_id` int(11) NOT NULL,
+  `department_name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_nurse_department`
+--
+
+INSERT INTO `user_nurse_department` (`department_id`, `department_name`, `description`, `is_active`) VALUES
+(1, 'Emergency Room (ER)', 'Handles emergency and urgent patient admissions', 1),
+(2, 'Intensive Care Unit (ICU)', 'Provides care for critically ill patients', 1),
+(3, 'Pediatrics', 'Cares for infants, children, and adolescents', 1),
+(4, 'Medical Ward', 'General ward for admitted medical patients', 1),
+(5, 'Surgical Ward', 'Ward for post-operative and surgical patients', 1),
+(6, 'Obstetrics and Gynecology (OB-GYN)', 'Care for mothers and newborns', 1),
+(7, 'Outpatient Department (OPD)', 'Manages non-admitted patients for consultations and minor procedures', 1),
+(8, 'Operating Room (OR)', 'Specialized area for surgical operations', 1);
 
 -- --------------------------------------------------------
 
@@ -971,6 +1134,29 @@ INSERT INTO `user_permission` (`permission_id`, `name`, `label`, `description`) 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_pharmacist`
+--
+
+CREATE TABLE `user_pharmacist` (
+  `pharmacist_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(150) DEFAULT NULL,
+  `license_number` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_pharmacist`
+--
+
+INSERT INTO `user_pharmacist` (`pharmacist_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`) VALUES
+(1, 5, 'pharma_f', 'pharma_mid', 'pharma_l', NULL, '');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `user_roles`
 --
 
@@ -987,15 +1173,12 @@ CREATE TABLE `user_roles` (
 INSERT INTO `user_roles` (`role_id`, `role_name`, `access_level`) VALUES
 (1, 'Admin', '10'),
 (2, 'Doctor', '9'),
-(3, 'Surgeon', '8'),
 (4, 'Nurse', '8'),
 (5, 'Lab Technician', '7'),
 (6, 'Pharmacist', '7'),
 (7, 'Therapist', '7'),
 (8, 'Cashier', '6'),
-(9, 'Billing Staff', '6'),
-(10, 'Insurance Officer', '5'),
-(11, 'Receptionist', '4');
+(9, 'Billing Staff', '6');
 
 -- --------------------------------------------------------
 
@@ -1034,22 +1217,70 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 21, 1),
 (2, 4, 1),
 (2, 12, 1),
-(3, 4, 1),
-(3, 10, 1),
-(3, 12, 1),
 (4, 4, 1),
+(4, 5, 1),
 (4, 12, 1),
+(4, 21, 1),
 (5, 9, 1),
 (6, 8, 1),
 (7, 11, 1),
 (8, 6, 1),
 (8, 7, 1),
 (9, 6, 1),
-(9, 7, 1),
-(10, 13, 1),
-(11, 5, 1),
-(11, 12, 1),
-(11, 21, 1);
+(9, 7, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_therapist`
+--
+
+CREATE TABLE `user_therapist` (
+  `therapist_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `suffix` varchar(50) DEFAULT NULL,
+  `license_number` varchar(50) DEFAULT NULL,
+  `specialty_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_therapist`
+--
+
+INSERT INTO `user_therapist` (`therapist_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `specialty_id`) VALUES
+(1, 7, 'therapist_f', 'therapist_m', 'therapist_l', NULL, NULL, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_therapist_specialty`
+--
+
+CREATE TABLE `user_therapist_specialty` (
+  `specialty_id` int(11) NOT NULL,
+  `specialty_name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_therapist_specialty`
+--
+
+INSERT INTO `user_therapist_specialty` (`specialty_id`, `specialty_name`, `description`, `is_active`) VALUES
+(1, 'Physical Therapy', 'Rehabilitation to improve strength, mobility, and physical function', 1),
+(2, 'Occupational Therapy', 'Helps patients regain the ability to perform daily tasks and activities', 1),
+(3, 'Speech Therapy', 'Assessment and treatment of speech, language, and swallowing disorders', 1),
+(4, 'Respiratory Therapy', 'Treatment and support for patients with breathing or lung issues', 1),
+(5, 'Cardiac Rehabilitation Therapy', 'Therapy for patients recovering from heart surgery or heart conditions', 1),
+(6, 'Neurorehabilitation Therapy', 'Rehabilitation for patients with neurological disorders such as stroke or spinal cord injury', 1),
+(7, 'Pediatric Therapy', 'Therapy specialized for children with developmental or physical challenges', 1),
+(8, 'Geriatric Therapy', 'Rehabilitation focused on elderly patients to improve independence and quality of life', 1),
+(9, 'Sports Therapy', 'Injury prevention and rehabilitation for athletes and physically active individuals', 1),
+(10, 'Hand Therapy', 'Specialized rehabilitation for hand and upper limb injuries or post-surgery recovery', 1);
 
 --
 -- Indexes for dumped tables
@@ -1314,6 +1545,22 @@ ALTER TABLE `users`
   ADD KEY `fk_users_1` (`role_id`);
 
 --
+-- Indexes for table `user_billing_officer`
+--
+ALTER TABLE `user_billing_officer`
+  ADD PRIMARY KEY (`billing_officer_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `employee_number` (`employee_number`);
+
+--
+-- Indexes for table `user_cashier`
+--
+ALTER TABLE `user_cashier`
+  ADD PRIMARY KEY (`cashier_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `employee_number` (`employee_number`);
+
+--
 -- Indexes for table `user_doctor`
 --
 ALTER TABLE `user_doctor`
@@ -1328,6 +1575,22 @@ ALTER TABLE `user_doctor_specialty`
   ADD PRIMARY KEY (`specialty_id`);
 
 --
+-- Indexes for table `user_labtech_department`
+--
+ALTER TABLE `user_labtech_department`
+  ADD PRIMARY KEY (`department_id`),
+  ADD UNIQUE KEY `department_name` (`department_name`);
+
+--
+-- Indexes for table `user_lab_technician`
+--
+ALTER TABLE `user_lab_technician`
+  ADD PRIMARY KEY (`technician_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `license_number` (`license_number`),
+  ADD KEY `department_id` (`department_id`);
+
+--
 -- Indexes for table `user_log`
 --
 ALTER TABLE `user_log`
@@ -1335,11 +1598,35 @@ ALTER TABLE `user_log`
   ADD KEY `fk_log_1` (`user_id`);
 
 --
+-- Indexes for table `user_nurse`
+--
+ALTER TABLE `user_nurse`
+  ADD PRIMARY KEY (`nurse_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `license_number` (`license_number`),
+  ADD KEY `department_id` (`department_id`);
+
+--
+-- Indexes for table `user_nurse_department`
+--
+ALTER TABLE `user_nurse_department`
+  ADD PRIMARY KEY (`department_id`),
+  ADD UNIQUE KEY `department_name` (`department_name`);
+
+--
 -- Indexes for table `user_permission`
 --
 ALTER TABLE `user_permission`
   ADD PRIMARY KEY (`permission_id`),
   ADD UNIQUE KEY `name` (`name`);
+
+--
+-- Indexes for table `user_pharmacist`
+--
+ALTER TABLE `user_pharmacist`
+  ADD PRIMARY KEY (`pharmacist_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD UNIQUE KEY `license_number` (`license_number`);
 
 --
 -- Indexes for table `user_roles`
@@ -1353,6 +1640,21 @@ ALTER TABLE `user_roles`
 ALTER TABLE `user_role_permission`
   ADD PRIMARY KEY (`user_role_id`,`permission_id`),
   ADD KEY `permission_id` (`permission_id`);
+
+--
+-- Indexes for table `user_therapist`
+--
+ALTER TABLE `user_therapist`
+  ADD PRIMARY KEY (`therapist_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD KEY `specialty_id` (`specialty_id`);
+
+--
+-- Indexes for table `user_therapist_specialty`
+--
+ALTER TABLE `user_therapist_specialty`
+  ADD PRIMARY KEY (`specialty_id`),
+  ADD UNIQUE KEY `specialty_name` (`specialty_name`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -1452,13 +1754,13 @@ ALTER TABLE `tbl_doctor_fee`
 -- AUTO_INCREMENT for table `tbl_labtest`
 --
 ALTER TABLE `tbl_labtest`
-  MODIFY `labtest_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `labtest_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `tbl_labtest_category`
 --
 ALTER TABLE `tbl_labtest_category`
-  MODIFY `labtest_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `labtest_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `tbl_labtest_item`
@@ -1476,13 +1778,13 @@ ALTER TABLE `tbl_medication_item`
 -- AUTO_INCREMENT for table `tbl_medicine`
 --
 ALTER TABLE `tbl_medicine`
-  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine_type`
 --
 ALTER TABLE `tbl_medicine_type`
-  MODIFY `med_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `med_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine_unit`
@@ -1494,7 +1796,7 @@ ALTER TABLE `tbl_medicine_unit`
 -- AUTO_INCREMENT for table `tbl_room`
 --
 ALTER TABLE `tbl_room`
-  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `room_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `tbl_room_assignment`
@@ -1512,7 +1814,7 @@ ALTER TABLE `tbl_room_stay`
 -- AUTO_INCREMENT for table `tbl_room_type`
 --
 ALTER TABLE `tbl_room_type`
-  MODIFY `room_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `room_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `tbl_service_type`
@@ -1524,7 +1826,7 @@ ALTER TABLE `tbl_service_type`
 -- AUTO_INCREMENT for table `tbl_surgery`
 --
 ALTER TABLE `tbl_surgery`
-  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `surgery_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `tbl_surgery_procedure`
@@ -1536,19 +1838,19 @@ ALTER TABLE `tbl_surgery_procedure`
 -- AUTO_INCREMENT for table `tbl_surgery_type`
 --
 ALTER TABLE `tbl_surgery_type`
-  MODIFY `surgery_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `surgery_type_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment`
 --
 ALTER TABLE `tbl_treatment`
-  MODIFY `treatment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `treatment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment_category`
 --
 ALTER TABLE `tbl_treatment_category`
-  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment_session`
@@ -1563,6 +1865,18 @@ ALTER TABLE `users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
+-- AUTO_INCREMENT for table `user_billing_officer`
+--
+ALTER TABLE `user_billing_officer`
+  MODIFY `billing_officer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `user_cashier`
+--
+ALTER TABLE `user_cashier`
+  MODIFY `cashier_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `user_doctor`
 --
 ALTER TABLE `user_doctor`
@@ -1575,10 +1889,34 @@ ALTER TABLE `user_doctor_specialty`
   MODIFY `specialty_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
+-- AUTO_INCREMENT for table `user_labtech_department`
+--
+ALTER TABLE `user_labtech_department`
+  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `user_lab_technician`
+--
+ALTER TABLE `user_lab_technician`
+  MODIFY `technician_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `user_log`
 --
 ALTER TABLE `user_log`
   MODIFY `login_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `user_nurse`
+--
+ALTER TABLE `user_nurse`
+  MODIFY `nurse_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `user_nurse_department`
+--
+ALTER TABLE `user_nurse_department`
+  MODIFY `department_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `user_permission`
@@ -1587,10 +1925,28 @@ ALTER TABLE `user_permission`
   MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
+-- AUTO_INCREMENT for table `user_pharmacist`
+--
+ALTER TABLE `user_pharmacist`
+  MODIFY `pharmacist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `user_roles`
 --
 ALTER TABLE `user_roles`
   MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `user_therapist`
+--
+ALTER TABLE `user_therapist`
+  MODIFY `therapist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `user_therapist_specialty`
+--
+ALTER TABLE `user_therapist_specialty`
+  MODIFY `specialty_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Constraints for dumped tables
@@ -1764,11 +2120,30 @@ ALTER TABLE `users`
   ADD CONSTRAINT `fk_users_1` FOREIGN KEY (`role_id`) REFERENCES `user_roles` (`role_id`);
 
 --
+-- Constraints for table `user_billing_officer`
+--
+ALTER TABLE `user_billing_officer`
+  ADD CONSTRAINT `user_billing_officer_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `user_cashier`
+--
+ALTER TABLE `user_cashier`
+  ADD CONSTRAINT `user_cashier_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
 -- Constraints for table `user_doctor`
 --
 ALTER TABLE `user_doctor`
   ADD CONSTRAINT `user_doctor_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `user_doctor_ibfk_2` FOREIGN KEY (`specialty_id`) REFERENCES `user_doctor_specialty` (`specialty_id`);
+
+--
+-- Constraints for table `user_lab_technician`
+--
+ALTER TABLE `user_lab_technician`
+  ADD CONSTRAINT `user_lab_technician_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `user_lab_technician_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `user_labtech_department` (`department_id`);
 
 --
 -- Constraints for table `user_log`
@@ -1777,11 +2152,31 @@ ALTER TABLE `user_log`
   ADD CONSTRAINT `fk_log_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
 --
+-- Constraints for table `user_nurse`
+--
+ALTER TABLE `user_nurse`
+  ADD CONSTRAINT `user_nurse_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `user_nurse_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `user_nurse_department` (`department_id`);
+
+--
+-- Constraints for table `user_pharmacist`
+--
+ALTER TABLE `user_pharmacist`
+  ADD CONSTRAINT `user_pharmacist_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
 -- Constraints for table `user_role_permission`
 --
 ALTER TABLE `user_role_permission`
   ADD CONSTRAINT `user_role_permission_ibfk_1` FOREIGN KEY (`user_role_id`) REFERENCES `user_roles` (`role_id`),
   ADD CONSTRAINT `user_role_permission_ibfk_2` FOREIGN KEY (`permission_id`) REFERENCES `user_permission` (`permission_id`);
+
+--
+-- Constraints for table `user_therapist`
+--
+ALTER TABLE `user_therapist`
+  ADD CONSTRAINT `user_therapist_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `user_therapist_ibfk_2` FOREIGN KEY (`specialty_id`) REFERENCES `user_therapist_specialty` (`specialty_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
