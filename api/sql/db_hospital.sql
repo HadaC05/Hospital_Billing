@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2025 at 07:12 AM
+-- Generation Time: Aug 27, 2025 at 07:18 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -938,7 +938,8 @@ CREATE TABLE `user_doctor` (
 --
 
 INSERT INTO `user_doctor` (`doctor_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `license_number`, `specialty_id`) VALUES
-(1, 2, 'doctor_first', 'doctor_mid', 'doc_last', NULL, 1);
+(1, 2, 'Ramon', NULL, 'Reyes', NULL, 1),
+(2, 12, 'Melissa', NULL, 'Garcia', NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -1880,7 +1881,7 @@ ALTER TABLE `user_cashier`
 -- AUTO_INCREMENT for table `user_doctor`
 --
 ALTER TABLE `user_doctor`
-  MODIFY `doctor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `doctor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `user_doctor_specialty`
