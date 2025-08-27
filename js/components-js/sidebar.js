@@ -50,17 +50,17 @@ async function buildSidebarLinks(baseApiUrl, user) {
     const moduleMap = {
         admin_dashboard: {
             label: 'Administrator Dashboard',
-            link: '../components/dashboard.html',
+            link: '../module/dashboard-html/admin-dashboard.html',
             icon: 'fas fa-tachometer-alt'
         },
         doctor_dashboard: {
             label: 'Doctor Dashboard',
-            link: '../module/doctor-dashboard.html',
+            link: '../module/dashboard-html/doctor-dashboard.html',
             icon: 'fas fa-user-md'
         },
         receptionist_dashboard: {
             label: 'Receptionist Dashboard',
-            link: '../module/receptionist-dashboard.html',
+            link: '../module/dashboard-html/receptionist-dashboard.html',
             icon: 'fas fa-handshake-angle'
         },
         room_occupancy: {
@@ -120,22 +120,22 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         biller_dashboard: {
             label: 'Biller Dashboard',
-            link: '../module/biller-dashboard.html',
+            link: '../module/dashboard-html/biller-dashboard.html',
             icon: 'fas fa-file-invoice-dollar'
         },
         lab_dashboard: {
             label: 'Laboratory Dashboard',
-            link: '../module/lab-dashboard.html',
+            link: '../module/dashboard-html/lab-dashboard.html',
             icon: 'fas fa-vial'
         },
         nurse_dashboard: {
             label: 'Nurse Dashboard',
-            link: '../module/nurse-dashboard.html',
+            link: '../module/dashboard-html/nurse-dashboard.html',
             icon: 'fas fa-user-nurse'
         },
         pharmacist_dashboard: {
             label: 'Pharmacist Dashboard',
-            link: '../module/pharmacist-dashboard.html',
+            link: '../module/dashboard-html/pharmacist-dashboard.html',
             icon: 'fas fa-pills'
         },
     };
@@ -143,52 +143,52 @@ async function buildSidebarLinks(baseApiUrl, user) {
     const inventoryMap = {
         manage_medicine: {
             label: 'Medicine Module',
-            link: '../module/inv-medicine.html',
+            link: '../module/masterfile-html/inv-medicine.html',
             icon: 'fas fa-pills'
         },
         manage_surgeries: {
             label: 'Surgical Module',
-            link: '../module/inv-surgery.html',
+            link: '../module/masterfile-html/inv-surgery.html',
             icon: 'fas fa-procedures'
         },
         manage_labtests: {
             label: 'Laboratory Module',
-            link: '../module/inv-labtest.html',
+            link: '../module/masterfile-html/inv-labtest.html',
             icon: 'fas fa-vial'
         },
         manage_treatments: {
             label: 'Treatment Module',
-            link: '../module/inv-treatments.html',
+            link: '../module/masterfile-html/inv-treatments.html',
             icon: 'fas fa-stethoscope'
         },
         manage_rooms: {
             label: 'Room Management',
-            link: '../module/inv-rooms.html',
+            link: '../module/masterfile-html/inv-rooms.html',
             icon: 'fas fa-bed'
         },
         manage_medicine_types: {
             label: 'Medicine Type Module',
-            link: '../module/type-medicine.html',
+            link: '../module/mf-types-html/type-medicine.html',
             icon: 'fas fa-pills'
         },
         manage_room_types: {
             label: 'Room Type Module',
-            link: '../module/type-room.html',
+            link: '../module/mf-types-html/type-room.html',
             icon: 'fas fa-bed'
         },
         manage_surgery_types: {
             label: 'Surgery Type Module',
-            link: '../module/type-surgery.html',
+            link: '../module/mf-types-html/type-surgery.html',
             icon: 'fas fa-procedures'
         },
         manage_treatment_types: {
             label: 'Treatment Type Module',
-            link: '../module/type-treatment.html',
+            link: '../module/mf-types-html/type-treatment.html',
             icon: 'fas fa-stethoscope'
         },
         manage_labtest_types: {
             label: 'Labtest Type Module',
-            link: '../module/type-labtest.html',
+            link: '../module/mf-types-html/type-labtest.html',
             icon: 'fas fa-vial'
         },
     };
