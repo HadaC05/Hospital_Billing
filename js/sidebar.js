@@ -63,6 +63,11 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../module/receptionist-dashboard.html',
             icon: 'fas fa-handshake-angle'
         },
+        room_occupancy: {
+            label: 'Room Occupancy',
+            link: '../module/room-occupancy.html',
+            icon: 'fas fa-bed'
+        },
         manage_users: {
             label: 'Manage Users',
             link: '../module/user-management.html',
@@ -234,6 +239,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         const isLab = roleStr.includes('lab') || roleStr.includes('laboratory');
         const isNurse = roleStr.includes('nurse');
         const isPharmacist = roleStr.includes('pharmacist') || roleStr.includes('pharmacy');
+        const isER = roleStr.includes('er') || roleStr.includes('emergency');
         if (isAdmin) {
             const alwaysShow = [
                 inventoryMap.manage_treatment_types,
@@ -267,8 +273,19 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add receptionist-only links
         if (isReceptionist) {
-            const recLinks = [moduleMap.receptionist_dashboard];
+            const recLinks = [moduleMap.receptionist_dashboard, moduleMap.room_occupancy];
             recLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add ER-only links
+        if (isER) {
+            const erLinks = [moduleMap.room_occupancy];
+            erLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
                     if (!exists) standaloneLinks.push(cfg);
