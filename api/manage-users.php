@@ -101,6 +101,7 @@ class UserManager
                     SELECT 
                         u.user_id, 
                         u.username,
+                        u.status,
                         COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) as first_name,
                         COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, b.middle_name) as middle_name,
                         COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) as last_name,

@@ -313,11 +313,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const displayName = hasName
                 ? `${fn}${mn ? ' ' + mn : ''}${ln ? ' ' + ln : ''}`.trim()
                 : user.username;
+            // Create status badge
+            const statusBadge = user.status === 1
+                ? '<span class="badge bg-success">Active</span>'
+                : '<span class="badge bg-danger">Inactive</span>';
+
             row.innerHTML = `
                 <td>${displayName}</td>
                 <td>${user.username}</td>
                 <td>${user.email || '-'}</td>
                 <td>${user.role_name}</td>
+                <td>${statusBadge}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user-id="${user.user_id}">
                         <i class="fas fa-edit"></i>
