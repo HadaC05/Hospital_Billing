@@ -1,8 +1,6 @@
 console.log('patients.js is working');
-
 // Use relative path for API URL to avoid cross-origin issues
 const baseApiUrl = 'http://localhost/hospital_billing/api';
-
 document.addEventListener('DOMContentLoaded', async () => {
     // Check for user authentication
     const user = JSON.parse(localStorage.getItem('user'));
@@ -11,7 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '../index.html';
         return;
     }
-
     async function loadLabTestsForModal() {
         try {
             const response = await axios.get(`${baseApiUrl}/masterfiles-php/get-labtests.php`, {
@@ -43,7 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({ title: 'Error', text: 'Failed to load lab tests', icon: 'error' });
         }
     }
-
     function updateLabTestPriceInfo() {
         if (!labTestSelect || !labTestPriceInfo) return;
         const id = labTestSelect.value;
@@ -54,7 +50,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             labTestPriceInfo.textContent = 'Unit price: -';
         }
     }
-
     async function loadSurgeriesForModal() {
         try {
             const response = await axios.get(`${baseApiUrl}/masterfiles-php/get-surgeries.php`, {
@@ -86,7 +81,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({ title: 'Error', text: 'Failed to load surgeries', icon: 'error' });
         }
     }
-
     function updateSurgeryPriceInfo() {
         if (!surgerySelect || !surgeryPriceInfo) return;
         const id = surgerySelect.value;
@@ -97,7 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             surgeryPriceInfo.textContent = 'Unit price: -';
         }
     }
-
     function renderSurgeriesCart() {
         if (!surgeriesCartTbody) return;
         if (surgeriesCart.length === 0) {
@@ -125,7 +118,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (surgeriesTotalEl) surgeriesTotalEl.textContent = total.toFixed(2);
     }
-
     async function loadTreatmentsForModal() {
         try {
             const response = await axios.get(`${baseApiUrl}/masterfiles-php/get-treatments.php`, {
@@ -157,7 +149,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({ title: 'Error', text: 'Failed to load treatments', icon: 'error' });
         }
     }
-
     function updateTreatmentPriceInfo() {
         if (!treatmentSelect || !treatmentPriceInfo) return;
         const id = treatmentSelect.value;
@@ -168,7 +159,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             treatmentPriceInfo.textContent = 'Unit price: -';
         }
     }
-
     function renderTreatmentsCart() {
         if (!treatmentsCartTbody) return;
         if (treatmentsCart.length === 0) {
@@ -196,7 +186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (treatmentsTotalEl) treatmentsTotalEl.textContent = total.toFixed(2);
     }
-
     function renderLabTestsCart() {
         if (!labTestsCartTbody) return;
         if (labTestsCart.length === 0) {
@@ -224,17 +213,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (labTestsTotalEl) labTestsTotalEl.textContent = total.toFixed(2);
     }
-
     // Patient Records functionality
     const patientListElement = document.getElementById('patient-list');
     const patientDetailsSection = document.getElementById('patient-details-section');
     const admissionDetailsSection = document.getElementById('admission-details-section');
     const backToListBtn = document.getElementById('back-to-list');
     const backToPatientBtn = document.getElementById('back-to-patient');
-
     let currentPatientId = null;
     let currentAdmissionId = null;
-
     // Initialize pagination utility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
@@ -245,7 +231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadPatients(1, itemsPerPage);
         }
     });
-
     // ========= Dispense Medicine Modal Logic =========
     const dispenseModalEl = document.getElementById('dispenseMedicineModal');
     const dispenseMedSelect = document.getElementById('dispense-med-id');
@@ -257,7 +242,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dispenseClearBtn = document.getElementById('btn-dispense-clear');
     const dispenseCartTbody = document.getElementById('dispense-cart');
     const dispenseTotalEl = document.getElementById('dispense-total');
-
     // ========= Add Lab Tests Modal Logic =========
     const labTestsModalEl = document.getElementById('addLabTestsModal');
     const labTestSelect = document.getElementById('labtest-id');
@@ -269,7 +253,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const labTestsSubmitBtn = document.getElementById('btn-labtests-submit');
     const labTestsCartTbody = document.getElementById('labtests-cart');
     const labTestsTotalEl = document.getElementById('labtests-total');
-
     // ========= Add Surgeries Modal Logic =========
     const surgeriesModalEl = document.getElementById('addSurgeriesModal');
     const surgerySelect = document.getElementById('surgery-id');
@@ -281,7 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const surgeriesSubmitBtn = document.getElementById('btn-surgeries-submit');
     const surgeriesCartTbody = document.getElementById('surgeries-cart');
     const surgeriesTotalEl = document.getElementById('surgeries-total');
-
     // ========= Add Treatments Modal Logic =========
     const treatmentsModalEl = document.getElementById('addTreatmentsModal');
     const treatmentSelect = document.getElementById('treatment-id');
@@ -293,7 +275,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const treatmentsSubmitBtn = document.getElementById('btn-treatments-submit');
     const treatmentsCartTbody = document.getElementById('treatments-cart');
     const treatmentsTotalEl = document.getElementById('treatments-total');
-
+    // ========= Transfer Room Modal Logic =========
+    const transferRoomModalEl = document.getElementById('transferRoomModal');
+    const newRoomSelect = document.getElementById('new-room-id');
+    const transferDateInput = document.getElementById('transfer-date');
+    const transferReasonInput = document.getElementById('transfer-reason');
+    const transferRoomSubmitBtn = document.getElementById('btn-transfer-room-submit');
+    const roomStayListElement = document.getElementById('room-stay-list');
+    
     let medicinesCache = [];
     let dispenseCart = [];
     let labTestsCache = [];
@@ -302,7 +291,104 @@ document.addEventListener('DOMContentLoaded', async () => {
     let surgeriesCart = [];
     let treatmentsCache = [];
     let treatmentsCart = [];
-
+    let roomsCache = [];
+    
+    // Load rooms for transfer modal
+    async function loadRoomsForTransfer() {
+        try {
+            const response = await axios.get(`${baseApiUrl}/masterfiles-php/get-rooms.php`, {
+                params: {
+                    operation: 'getRooms',
+                    json: JSON.stringify({}),
+                    page: 1,
+                    itemsPerPage: 500
+                }
+            });
+            const data = response.data;
+            if (data.success) {
+                roomsCache = (data.rooms || []).filter(r => Number(r.is_available) === 1);
+                if (newRoomSelect) {
+                    newRoomSelect.innerHTML = '<option value="">Select room</option>';
+                    roomsCache.forEach(room => {
+                        const opt = document.createElement('option');
+                        opt.value = room.room_id;
+                        opt.textContent = `${room.room_number} (${room.room_type})`;
+                        newRoomSelect.appendChild(opt);
+                    });
+                }
+            } else {
+                Swal.fire({ title: 'Error', text: data.message || 'Failed to load rooms', icon: 'error' });
+            }
+        } catch (err) {
+            console.error('Failed to load rooms:', err);
+            Swal.fire({ title: 'Error', text: 'Failed to load rooms', icon: 'error' });
+        }
+    }
+    
+    // Handle room transfer
+    if (transferRoomSubmitBtn) {
+        transferRoomSubmitBtn.addEventListener('click', async () => {
+            try {
+                if (!currentAdmissionId) {
+                    Swal.fire({ title: 'Error', text: 'No admission selected.', icon: 'error' });
+                    return;
+                }
+                
+                const roomId = newRoomSelect ? Number(newRoomSelect.value) : 0;
+                const transferDate = transferDateInput ? transferDateInput.value : '';
+                const transferReason = transferReasonInput ? transferReasonInput.value : '';
+                
+                if (!roomId) {
+                    Swal.fire({ title: 'Validation', text: 'Please select a room.', icon: 'warning' });
+                    return;
+                }
+                
+                if (!transferDate) {
+                    Swal.fire({ title: 'Validation', text: 'Please select a transfer date.', icon: 'warning' });
+                    return;
+                }
+                
+                if (!transferReason) {
+                    Swal.fire({ title: 'Validation', text: 'Please provide a reason for transfer.', icon: 'warning' });
+                    return;
+                }
+                
+                const payload = {
+                    operation: 'transferRoom',
+                    json: JSON.stringify({
+                        admission_id: Number(currentAdmissionId),
+                        room_id: roomId,
+                        transfer_date: transferDate,
+                        transfer_reason: transferReason,
+                        transferred_by: Number(user.user_id)
+                    })
+                };
+                
+                const { data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload);
+                
+                if (data && data.status === 'success') {
+                    Swal.fire({ title: 'Success', text: 'Room transferred successfully.', icon: 'success' });
+                    const modal = bootstrap.Modal.getInstance(transferRoomModalEl);
+                    if (modal) modal.hide();
+                    await loadAdmissionDetails(currentAdmissionId);
+                } else {
+                    Swal.fire({ title: 'Error', text: (data && data.message) || 'Failed to transfer room', icon: 'error' });
+                }
+            } catch (err) {
+                console.error('Transfer room error:', err);
+                Swal.fire({ title: 'Error', text: 'Failed to transfer room', icon: 'error' });
+            }
+        });
+    }
+    
+    // Set up transfer room modal
+    if (transferRoomModalEl) {
+        transferRoomModalEl.addEventListener('show.bs.modal', async () => {
+            if (transferDateInput) transferDateInput.valueAsDate = new Date();
+            await loadRoomsForTransfer();
+        });
+    }
+    
     async function loadMedicinesForDispense() {
         try {
             // Fetch a generous page to cover most lists; adjust if needed
@@ -337,7 +423,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({ title: 'Error', text: 'Failed to load medicines', icon: 'error' });
         }
     }
-
     function updateStockInfo() {
         if (!dispenseMedSelect || !dispenseStockInfo) return;
         const medId = dispenseMedSelect.value;
@@ -354,7 +439,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     }
-
     function renderDispenseCart() {
         if (!dispenseCartTbody) return;
         if (dispenseCart.length === 0) {
@@ -367,7 +451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dispenseCart.forEach((item, idx) => {
             const med = medicinesCache.find(m => Number(m.med_id) === Number(item.med_id));
             const name = med ? `${med.med_name} (${med.unit_name})` : `#${item.med_id}`;
-            const price = med ? Number(med.unit_price) : 0;
+            const price = med ? Number(m.unit_price) : 0;
             const subtotal = price * item.quantity;
             total += subtotal;
             const tr = document.createElement('tr');
@@ -382,11 +466,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (dispenseTotalEl) dispenseTotalEl.textContent = total.toFixed(2);
     }
-
     if (dispenseMedSelect) {
         dispenseMedSelect.addEventListener('change', updateStockInfo);
     }
-
     if (dispenseModalEl) {
         dispenseModalEl.addEventListener('show.bs.modal', async () => {
             // Default date to today
@@ -400,7 +482,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateStockInfo();
         });
     }
-
     // Submit Surgeries batch
     if (surgeriesSubmitBtn) {
         surgeriesSubmitBtn.addEventListener('click', async () => {
@@ -445,7 +526,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     // Submit Treatments batch
     if (treatmentsSubmitBtn) {
         treatmentsSubmitBtn.addEventListener('click', async () => {
@@ -490,7 +570,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     // Remove items from carts via delegation
     if (surgeriesCartTbody) {
         surgeriesCartTbody.addEventListener('click', (e) => {
@@ -514,7 +593,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     // Submit Lab Tests batch
     if (labTestsSubmitBtn) {
         labTestsSubmitBtn.addEventListener('click', async () => {
@@ -523,22 +601,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Swal.fire({ title: 'Error', text: 'No admission selected.', icon: 'error' });
                     return;
                 }
-
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (!user) {
                     Swal.fire({ title: 'Error', text: 'Not authenticated.', icon: 'error' });
                     return;
                 }
-
                 if (!labTestsCart || labTestsCart.length === 0) {
                     Swal.fire({ title: 'Validation', text: 'Add at least one lab test.', icon: 'warning' });
                     return;
                 }
-
                 const dateInput = labTestDateInput ? labTestDateInput.value : '';
                 const items = labTestsCart.map(i => ({ labtest_id: Number(i.labtest_id), quantity: Number(i.quantity) }));
                 const isDoctor = (user.role_name || '').toLowerCase().includes('doctor');
-
                 // If doctor, submit as a request; otherwise, submit as performed (existing behavior)
                 const payload = isDoctor
                     ? {
@@ -559,7 +633,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             performed_by: Number(user.user_id)
                         })
                       };
-
                 const { data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload);
                 if (data && data.status === 'success') {
                     Swal.fire({ title: 'Success', text: isDoctor ? 'Lab tests requested successfully.' : 'Lab tests added successfully.', icon: 'success' });
@@ -576,7 +649,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     if (labTestsModalEl) {
         labTestsModalEl.addEventListener('show.bs.modal', async () => {
             if (labTestDateInput) labTestDateInput.valueAsDate = new Date();
@@ -586,7 +658,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateLabTestPriceInfo();
         });
     }
-
     // Surgeries modal show
     if (surgeriesModalEl) {
         surgeriesModalEl.addEventListener('show.bs.modal', async () => {
@@ -597,7 +668,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateSurgeryPriceInfo();
         });
     }
-
     // Treatments modal show
     if (treatmentsModalEl) {
         treatmentsModalEl.addEventListener('show.bs.modal', async () => {
@@ -608,7 +678,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateTreatmentPriceInfo();
         });
     }
-
     // Add to cart
     if (dispenseAddBtn) {
         dispenseAddBtn.addEventListener('click', () => {
@@ -635,7 +704,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderDispenseCart();
         });
     }
-
     // Clear cart
     if (dispenseClearBtn) {
         dispenseClearBtn.addEventListener('click', () => {
@@ -643,7 +711,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderDispenseCart();
         });
     }
-
     // Add Lab Test to cart
     if (labTestsAddBtn) {
         labTestsAddBtn.addEventListener('click', () => {
@@ -662,7 +729,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderLabTestsCart();
         });
     }
-
     // Clear lab tests cart
     if (labTestsClearBtn) {
         labTestsClearBtn.addEventListener('click', () => {
@@ -670,7 +736,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderLabTestsCart();
         });
     }
-
     // Add Surgery to cart
     if (surgeriesAddBtn) {
         surgeriesAddBtn.addEventListener('click', () => {
@@ -689,7 +754,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderSurgeriesCart();
         });
     }
-
     // Clear surgeries cart
     if (surgeriesClearBtn) {
         surgeriesClearBtn.addEventListener('click', () => {
@@ -697,7 +761,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderSurgeriesCart();
         });
     }
-
     // Add Treatment to cart
     if (treatmentsAddBtn) {
         treatmentsAddBtn.addEventListener('click', () => {
@@ -716,7 +779,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTreatmentsCart();
         });
     }
-
     // Clear treatments cart
     if (treatmentsClearBtn) {
         treatmentsClearBtn.addEventListener('click', () => {
@@ -724,7 +786,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderTreatmentsCart();
         });
     }
-
     // Remove from lab tests cart
     if (labTestsCartTbody) {
         labTestsCartTbody.addEventListener('click', (e) => {
@@ -737,11 +798,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     if (labTestSelect) labTestSelect.addEventListener('change', updateLabTestPriceInfo);
     if (surgerySelect) surgerySelect.addEventListener('change', updateSurgeryPriceInfo);
     if (treatmentSelect) treatmentSelect.addEventListener('change', updateTreatmentPriceInfo);
-
     // Remove from cart via delegation
     if (dispenseCartTbody) {
         dispenseCartTbody.addEventListener('click', (e) => {
@@ -754,7 +813,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     if (dispenseSubmitBtn) {
         dispenseSubmitBtn.addEventListener('click', async () => {
             try {
@@ -762,13 +820,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     Swal.fire({ title: 'Error', text: 'No admission selected.', icon: 'error' });
                     return;
                 }
-
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (!user) {
                     Swal.fire({ title: 'Error', text: 'Not authenticated.', icon: 'error' });
                     return;
                 }
-
                 const dateGiven = dispenseDateInput ? dispenseDateInput.value : '';
                 let data;
                 if (dispenseCart.length > 0) {
@@ -804,7 +860,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     };
                     ({ data } = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, payload));
                 }
-
                 if (data && data.status === 'success') {
                     Swal.fire({ title: 'Success', text: 'Medicine dispensed successfully.', icon: 'success' });
                     // Hide modal and reset cart
@@ -822,16 +877,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
     // Load Patient List
     async function loadPatients(page = 1, itemsPerPage = 10, search = '') {
         if (!patientListElement) {
             console.error('Patient list element not found');
             return;
         }
-
         patientListElement.innerHTML = '<tr><td colspan="4" class="text-center">Loading patients...</td></tr>';
-
         try {
             const response = await axios.get(`${baseApiUrl}/get-patients.php`, {
                 params: {
@@ -842,13 +894,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     search: search
                 }
             });
-
             const data = response.data;
-
             if (data.success && Array.isArray(data.patients)) {
                 const patients = data.patients;
                 const paginationData = data.pagination;
-
                 if (patients.length === 0) {
                     patientListElement.innerHTML = '<tr><td colspan="4" class="text-center">No patients found.</td></tr>';
                     // Clear pagination controls
@@ -858,12 +907,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     return;
                 }
-
                 patientListElement.innerHTML = '';
-
                 patients.forEach(patient => {
                     const fullName = `${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname.charAt(0) + '.' : ''}`;
-
                     const row = `
                         <tr>
                             <td>${fullName}</td>
@@ -876,7 +922,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     patientListElement.innerHTML += row;
                 });
-
                 // Update pagination controls
                 pagination.calculatePagination(paginationData.totalItems, paginationData.currentPage, paginationData.itemsPerPage);
                 pagination.generatePaginationControls('pagination-container');
@@ -888,61 +933,73 @@ document.addEventListener('DOMContentLoaded', async () => {
             patientListElement.innerHTML = '<tr><td colspan="4" class="text-center">Failed to load patients.</td></tr>';
         }
     }
-
     // Load Patient Details
     async function loadPatientDetails(patientId) {
         currentPatientId = patientId;
-
         try {
             const response = await axios.post(`${baseApiUrl}/get-patients.php`, {
                 operation: 'getPatientDetails',
                 json: JSON.stringify({ patient_id: patientId })
             });
-
             const data = response.data;
-
             if (data.success) {
                 const patient = data.patient;
                 const admissions = data.admissions;
                 const insurance = data.insurance;
-
+                
+                // Calculate age and check if under 18
+                const birthDate = new Date(patient.birthdate);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                const isUnder18 = age < 18;
+                
                 // Display patient info
                 const patientInfoElement = document.getElementById('patient-info');
-                const birthDate = new Date(patient.birthdate).toLocaleDateString();
-
                 patientInfoElement.innerHTML = `
                     <div class="col-md-6">
-                        <h4>${patient.patient_lname}, ${patient.patient_fname} ${patient.patient_mname}</h4>
-                        <p><strong>Birth Date:</strong> ${birthDate}</p>
+                        <h4>${patient.patient_fname} ${patient.patient_mname ? patient.patient_mname + ' ' : ''}${patient.patient_lname} ${patient.patient_suffix || ''}</h4>
+                        <p><strong>Birth Date:</strong> ${birthDate.toLocaleDateString()}</p>
+                        <p><strong>Age:</strong> ${age} years old</p>
+                        <p><strong>Gender:</strong> ${patient.gender}</p>
+                        <p><strong>Marital Status:</strong> ${patient.marital_status}</p>
                         <p><strong>Address:</strong> ${patient.address}</p>
                         <p><strong>Contact:</strong> ${patient.mobile_number}</p>
-                        <p><strong>Email:</strong> ${patient.email}</p>
+                        <p><strong>Email:</strong> ${patient.email || 'N/A'}</p>
                     </div>
                     <div class="col-md-6">
                         <h5>Emergency Contact</h5>
                         <p><strong>Name:</strong> ${patient.em_contact_name}</p>
+                        <p><strong>Relationship:</strong> ${patient.em_contact_relationship}</p>
                         <p><strong>Contact:</strong> ${patient.em_contact_number}</p>
+                        <p><strong>Email:</strong> ${patient.em_contact_email || 'N/A'}</p>
                         <p><strong>Address:</strong> ${patient.em_contact_address}</p>
+                        ${isUnder18 ? `
+                        <h5 class="mt-3">Parent/Guardian Information</h5>
+                        <p><strong>Name:</strong> ${patient.parent_name || 'N/A'}</p>
+                        <p><strong>Contact:</strong> ${patient.parent_contact || 'N/A'}</p>
+                        ` : ''}
                     </div>
                 `;
-
+                
                 // Display admissions
                 const admissionListElement = document.getElementById('admission-list');
-
                 if (admissions.length === 0) {
-                    admissionListElement.innerHTML = '<tr><td colspan="6" class="text-center">No admissions found.</td></tr>';
+                    admissionListElement.innerHTML = '<tr><td colspan="7" class="text-center">No admissions found.</td></tr>';
                 } else {
                     admissionListElement.innerHTML = '';
-
                     admissions.forEach(admission => {
                         const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                         const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'Not discharged';
-
                         const row = `
                             <tr>
                                 <td>${admission.admission_id}</td>
                                 <td>${admissionDate}</td>
                                 <td>${dischargeDate}</td>
+                                <td>${admission.room_number || 'Not assigned'}</td>
                                 <td>${admission.admission_reason}</td>
                                 <td>${admission.status}</td>
                                 <td>
@@ -953,19 +1010,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         admissionListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Display insurance policies
                 const insuranceListElement = document.getElementById('insurance-list');
-
                 if (insurance.length === 0) {
                     insuranceListElement.innerHTML = '<tr><td colspan="5" class="text-center">No insurance policies found.</td></tr>';
                 } else {
                     insuranceListElement.innerHTML = '';
-
                     insurance.forEach(policy => {
                         const startDate = new Date(policy.start_date).toLocaleDateString();
                         const endDate = new Date(policy.end_date).toLocaleDateString();
-
                         const row = `
                             <tr>
                                 <td>${policy.policy_number}</td>
@@ -978,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         insuranceListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Show patient details section and hide other sections
                 patientDetailsSection.style.display = 'block';
                 admissionDetailsSection.style.display = 'none';
@@ -999,20 +1053,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
-
     // Load Admission Details
     async function loadAdmissionDetails(admissionId) {
         currentAdmissionId = admissionId;
-
         try {
             // Use AdmissionAPI for richer details (services include medications with names, quantities, nurse, dates)
             const response = await axios.post(`${baseApiUrl}/AdmissionAPI.php`, {
                 operation: 'getAdmission',
                 json: JSON.stringify({ admission_id: admissionId })
             });
-
             const data = response.data;
-
             if (data.status === 'success') {
                 const admission = data.admission;
                 const services = data.services || {};
@@ -1021,30 +1071,53 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const surgeries = services.surgeries || [];
                 const treatments = services.treatments || [];
                 const invoices = data.invoices || [];
-
+                const roomStays = data.room_stays || [];
+                
                 // Display admission info
                 const admissionInfoElement = document.getElementById('admission-info');
                 const admissionDate = new Date(admission.admission_date).toLocaleDateString();
                 const dischargeDate = (admission.discharge_date && admission.discharge_date !== '0000-00-00')
                     ? new Date(admission.discharge_date).toLocaleDateString()
                     : 'Not discharged';
-
+                    
                 admissionInfoElement.innerHTML = `
                     <div class="col-md-6">
                         <h4>Admission #${admission.admission_id}</h4>
-                        <p><strong>Patient:</strong> ${admission.patient_lname}, ${admission.patient_fname} ${admission.patient_mname}</p>
+                        <p><strong>Patient:</strong> ${admission.patient_fname} ${admission.patient_mname ? admission.patient_mname + ' ' : ''}${admission.patient_lname}</p>
+                        <p><strong>Doctor:</strong> ${admission.doctor_name || 'Not assigned'}</p>
                         <p><strong>Admission Date:</strong> ${admissionDate}</p>
-                        <p><strong>Discharge Date:</strong> ${dischargeDate}</p>
+                        <p><strong>Reason:</strong> ${admission.admission_reason}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Reason:</strong> ${admission.admission_reason}</p>
-                        <p><strong>Status:</strong> ${admission.status}</p>
+                        <p><strong>Discharge Date:</strong> ${dischargeDate}</p>
+                        <p><strong>ER Initial Charge:</strong> ${admission.er_initial_charge === '1' ? 'Applied' : 'Not Applied'}</p>
                     </div>
                 `;
-
+                
+                // Display room stays
+                if (roomStayListElement) {
+                    if (roomStays.length === 0) {
+                        roomStayListElement.innerHTML = '<tr><td colspan="4" class="text-center">No room stays found.</td></tr>';
+                    } else {
+                        roomStayListElement.innerHTML = '';
+                        roomStays.forEach(roomStay => {
+                            const startDate = new Date(roomStay.start_date).toLocaleDateString();
+                            const endDate = roomStay.end_date ? new Date(roomStay.end_date).toLocaleDateString() : 'Ongoing';
+                            const row = `
+                                <tr>
+                                    <td>${roomStay.room_number || 'Not assigned'}</td>
+                                    <td>${startDate}</td>
+                                    <td>${endDate}</td>
+                                    <td>${roomStay.status || 'Active'}</td>
+                                </tr>
+                            `;
+                            roomStayListElement.innerHTML += row;
+                        });
+                    }
+                }
+                
                 // Display medications
                 const medicationsListElement = document.getElementById('medications-list');
-
                 if (medications.length === 0) {
                     medicationsListElement.innerHTML = '<tr><td colspan="4" class="text-center">No medications found.</td></tr>';
                 } else {
@@ -1062,15 +1135,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         medicationsListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Display lab tests
                 const labtestsListElement = document.getElementById('labtests-list');
-
                 if (labtests.length === 0) {
                     labtestsListElement.innerHTML = '<tr><td colspan="4" class="text-center">No lab tests found.</td></tr>';
                 } else {
                     labtestsListElement.innerHTML = '';
-
                     labtests.forEach(item => {
                         const datePerf = item.date_performed || item.record_date || item.date_given;
                         const prettyDate = datePerf ? new Date(datePerf).toLocaleDateString() : '';
@@ -1085,15 +1156,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         labtestsListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Display surgeries
                 const surgeriesListElement = document.getElementById('surgeries-list');
-
                 if (surgeries.length === 0) {
                     surgeriesListElement.innerHTML = '<tr><td colspan="4" class="text-center">No surgeries found.</td></tr>';
                 } else {
                     surgeriesListElement.innerHTML = '';
-
                     surgeries.forEach(surgery => {
                         const recordDate = surgery.date_given || surgery.record_date;
                         const prettyDate = recordDate ? new Date(recordDate).toLocaleDateString() : '';
@@ -1108,15 +1177,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         surgeriesListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Display treatments
                 const treatmentsListElement = document.getElementById('treatments-list');
-
                 if (treatments.length === 0) {
                     treatmentsListElement.innerHTML = '<tr><td colspan="4" class="text-center">No treatments found.</td></tr>';
                 } else {
                     treatmentsListElement.innerHTML = '';
-
                     treatments.forEach(treatment => {
                         const recordDate = treatment.date_given || treatment.record_date;
                         const prettyDate = recordDate ? new Date(recordDate).toLocaleDateString() : '';
@@ -1131,18 +1198,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         treatmentsListElement.innerHTML += row;
                     });
                 }
-
+                
                 // Display invoices
                 const invoicesListElement = document.getElementById('invoices-list');
-
                 if (invoices.length === 0) {
                     invoicesListElement.innerHTML = '<tr><td colspan="5" class="text-center">No invoices found.</td></tr>';
                 } else {
                     invoicesListElement.innerHTML = '';
-
                     invoices.forEach(invoice => {
                         const invoiceDate = new Date(invoice.invoice_date).toLocaleDateString();
-
                         const row = `
                             <tr>
                                 <td>${invoice.invoice_id}</td>
@@ -1155,7 +1219,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                         invoicesListElement.innerHTML += row;
                     });
                 }
-
+                
+                // Show agreement and consent information if available
+                const consentCheckbox = document.getElementById('patientAgreement');
+                const consentSignedBy = document.getElementById('consentSignedBy');
+                const consentDate = document.getElementById('consentDate');
+                
+                if (admission.agreement_signed === '1') {
+                    consentCheckbox.checked = true;
+                    consentSignedBy.textContent = admission.agreement_signed_by || 'Not available';
+                    consentDate.textContent = admission.agreement_date ? new Date(admission.agreement_date).toLocaleDateString() : 'Not available';
+                } else {
+                    consentCheckbox.checked = false;
+                    consentSignedBy.textContent = 'Not available';
+                    consentDate.textContent = 'Not available';
+                }
+                
                 // Show admission details section and hide other sections
                 patientDetailsSection.style.display = 'none';
                 admissionDetailsSection.style.display = 'block';
@@ -1178,7 +1257,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
-
     // Event Listeners
     document.addEventListener('click', async (e) => {
         // View Patient Details
@@ -1186,14 +1264,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const patientId = e.target.dataset.id;
             await loadPatientDetails(patientId);
         }
-
         // View Admission Details
         if (e.target.classList.contains('view-admission-btn')) {
             const admissionId = e.target.dataset.id;
             await loadAdmissionDetails(admissionId);
         }
     });
-
     // Back to List button
     if (backToListBtn) {
         backToListBtn.addEventListener('click', () => {
@@ -1203,7 +1279,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentPatientId = null;
         });
     }
-
     // Back to Patient button
     if (backToPatientBtn) {
         backToPatientBtn.addEventListener('click', () => {
@@ -1217,7 +1292,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentAdmissionId = null;
         });
     }
-
     // Load initial data
     await loadPatients();
 });
