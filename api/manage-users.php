@@ -69,8 +69,8 @@ class UserManager
             $searchParams = [];
 
             if (!empty($search)) {
-                $whereClause = "WHERE d.first_name LIKE :search 
-                               OR d.last_name LIKE :search 
+                $whereClause = "WHERE COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) LIKE :search 
+                               OR COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) LIKE :search 
                                OR u.username LIKE :search 
                                OR u.email LIKE :search 
                                OR r.role_name LIKE :search";
@@ -81,6 +81,12 @@ class UserManager
             $countQuery = "SELECT COUNT(*) as total FROM users u 
                           JOIN user_roles r ON u.role_id = r.role_id 
                           LEFT JOIN user_doctor d ON d.user_id = u.user_id
+                          LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                          LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                          LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                          LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                          LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                          LEFT JOIN user_billing_officer b ON b.user_id = u.user_id
                           $whereClause";
             $countStmt = $this->conn->prepare($countQuery);
             if (!empty($searchParams)) {
@@ -91,15 +97,30 @@ class UserManager
             $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Get paginated data
-            $query = "SELECT u.user_id, u.username,
-                        d.first_name, d.middle_name, d.last_name,
-                        u.email, u.mobile_number, u.role_id, r.role_name 
-                        FROM users u 
-                        JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                        $whereClause
-                        ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')
-                        LIMIT :limit OFFSET :offset";
+            $query = "
+                    SELECT 
+                        u.user_id, 
+                        u.username,
+                        COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) as first_name,
+                        COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, b.middle_name) as middle_name,
+                        COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) as last_name,
+                        u.email, 
+                        u.mobile_number, 
+                        u.role_id, 
+                        r.role_name 
+                    FROM users u 
+                    JOIN user_roles r ON u.role_id = r.role_id 
+                    LEFT JOIN user_doctor d ON d.user_id = u.user_id
+                    LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                    LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                    LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                    LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                    LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                    LEFT JOIN user_billing_officer b ON b.user_id = u.user_id
+                    $whereClause
+                    ORDER BY COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name, u.username), 
+                             COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name, '')
+                    LIMIT :limit OFFSET :offset";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
@@ -417,53 +438,6 @@ class UserManager
             ]);
         }
     }
-
-    /**
-     * Delete a user
-     */
-    function deleteUser($userId)
-    {
-        try {
-            // Check if user exists
-            $checkQuery = "SELECT COUNT(*) FROM users WHERE user_id = :user_id";
-            $checkStmt = $this->conn->prepare($checkQuery);
-            $checkStmt->bindParam(':user_id', $userId);
-            $checkStmt->execute();
-
-            if ($checkStmt->fetchColumn() == 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'User not found'
-                ]);
-                return;
-            }
-
-            // Prevent deleting the current logged-in user
-            if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $userId) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Cannot delete your own account'
-                ]);
-                return;
-            }
-
-            // Delete user
-            $query = "DELETE FROM users WHERE user_id = :user_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->execute();
-
-            echo json_encode([
-                'success' => true,
-                'message' => 'User deleted successfully'
-            ]);
-        } catch (PDOException $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
-            ]);
-        }
-    }
 }
 
 include 'connection-pdo.php';
@@ -557,10 +531,6 @@ switch ($operation) {
         break;
     case 'updateUser':
         $userManager->updateUser($data);
-        break;
-    case 'deleteUser':
-        $user_id = $data['user_id'] ?? null;
-        $userManager->deleteUser($user_id);
         break;
     case 'getDoctors':
         $params = ['search' => $search];

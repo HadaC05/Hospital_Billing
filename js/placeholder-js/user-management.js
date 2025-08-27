@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listeners for modals
     document.getElementById('saveUserBtn').addEventListener('click', addUser);
     document.getElementById('updateUserBtn').addEventListener('click', updateUser);
-    document.getElementById('confirmDeleteUserBtn').addEventListener('click', deleteUser);
 
     // Password visibility toggle for modals
     function setupPasswordToggles() {
@@ -323,9 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user-id="${user.user_id}">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger delete-user-btn" data-user-id="${user.user_id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
                 </td>
             `;
             tableBody.appendChild(row);
@@ -334,13 +330,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Add event listeners to buttons
         document.querySelectorAll('.edit-user-btn').forEach(button => {
             button.addEventListener('click', () => loadUserDetails(button.dataset.userId));
-        });
-
-        document.querySelectorAll('.delete-user-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.getElementById('confirmDeleteUserBtn').dataset.userId = button.dataset.userId;
-                new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
-            });
         });
     }
 
@@ -585,40 +574,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Swal.fire({
                 title: 'Error',
                 text: 'Failed to update user. Please try again.',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Function to delete a user
-    async function deleteUser() {
-        const userId = document.getElementById('confirmDeleteUserBtn').dataset.userId;
-        try {
-            const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
-                operation: 'deleteUser',
-                json: JSON.stringify({ user_id: userId })
-            });
-            const data = response.data;
-            if (data.success) {
-                Swal.fire({
-                    title: 'Deleted',
-                    text: 'User deleted successfully!',
-                    icon: 'success'
-                });
-                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
-                loadUsers();
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to delete user: ' + data.message,
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to delete user. Please try again.',
                 icon: 'error'
             });
         }
