@@ -2,7 +2,7 @@ console.log('admission-records.js is working');
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Use relative path for API URL to avoid cross-origin issues
-    const baseApiUrl = '../api';
+    const baseApiUrl = '../../api';
     // Get user from localStorage or create a temporary one for testing
     let user = JSON.parse(localStorage.getItem('user'));
 
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // return;
     }
     // Local API URL for relative paths
-    const localApiUrl = '../api/';
+    const localApiUrl = '../../api/';
 
     // Get elements
     const admissionList = document.getElementById('admission-list');

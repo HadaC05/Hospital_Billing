@@ -50,92 +50,92 @@ async function buildSidebarLinks(baseApiUrl, user) {
     const moduleMap = {
         admin_dashboard: {
             label: 'Administrator Dashboard',
-            link: '../module/dashboard-html/admin-dashboard.html',
+            link: '../dashboard-html/admin-dashboard.html',
             icon: 'fas fa-tachometer-alt'
         },
         doctor_dashboard: {
             label: 'Doctor Dashboard',
-            link: '../module/dashboard-html/doctor-dashboard.html',
+            link: '../dashboard-html/doctor-dashboard.html',
             icon: 'fas fa-user-md'
         },
         receptionist_dashboard: {
             label: 'Receptionist Dashboard',
-            link: '../module/dashboard-html/receptionist-dashboard.html',
+            link: '../dashboard-html/receptionist-dashboard.html',
             icon: 'fas fa-handshake-angle'
         },
         room_occupancy: {
             label: 'Room Occupancy',
-            link: '../module/room-occupancy.html',
+            link: '../placeholder-html/room-occupancy.html',
             icon: 'fas fa-bed'
         },
         manage_users: {
             label: 'Manage Users',
-            link: '../module/user-management.html',
+            link: '../placeholder-html/user-management.html',
             icon: 'fas fa-users'
         },
         manage_roles: {
             label: 'Role Settings',
-            link: '../module/role-settings.html',
+            link: '../placeholder-html/role-settings.html',
             icon: 'fas fa-user-shield'
         },
         view_admissions: {
             label: 'Admission Records',
-            link: '../module/admission-records.html',
+            link: '../placeholder-html/admission-records.html',
             icon: 'fas fa-clipboard-list'
         },
         edit_admissions: {
             label: 'Admission Editor',
-            link: '../module/admission-editor.html',
+            link: '../placeholder-html/admission-editor.html',
             icon: 'fas fa-edit'
         },
         view_patient_records: {
             label: 'Patient Records Viewer',
-            link: '../module/patient-records.html',
+            link: '../placeholder-html/patient-records.html',
             icon: 'fas fa-folder-open'
         },
         access_billing: {
             label: 'Billing Overview',
-            link: '../module/billing-overview.html',
+            link: '../placeholder-html/billing-overview.html',
             icon: 'fas fa-file-invoice-dollar'
         },
         generate_invoice: {
             label: 'Invoice Generator',
-            link: '../module/invoice-generator.html',
+            link: '../placeholder-html/invoice-generator.html',
             icon: 'fas fa-file-invoice'
         },
         approve_insurance: {
             label: 'Insurance Approval Panel',
-            link: '../module/insurance-approval.html',
+            link: '../placeholder-html/insurance-approval.html',
             icon: 'fas fa-shield-alt'
         },
         doctor_prescription: {
             label: 'Doctor Prescription',
-            link: '../module/doctor-prescription.html',
+            link: '../placeholder-html/doctor-prescription.html',
             icon: 'fas fa-prescription-bottle'
         },
         doctor_my_patients: {
             label: 'My Patients',
-            link: '../module/my-patients.html',
+            link: '../placeholder-html/my-patients.html',
             icon: 'fas fa-user-injured'
         },
         biller_dashboard: {
             label: 'Biller Dashboard',
-            link: '../module/dashboard-html/biller-dashboard.html',
+            link: '../dashboard-html/biller-dashboard.html',
             icon: 'fas fa-file-invoice-dollar'
         },
         lab_dashboard: {
             label: 'Laboratory Dashboard',
-            link: '../module/dashboard-html/lab-dashboard.html',
+            link: '../dashboard-html/lab-dashboard.html',
             icon: 'fas fa-vial'
         },
         nurse_dashboard: {
             label: 'Nurse Dashboard',
-            link: '../module/dashboard-html/nurse-dashboard.html',
+            link: '../dashboard-html/nurse-dashboard.html',
             icon: 'fas fa-user-nurse'
         },
         pharmacist_dashboard: {
             label: 'Pharmacist Dashboard',
-            link: '../module/dashboard-html/pharmacist-dashboard.html',
+            link: '../dashboard-html/pharmacist-dashboard.html',
             icon: 'fas fa-pills'
         },
     };
