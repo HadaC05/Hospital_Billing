@@ -1,4 +1,9 @@
 /* Base layout */
+:root {
+    /* Adjust if header height changes */
+    --header-height: 56px;
+}
+
 body {
     min-height: 100vh;
     margin: 0;
@@ -8,31 +13,37 @@ body {
 }
 
 header {
-    z-index: 1000;
-    position: sticky;
+    position: fixed; /* ensure it stays on screen on all browsers */
     top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100; /* above sidebar */
+    background: #fff; /* prevent bleed-through when overlapping */
 }
+
+/* The placeholder remains in normal flow; spacing is applied to page container */
 /* Main layout */
 #page-container {
     display: flex;
     flex-grow: 1;
+    margin-top: var(--header-height); /* push content below fixed header */
 }
 
 /* Sidebar */
-.sidebar {
-    width: 250px;
-    background-color: #343a40;
-    color: white;
+.sidebar { /* Let theme override colors; keep layout only */
+    width: 280px;
     transition: width 0.3s ease;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    position: relative;
+    position: sticky;            /* Stick within the scrolling area */
+    top: var(--header-height);   /* Start below header */
+    height: calc(100vh - var(--header-height)) !important; /* Override vh-100 from markup */
+    overflow: auto;              /* Sidebar gets its own scroll */
+    z-index: 1000;
 }
 
 /* Sidebar links */
-#sidebar-links a {
-    color: white;
+#sidebar-links a { /* colors from theme */
     text-decoration: none;
     padding: 1rem;
     display: block;
@@ -46,13 +57,10 @@ header {
     visibility: visible;
 }
 
-#sidebar-links a:hover {
-    background-color: #495057;
-}
-
 /* Collapse behavior */
 .sidebar.collapsed {
     width: 60px; /* Enough to show hamburger + logout button */
+    margin-left: -250px;
 }
 
 .sidebar.collapsed #sidebar-links a {
@@ -68,6 +76,21 @@ header {
 /* Logout button */
 #logout-btn {
     width: 100%;
+}
+
+/* Header logout button */
+header #logout-btn {
+    width: auto;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+header #logout-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
 }
 
 /* Logout Button Container */
@@ -98,7 +121,110 @@ header {
     opacity: 0;
     transform: translateX(-20px);
     pointer-events: none;
-    visibility: hidden;
+}
+
+/* Content Styles */
+.content {
+    margin-left: 0;
+    transition: all 0.3s ease;
+    width: calc(100% - 280px); /* match sidebar width */
+}
+
+.content.expanded {
+    margin-left: 0;
+    width: 100%;
+}
+
+/* Fully collapse sidebar */
+.sidebar.collapsed {
+    width: 0 !important;
+    margin-left: -280px !important; /* slide completely off-canvas */
+    overflow: hidden !important;
+    border: 0 !important;
+}
+
+/* When sidebar is collapsed, let content take full width */
+.sidebar-collapsed .content {
+    width: 100% !important;
+}
+
+/* Hamburger Button Styles */
+#hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    box-sizing: border-box;
+    color: black;
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 2px;
+    background-color: #333;
+    transition: all 0.3s ease;
+}
+
+/* Card Styles for Lab Technician */
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+/* Table Styles for Lab Technician */
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Form Styles for Lab Technician */
+.form-label {
+    font-weight: 500;
+}
+
+/* Modal Styles - Softer styling */
+.modal-content {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: rgba(91, 155, 213, 0.05);
+    border-bottom: 1px solid rgba(91, 155, 213, 0.1);
+    padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+    background-color: rgba(248, 249, 250, 0.7);
+    border-top: 1px solid rgba(222, 226, 230, 0.5);
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Ensure modals appear above fixed header (header z-index: 1100) */
+.modal {
+    z-index: 1300 !important; /* above header and sidebar */
+}
+
+.modal-backdrop {
+    z-index: 1200 !important; /* just below modal, above header */
 }
 
 /* Content area */
