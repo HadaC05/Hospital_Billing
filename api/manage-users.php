@@ -195,10 +195,12 @@ class UserManager
                 return;
             }
 
+            // Start transaction
+            $this->conn->beginTransaction();
 
-            // Insert new user (users table has no name columns)
-            $query = "INSERT INTO users (username, password, email, mobile_number, role_id) 
-                        VALUES (:username, :password, :email, :mobile_number, :role_id)";
+            // Insert new user with default active status
+            $query = "INSERT INTO users (username, password, email, mobile_number, role_id, status) 
+                        VALUES (:username, :password, :email, :mobile_number, :role_id, 1)";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
@@ -208,17 +210,153 @@ class UserManager
             $stmt->bindParam(':role_id', $userData['role_id']);
 
             $stmt->execute();
+            $userId = $this->conn->lastInsertId();
+
+            // Insert into role-specific table based on role_id
+            $this->insertRoleSpecificData($userId, $userData);
+
+            $this->conn->commit();
             echo json_encode([
                 'success' => true,
                 'message' => 'User added successfully'
             ]);
         } catch (PDOException $e) {
+            $this->conn->rollback();
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
             ]);
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollback();
+            }
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
         }
     }
+
+    /**
+     * Insert data into role-specific table
+     */
+    private function insertRoleSpecificData($userId, $userData)
+    {
+        $roleId = $userData['role_id'];
+
+        // Debug logging
+        error_log("Inserting role-specific data for user ID: $userId, role ID: $roleId");
+        error_log("User data: " . print_r($userData, true));
+
+        switch ($roleId) {
+            case '2': // Doctor
+                $query = "INSERT INTO user_doctor 
+                          (user_id, first_name, middle_name, last_name, suffix, license_number, specialty_id) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :specialty_id)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '4': // Nurse
+                $query = "INSERT INTO user_nurse 
+                          (user_id, first_name, middle_name, last_name, suffix, license_number, department_id) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :department_id)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '5': // Lab Technician
+                $query = "INSERT INTO user_lab_technician 
+                          (user_id, first_name, middle_name, last_name, suffix, license_number, department_id) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :department_id)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '6': // Pharmacist
+                $query = "INSERT INTO user_pharmacist 
+                          (user_id, first_name, middle_name, last_name, suffix, license_number) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->execute();
+                break;
+
+            case '7': // Therapist
+                $query = "INSERT INTO user_therapist 
+                          (user_id, first_name, middle_name, last_name, suffix, license_number, specialty_id) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :specialty_id)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
+                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
+                $stmt->execute();
+                break;
+
+            case '8': // Cashier
+                $query = "INSERT INTO user_cashier 
+                          (user_id, first_name, middle_name, last_name, suffix, employee_number) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :employee_number)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
+                $stmt->execute();
+                break;
+
+            case '9': // Billing Staff
+                $query = "INSERT INTO user_billing_officer 
+                          (user_id, first_name, middle_name, last_name, suffix, employee_number) 
+                          VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :employee_number)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
+                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
+                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
+                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
+                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
+                $stmt->execute();
+                break;
+
+            default:
+                // For roles without specific tables, do nothing
+                return;
+        }
+    }
+
 
     /**
      * Update an existing user
@@ -257,9 +395,6 @@ class UserManager
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':first_name', $userData['first_name']);
-            $stmt->bindParam(':middle_name', $userData['middle_name']);
-            $stmt->bindParam(':last_name', $userData['last_name']);
             $stmt->bindParam(':email', $userData['email']);
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
@@ -354,38 +489,51 @@ if ($method === 'GET') {
         $operation = 'getAllUsers';
     }
 } else if ($method === 'POST') {
-    $body = file_get_contents("php://input");
-    $payload = json_decode($body, true);
+    // Check if data is sent as form data or JSON body
+    if (!empty($_POST)) {
+        // Form data (from frontend axios)
+        $operation = $_POST['operation'] ?? '';
+        $json = $_POST['json'] ?? '';
 
-    // Get pagination parameters from POST request
-    $page = $payload['page'] ?? 1;
-    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
-    $search = $payload['search'] ?? '';
-
-    // For backward compatibility
-    if (isset($payload['action'])) {
-        switch ($payload['action']) {
-            case 'add':
-                $operation = 'addUser';
-                break;
-            case 'update':
-                $operation = 'updateUser';
-                break;
-            case 'delete':
-                $operation = 'deleteUser';
-                $payload['user_id'] = $payload['user_id'] ?? null;
-                break;
-            default:
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Invalid action'
-                ]);
-                exit;
-        }
-        $json = json_encode($payload);
+        // Get pagination parameters from POST request
+        $page = $_POST['page'] ?? 1;
+        $itemsPerPage = $_POST['itemsPerPage'] ?? 10;
+        $search = $_POST['search'] ?? '';
     } else {
-        $operation = $payload['operation'] ?? '';
-        $json = $payload['json'] ?? '';
+        // JSON body (for other clients)
+        $body = file_get_contents("php://input");
+        $payload = json_decode($body, true);
+
+        // Get pagination parameters from POST request
+        $page = $payload['page'] ?? 1;
+        $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+        $search = $payload['search'] ?? '';
+
+        // For backward compatibility
+        if (isset($payload['action'])) {
+            switch ($payload['action']) {
+                case 'add':
+                    $operation = 'addUser';
+                    break;
+                case 'update':
+                    $operation = 'updateUser';
+                    break;
+                case 'delete':
+                    $operation = 'deleteUser';
+                    $payload['user_id'] = $payload['user_id'] ?? null;
+                    break;
+                default:
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Invalid action'
+                    ]);
+                    exit;
+            }
+            $json = json_encode($payload);
+        } else {
+            $operation = $payload['operation'] ?? '';
+            $json = $payload['json'] ?? '';
+        }
     }
 }
 

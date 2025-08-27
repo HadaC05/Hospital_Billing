@@ -1,6 +1,10 @@
 console.log('user-management.js is working');
 document.addEventListener('DOMContentLoaded', async () => {
     const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
+    // Ensure session cookies are sent for auth-protected endpoints
+    if (window.axios) {
+        axios.defaults.withCredentials = true;
+    }
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
@@ -22,6 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load users and roles
     loadUsers();
     loadRoles();
+
+    // Setup role change listener for dynamic fields
+    setupRoleChangeListener();
 
     // Event listeners for modals
     document.getElementById('saveUserBtn').addEventListener('click', addUser);
@@ -51,6 +58,211 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPasswordToggles();
     document.getElementById('addUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
     document.getElementById('editUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
+
+    // Setup role change listener for dynamic fields
+    function setupRoleChangeListener() {
+        const roleSelect = document.getElementById('roleId');
+        if (roleSelect) {
+            roleSelect.addEventListener('change', function () {
+                loadRoleSpecificFields(this.value);
+            });
+        }
+    }
+
+    // Function to load role-specific fields dynamically
+    async function loadRoleSpecificFields(roleId) {
+        const roleSpecificContainer = document.getElementById('roleSpecificFields');
+        if (!roleSpecificContainer) return;
+
+        // Clear existing fields
+        roleSpecificContainer.innerHTML = '';
+
+        if (!roleId) return;
+
+        // Role-specific field configurations
+        const roleConfigs = {
+            '2': { // Doctor
+                title: 'DOCTOR INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'license_number', label: 'License Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' },
+                    { name: 'specialty_id', label: 'Specialty', type: 'select', required: true, colClass: 'col-md-6', apiEndpoint: 'get-doctor-specialties.php' }
+                ]
+            },
+            '4': { // Nurse
+                title: 'NURSE INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'license_number', label: 'License Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' },
+                    { name: 'department_id', label: 'Department', type: 'select', required: true, colClass: 'col-md-6', apiEndpoint: 'get-nurse-departments.php' }
+                ]
+            },
+            '5': { // Lab Technician
+                title: 'LAB TECHNICIAN INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'license_number', label: 'License Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' },
+                    { name: 'department_id', label: 'Department', type: 'select', required: true, colClass: 'col-md-6', apiEndpoint: 'get-labtech-departments.php' }
+                ]
+            },
+            '6': { // Pharmacist
+                title: 'PHARMACIST INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'license_number', label: 'License Number', type: 'text', required: false, colClass: 'col-md-6' }
+                ]
+            },
+            '7': { // Therapist
+                title: 'THERAPIST INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'license_number', label: 'License Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' },
+                    { name: 'specialty_id', label: 'Specialty', type: 'select', required: false, colClass: 'col-md-6', apiEndpoint: 'get-therapist-specialties.php' }
+                ]
+            },
+            '8': { // Cashier
+                title: 'CASHIER INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'employee_number', label: 'Employee Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' }
+                ]
+            },
+            '9': { // Billing Staff
+                title: 'BILLING STAFF INFORMATION',
+                fields: [
+                    { name: 'first_name', label: 'First Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'middle_name', label: 'Middle Name', type: 'text', required: false, colClass: 'col-md-3' },
+                    { name: 'last_name', label: 'Last Name', type: 'text', required: true, colClass: 'col-md-3' },
+                    { name: 'suffix', label: 'Suffix (Optional)', type: 'text', required: false, colClass: 'col-md-3', placeholder: 'Jr., Sr., III' },
+                    { name: 'employee_number', label: 'Employee Number (Optional)', type: 'text', required: false, colClass: 'col-md-6' }
+                ]
+            }
+        };
+
+        const config = roleConfigs[roleId];
+        if (!config) return;
+
+        // Create the form section
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'form-section role-specific-section active';
+        sectionDiv.innerHTML = `
+            <div class="form-section-title">${config.title}</div>
+            <div id="roleFieldsContainer"></div>
+        `;
+        roleSpecificContainer.appendChild(sectionDiv);
+
+        const fieldsContainer = document.getElementById('roleFieldsContainer');
+
+        // Group fields into rows (4 fields per row for name fields, 2 for others)
+        let currentRow = null;
+        let fieldsInRow = 0;
+
+        for (let i = 0; i < config.fields.length; i++) {
+            const field = config.fields[i];
+
+            // Start new row if needed
+            if (!currentRow || fieldsInRow >= 4 || (fieldsInRow >= 2 && !field.name.includes('name') && !field.name.includes('suffix'))) {
+                currentRow = document.createElement('div');
+                currentRow.className = 'row mb-2';
+                fieldsContainer.appendChild(currentRow);
+                fieldsInRow = 0;
+            }
+
+            // Create field container
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = field.colClass;
+
+            const fieldHtml = await createFieldHtml(field);
+            fieldDiv.innerHTML = fieldHtml;
+
+            currentRow.appendChild(fieldDiv);
+            fieldsInRow++;
+        }
+    }
+
+    // Function to create HTML for different field types
+    async function createFieldHtml(field) {
+        const requiredAttr = field.required ? 'required' : '';
+        const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
+
+        if (field.type === 'select' && field.apiEndpoint) {
+            // Load options from API
+            const options = await loadSelectOptions(field.apiEndpoint);
+            const optionsHtml = options.map(option =>
+                `<option value="${option.id}">${option.name}</option>`
+            ).join('');
+
+            return `
+                <div class="mb-2">
+                    <label for="${field.name}" class="form-label">${field.label}</label>
+                    <select class="form-control" id="${field.name}" ${requiredAttr}>
+                        <option value="">-- Select ${field.label} --</option>
+                        ${optionsHtml}
+                    </select>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="mb-2">
+                    <label for="${field.name}" class="form-label">${field.label}</label>
+                    <input type="${field.type}" class="form-control" id="${field.name}" ${requiredAttr} ${placeholder}>
+                </div>
+            `;
+        }
+    }
+
+    // Function to load select options from API
+    async function loadSelectOptions(endpoint) {
+        try {
+            // Map endpoints to actual API calls
+            const endpointMap = {
+                'get-doctor-specialties.php': () => axios.get(`${baseApiUrl}/mf-types-php/get-doctor-specialties.php`),
+                'get-nurse-departments.php': () => axios.get(`${baseApiUrl}/mf-types-php/get-nurse-departments.php`),
+                'get-labtech-departments.php': () => axios.get(`${baseApiUrl}/mf-types-php/get-labtech-departments.php`),
+                'get-therapist-specialties.php': () => axios.get(`${baseApiUrl}/mf-types-php/get-therapist-specialties.php`)
+            };
+
+            const apiCall = endpointMap[endpoint];
+            if (!apiCall) {
+                console.warn(`No API mapping found for endpoint: ${endpoint}`);
+                return [];
+            }
+
+            const response = await apiCall();
+            const data = response.data;
+
+            if (data.success && data.data) {
+                // Map the response data to a consistent format
+                return data.data.map(item => ({
+                    id: item.specialty_id || item.department_id || item.id,
+                    name: item.specialty_name || item.department_name || item.name
+                }));
+            }
+
+            return [];
+        } catch (error) {
+            console.error(`Error loading options for ${endpoint}:`, error);
+            return [];
+        }
+    }
 
     // Function to load all users
     async function loadUsers(page = 1, itemsPerPage = 10, search = '') {
@@ -217,10 +429,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to add a new user
     async function addUser() {
+        // Collect authentication data
         const formData = {
-            first_name: document.getElementById('firstName').value.trim(),
-            middle_name: document.getElementById('middleName').value.trim(),
-            last_name: document.getElementById('lastName').value.trim(),
             username: document.getElementById('username').value.trim(),
             password: document.getElementById('password').value,
             email: document.getElementById('email').value.trim(),
@@ -228,22 +438,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             role_id: document.getElementById('roleId').value
         };
 
-        // Validate form
-        if (!formData.first_name || !formData.last_name || !formData.username || !formData.password || !formData.email || !formData.role_id) {
+        // Collect role-specific data
+        const roleSpecificData = {};
+        const roleSpecificFields = document.querySelectorAll('#roleSpecificFields input, #roleSpecificFields select');
+        roleSpecificFields.forEach(field => {
+            // Include all fields, even if empty, to ensure backend receives expected data structure
+            roleSpecificData[field.id] = field.value.trim();
+        });
+
+        // Combine all form data
+        const completeFormData = { ...formData, ...roleSpecificData };
+
+        // Debug: Log the data being sent
+        console.log('Complete form data being sent:', completeFormData);
+
+        // Validate required authentication fields (email and mobile are now optional)
+        if (!formData.username || !formData.password || !formData.role_id) {
             Swal.fire({
                 title: 'Validation',
-                text: 'Please fill in all required fields.',
+                text: 'Please fill in username, password and role.',
                 icon: 'warning'
             });
             return;
         }
 
+        // Validate role-specific required fields
+        const requiredRoleFields = document.querySelectorAll('#roleSpecificFields input[required], #roleSpecificFields select[required]');
+        for (let field of requiredRoleFields) {
+            if (!field.value.trim()) {
+                Swal.fire({
+                    title: 'Validation',
+                    text: `Please fill in the required field: ${field.previousElementSibling.textContent}`,
+                    icon: 'warning'
+                });
+                return;
+            }
+        }
+
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'addUser',
-                json: JSON.stringify(formData)
+                json: JSON.stringify(completeFormData)
             });
-            const data = response.data;
+            const data = response.data || {};
             if (data.success) {
                 Swal.fire({
                     title: 'Success',
@@ -251,20 +488,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                     icon: 'success'
                 });
                 document.getElementById('addUserForm').reset();
+                document.getElementById('roleSpecificFields').innerHTML = ''; // Clear dynamic fields
                 bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
                 loadUsers();
             } else {
+                const msg = typeof data.message === 'string' && data.message.trim() !== '' ? data.message : 'Unknown error occurred.';
                 Swal.fire({
                     title: 'Error',
-                    text: 'Failed to add user: ' + data.message,
+                    text: 'Failed to add user: ' + msg,
                     icon: 'error'
                 });
             }
         } catch (error) {
             console.error('Error adding user:', error);
+            console.error('Full error details:', error.response);
+
+            let errorMessage = 'Failed to add user. Please try again.';
+            if (error.response) {
+                const { status, data } = error.response;
+                if (data) {
+                    if (typeof data === 'string') {
+                        errorMessage = `Failed to add user: ${data}`;
+                    } else if (typeof data.message === 'string' && data.message.trim() !== '') {
+                        errorMessage = `Failed to add user: ${data.message}`;
+                    } else {
+                        // Fallback to a compact JSON of the response body
+                        try {
+                            errorMessage = `Failed to add user: ${JSON.stringify(data)}`;
+                        } catch (_) {
+                            errorMessage = `Failed to add user (status ${status}).`;
+                        }
+                    }
+                } else {
+                    errorMessage = `Failed to add user (status ${status}).`;
+                }
+            } else if (error.message) {
+                errorMessage = 'Failed to add user: ' + error.message;
+            }
+
             Swal.fire({
                 title: 'Error',
-                text: 'Failed to add user. Please try again.',
+                text: errorMessage,
                 icon: 'error'
             });
         }

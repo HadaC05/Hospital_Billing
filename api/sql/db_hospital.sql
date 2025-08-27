@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2025 at 07:18 AM
+-- Generation Time: Aug 27, 2025 at 03:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -822,7 +822,8 @@ INSERT INTO `tbl_treatment_category` (`treatment_category_id`, `category_name`, 
 (6, 'Counseling', 'Mental health support and therapy sessions', 1),
 (7, 'test', 'test', 0),
 (8, '1', '1', 0),
-(9, '2', '2', 0);
+(9, '2', '2', 0),
+(10, '3', '3', 0);
 
 -- --------------------------------------------------------
 
@@ -930,16 +931,17 @@ CREATE TABLE `user_doctor` (
   `middle_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) NOT NULL,
   `license_number` varchar(50) DEFAULT NULL,
-  `specialty_id` int(11) NOT NULL
+  `specialty_id` int(11) NOT NULL,
+  `suffix` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user_doctor`
 --
 
-INSERT INTO `user_doctor` (`doctor_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `license_number`, `specialty_id`) VALUES
-(1, 2, 'Ramon', NULL, 'Reyes', NULL, 1),
-(2, 12, 'Melissa', NULL, 'Garcia', NULL, 2);
+INSERT INTO `user_doctor` (`doctor_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `license_number`, `specialty_id`, `suffix`) VALUES
+(1, 2, 'Ramon', NULL, 'Reyes', NULL, 1, NULL),
+(2, 12, 'Melissa', NULL, 'Garcia', NULL, 2, NULL);
 
 -- --------------------------------------------------------
 
@@ -1851,7 +1853,7 @@ ALTER TABLE `tbl_treatment`
 -- AUTO_INCREMENT for table `tbl_treatment_category`
 --
 ALTER TABLE `tbl_treatment_category`
-  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `treatment_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `tbl_treatment_session`
