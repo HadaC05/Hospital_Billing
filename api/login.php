@@ -15,7 +15,7 @@ class Users
         include 'connection-pdo.php';
 
         $sql = "
-            SELECT user_id, username, password, role_id
+            SELECT user_id, username, password, role_id, status
             FROM users
             WHERE username = :username
         ";
@@ -26,25 +26,32 @@ class Users
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && $password === $user['password']) {
-            $role_sql = "
-                SELECT role_name FROM user_roles 
-                WHERE role_id = :role_id
-            ";
-            $role_stmt = $conn->prepare($role_sql);
-            $role_stmt->bindParam(":role_id", $user['role_id']);
-            $role_stmt->execute();
-            $role = $role_stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user['status'] == 1) {
+                $role_sql = "
+                    SELECT role_name FROM user_roles 
+                    WHERE role_id = :role_id
+                ";
+                $role_stmt = $conn->prepare($role_sql);
+                $role_stmt->bindParam(":role_id", $user['role_id']);
+                $role_stmt->execute();
+                $role = $role_stmt->fetch(PDO::FETCH_ASSOC);
 
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['role'] = $role['role_name'];
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['role'] = $role['role_name'];
 
-            $response = [
-                'success' => true,
-                'user_id' => $user['user_id'],
-                'username' => $user['username'],
-                'role' => $role['role_name'],
-                'message' => 'Login successful'
-            ];
+                $response = [
+                    'success' => true,
+                    'user_id' => $user['user_id'],
+                    'username' => $user['username'],
+                    'role' => $role['role_name'],
+                    'message' => 'Login successful'
+                ];
+            } else {
+                $response = [
+                    'success' => false,
+                    'message' => 'User is inactive'
+                ];
+            }
         } else {
             $response = [
                 'success' => false,
