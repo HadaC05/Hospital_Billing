@@ -201,12 +201,21 @@
                                 <input type="text" class="form-control" id="editMobileNumber">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="editRoleId" class="form-label">Role</label>
-                            <select class="form-select" id="editRoleId" required>
-                                <option value="">Select a role</option>
-                                <!-- Roles will be loaded here -->
-                            </select>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="editRoleId" class="form-label">Role</label>
+                                <select class="form-select" id="editRoleId" required>
+                                    <option value="">Select a role</option>
+                                    <!-- Roles will be loaded here -->
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit_status" class="form-label">Status</label>
+                                <select id="edit_status     " class="form-select" required>
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
                         </div>
                     </form>
                 </div>

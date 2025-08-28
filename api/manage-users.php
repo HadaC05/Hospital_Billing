@@ -385,11 +385,11 @@ class UserManager
     private function updateRoleSpecificData($userId, $userData)
     {
         $roleId = $userData['role_id'];
-        
+
         // Debug logging
         error_log("Updating role-specific data for user ID: $userId, role ID: $roleId");
         error_log("User data: " . print_r($userData, true));
-        
+
         switch ($roleId) {
             case '2': // Doctor
                 $query = "UPDATE user_doctor SET 
@@ -557,7 +557,9 @@ class UserManager
                         username = :username, 
                         email = :email, 
                         mobile_number = :mobile_number, 
-                        role_id = :role_id";
+                        role_id = :role_id,
+                        status = :status
+                    ";
 
             // Add password to update query if provided
             if (!empty($userData['password'])) {
@@ -572,17 +574,18 @@ class UserManager
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
             $stmt->bindParam(':user_id', $userData['user_id']);
+            $stmt->bindParam(':status', $userData['status']);
 
             // Bind password if provided
             if (!empty($userData['password'])) {
-                $stmt->bindParam(':password', $userData['password']);  // Store plain text password
+                $stmt->bindParam(':password', $userData['password']);
             }
 
             $stmt->execute();
-            
+
             // Update role-specific data
             $this->updateRoleSpecificData($userData['user_id'], $userData);
-            
+
             echo json_encode([
                 'success' => true,
                 'message' => 'User updated successfully'

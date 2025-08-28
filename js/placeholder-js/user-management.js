@@ -403,6 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editMobileNumber').value = user.mobile_number || '';
                 document.getElementById('editRoleId').value = user.role_id;
+                document.getElementById('edit_status').value = user.status || 1;
 
                 // Open edit modal
                 new bootstrap.Modal(document.getElementById('editUserModal')).show();
@@ -543,7 +544,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             password: document.getElementById('editPassword').value,
             email: document.getElementById('editEmail').value.trim(),
             mobile_number: document.getElementById('editMobileNumber').value.trim(),
-            role_id: document.getElementById('editRoleId').value
+            role_id: document.getElementById('editRoleId').value,
+            status: document.getElementById('edit_status').value
         };
 
         // Validate basic required fields
