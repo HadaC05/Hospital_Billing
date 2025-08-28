@@ -42,7 +42,7 @@ class Patients
         }
         $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        // Get paginated data
+        // Get paginated data with current active room number (if any)
         $sql = "
             SELECT 
                 p.patient_id,
@@ -55,8 +55,22 @@ class Patients
                 p.email,
                 p.em_contact_name,
                 p.em_contact_number,
-                p.em_contact_address
+                p.em_contact_address,
+                p.parent_name,
+                p.parent_contact,
+                cr.current_room_number
             FROM patients p
+            LEFT JOIN (
+                SELECT 
+                    pa.patient_id,
+                    MAX(r.room_number) AS current_room_number
+                FROM patient_admission pa
+                JOIN tbl_room_assignment ra ON ra.admission_id = pa.admission_id
+                JOIN tbl_room_stay rs ON rs.room_assignment_id = ra.room_assignment_id
+                JOIN tbl_room r ON r.room_id = rs.room_id
+                WHERE (rs.end_date IS NULL OR rs.end_date = '0000-00-00')
+                GROUP BY pa.patient_id
+            ) cr ON cr.patient_id = p.patient_id
             $whereClause
             ORDER BY p.patient_lname ASC
             LIMIT :limit OFFSET :offset
@@ -113,7 +127,9 @@ class Patients
                 p.email,
                 p.em_contact_name,
                 p.em_contact_number,
-                p.em_contact_address
+                p.em_contact_address,
+                p.parent_name,
+                p.parent_contact
             FROM patients p
             WHERE p.patient_id = :patient_id
         ";

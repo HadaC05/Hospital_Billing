@@ -32,10 +32,21 @@ class Invoices
             $items = [];
 
             // 1) Room stays
+            // Apply initial charges automatically by computing the number of days stayed
+            // quantity = days between start_date and end_date (or today if ongoing) + 1 (min 1)
+            // unit_price = room.daily_rate
             $stmt = $conn->prepare(
-                "SELECT rs.room_stay_id AS svc_reference_id, rt.room_type_name AS item_description,
-                        rs.charge AS unit_price, 1 AS quantity, 0 AS coverage_amount,
-                        'Room' AS service_type_name, 1 AS svc_type_id
+                "SELECT 
+                    rs.room_stay_id AS svc_reference_id,
+                    CONCAT('Room ', r.room_number, ' - ', rt.room_type_name) AS item_description,
+                    r.daily_rate AS unit_price,
+                    GREATEST(DATEDIFF(
+                        CASE WHEN rs.end_date = '0000-00-00' THEN CURRENT_DATE() ELSE rs.end_date END,
+                        rs.start_date
+                    ) + 1, 1) AS quantity,
+                    0 AS coverage_amount,
+                    'Room' AS service_type_name, 
+                    1 AS svc_type_id
                  FROM tbl_room_stay rs
                  JOIN tbl_room r ON rs.room_id = r.room_id
                  JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
@@ -45,6 +56,33 @@ class Invoices
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
             $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+            // 1b) ER Initial Charge (one-time) — infer applicability if admission has any ER-type room stay
+            // We treat any room type whose name starts with 'Emergency' as ER (e.g., 'Emergency Holding').
+            // If such a stay exists for this admission, add a single ER Initial Charge item of ₱1,500.
+            $erCheck = $conn->prepare(
+                "SELECT 1
+                 FROM tbl_room_stay rs
+                 JOIN tbl_room r ON rs.room_id = r.room_id
+                 JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+                 JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
+                 WHERE ra.admission_id = :admission_id
+                   AND rt.room_type_name LIKE 'Emergency%'
+                 LIMIT 1"
+            );
+            $erCheck->bindParam(':admission_id', $admission_id);
+            $erCheck->execute();
+            if ($erCheck->fetch(PDO::FETCH_ASSOC)) {
+                $items[] = [
+                    'svc_reference_id' => 0,
+                    'item_description' => 'ER Initial Charge',
+                    'unit_price' => 1500.00,
+                    'quantity' => 1,
+                    'coverage_amount' => 0,
+                    'service_type_name' => 'Treatment',
+                    'svc_type_id' => 5,
+                ];
+            }
 
             // 2) Surgeries performed
             $stmt = $conn->prepare(
@@ -129,7 +167,8 @@ class Invoices
             $conn->beginTransaction();
 
             // Compute totals
-            $total = 0; $covered = 0;
+            $total = 0;
+            $covered = 0;
             foreach ($items as $it) {
                 $line = (float)$it['unit_price'] * (float)$it['quantity'];
                 $cov = isset($it['coverage_amount']) ? (float)$it['coverage_amount'] : 0.0;
@@ -217,5 +256,3 @@ switch ($operation) {
         echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
-
-

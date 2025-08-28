@@ -12,6 +12,8 @@
         crossorigin="anonymous">
     <link rel="stylesheet" href="../css/hospital-theme.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="icon" type="image/png" href="../assets/images/favicon-32.png">
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -54,7 +56,6 @@
                 <table class="table table-bordered table-striped">
                     <thead class="table-dark">
                         <tr>
-                            <th>Patient ID</th>
                             <th>Patient Name</th>
                             <th>Contact</th>
                             <th>Admission Date</th>
@@ -83,7 +84,7 @@
                                 <div class="col-md-6">
                                     <h6>Patient Information</h6>
                                     <table class="table table-bordered">
-                                        <tr>
+                                        <tr class="d-none">
                                             <th>Patient ID</th>
                                             <td id="view_patient_id"></td>
                                         </tr>
@@ -169,7 +170,7 @@
             <!-- Print View (hidden) -->
             <div id="printView" class="d-none">
                 <div class="text-center mb-4">
-                    <h2>Hospital Management System</h2>
+                    <h2>Springfield General Hospital</h2>
                     <h3>Patient Admission Records</h3>
                     <p>Generated on: <span id="print_date"></span></p>
                 </div>

@@ -26,18 +26,22 @@ class UserManager
             $where = "WHERE LOWER(r.role_name) LIKE '%doctor%'";
             $binds = [];
             if (!empty($search)) {
-                $where .= " AND (u.first_name LIKE :s OR u.last_name LIKE :s OR u.username LIKE :s)";
+                $where .= " AND (d.first_name LIKE :s OR d.last_name LIKE :s OR u.username LIKE :s)";
                 $binds[':s'] = "%$search%";
             }
 
-            $sql = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name,
+            $sql = "SELECT u.user_id, u.username,
+                           d.first_name, d.middle_name, d.last_name,
                            u.email, u.mobile_number, u.role_id, r.role_name
                     FROM users u
                     JOIN user_roles r ON u.role_id = r.role_id
+                    LEFT JOIN user_doctor d ON d.user_id = u.user_id
                     $where
-                    ORDER BY u.last_name, u.first_name";
+                    ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')";
             $stmt = $this->conn->prepare($sql);
-            foreach ($binds as $k => $v) { $stmt->bindValue($k, $v); }
+            foreach ($binds as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             echo json_encode(['success' => true, 'doctors' => $rows]);
@@ -65,8 +69,8 @@ class UserManager
             $searchParams = [];
 
             if (!empty($search)) {
-                $whereClause = "WHERE u.first_name LIKE :search 
-                               OR u.last_name LIKE :search 
+                $whereClause = "WHERE d.first_name LIKE :search 
+                               OR d.last_name LIKE :search 
                                OR u.username LIKE :search 
                                OR u.email LIKE :search 
                                OR r.role_name LIKE :search";
@@ -76,6 +80,7 @@ class UserManager
             // Get total count
             $countQuery = "SELECT COUNT(*) as total FROM users u 
                           JOIN user_roles r ON u.role_id = r.role_id 
+                          LEFT JOIN user_doctor d ON d.user_id = u.user_id
                           $whereClause";
             $countStmt = $this->conn->prepare($countQuery);
             if (!empty($searchParams)) {
@@ -86,12 +91,14 @@ class UserManager
             $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Get paginated data
-            $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
+            $query = "SELECT u.user_id, u.username,
+                        d.first_name, d.middle_name, d.last_name,
                         u.email, u.mobile_number, u.role_id, r.role_name 
                         FROM users u 
                         JOIN user_roles r ON u.role_id = r.role_id 
+                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
                         $whereClause
-                        ORDER BY u.last_name, u.first_name
+                        ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')
                         LIMIT :limit OFFSET :offset";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
@@ -137,10 +144,12 @@ class UserManager
     function getUserById($userId)
     {
         try {
-            $query = "SELECT u.user_id, u.username, u.first_name, u.middle_name, u.last_name, 
+            $query = "SELECT u.user_id, u.username,
+                        d.first_name, d.middle_name, d.last_name,
                         u.email, u.mobile_number, u.role_id, r.role_name 
                         FROM users u 
                         JOIN user_roles r ON u.role_id = r.role_id 
+                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
                         WHERE u.user_id = :user_id";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $userId);
@@ -187,18 +196,13 @@ class UserManager
             }
 
 
-            // Insert new user
-            $query = "INSERT INTO users (username, password, first_name, middle_name, last_name, 
-                        email, mobile_number, role_id) 
-                        VALUES (:username, :password, :first_name, :middle_name, :last_name, 
-                        :email, :mobile_number, :role_id)";
+            // Insert new user (users table has no name columns)
+            $query = "INSERT INTO users (username, password, email, mobile_number, role_id) 
+                        VALUES (:username, :password, :email, :mobile_number, :role_id)";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':username', $userData['username']);
             $stmt->bindParam(':password', $userData['password']);
-            $stmt->bindParam(':first_name', $userData['first_name']);
-            $stmt->bindParam(':middle_name', $userData['middle_name']);
-            $stmt->bindParam(':last_name', $userData['last_name']);
             $stmt->bindParam(':email', $userData['email']);
             $stmt->bindParam(':mobile_number', $userData['mobile_number']);
             $stmt->bindParam(':role_id', $userData['role_id']);
@@ -240,9 +244,6 @@ class UserManager
             // Start building the update query
             $query = "UPDATE users SET 
                         username = :username, 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
                         email = :email, 
                         mobile_number = :mobile_number, 
                         role_id = :role_id";
@@ -414,7 +415,7 @@ switch ($operation) {
         $userManager->deleteUser($user_id);
         break;
     case 'getDoctors':
-        $params = [ 'search' => $search ];
+        $params = ['search' => $search];
         $userManager->getDoctors($params);
         break;
     default:

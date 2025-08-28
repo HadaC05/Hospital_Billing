@@ -218,6 +218,15 @@ header #logout-btn:hover {
     padding: 1.5rem;
 }
 
+/* Ensure modals appear above fixed header (header z-index: 1100) */
+.modal {
+    z-index: 1300 !important; /* above header and sidebar */
+}
+
+.modal-backdrop {
+    z-index: 1200 !important; /* just below modal, above header */
+}
+
 /* Content area */
 .content {
     flex-grow: 1;
