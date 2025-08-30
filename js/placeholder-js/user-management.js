@@ -446,9 +446,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Combine all form data
         const completeFormData = { ...formData, ...roleSpecificData };
 
-        // Debug: Log the data being sent
-        console.log('Complete form data being sent:', completeFormData);
-
         // Validate required authentication fields (email and mobile are now optional)
         if (!formData.username || !formData.password || !formData.role_id) {
             Swal.fire({
