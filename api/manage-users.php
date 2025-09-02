@@ -35,6 +35,9 @@ class UserManager
                     d.first_name, 
                     d.middle_name, 
                     d.last_name,
+                    d.suffix,
+                    d.license_number,
+                    d.specialty_id,
                     u.email, 
                     u.mobile_number, 
                     u.role_id, 
@@ -111,6 +114,11 @@ class UserManager
                         COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) as first_name,
                         COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, b.middle_name) as middle_name,
                         COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) as last_name,
+                        COALESCE(d.suffix, n.suffix, lt.suffix, p.suffix, t.suffix, c.suffix, b.suffix) as suffix,
+                        COALESCE(d.license_number, n.license_number, lt.license_number, p.license_number, t.license_number, NULL, NULL) as license_number,
+                        COALESCE(d.specialty_id, NULL, NULL, NULL, t.specialty_id, NULL, NULL) as specialty_id,
+                        COALESCE(NULL, n.department_id, lt.department_id, NULL, NULL, NULL, NULL) as department_id,
+                        COALESCE(NULL, NULL, NULL, NULL, NULL, c.employee_number, b.employee_number) as employee_number,
                         u.email, 
                         u.mobile_number, 
                         u.role_id, 
@@ -533,6 +541,10 @@ class UserManager
     function updateUser($userData)
     {
         try {
+
+            // Start transaction
+            $this->conn->beginTransaction();
+
             // Check if username already exists for another user
             $checkSql = "SELECT COUNT(*) FROM users WHERE username = :username AND user_id != :user_id";
             $checkStmt = $this->conn->prepare($checkSql);
@@ -583,14 +595,30 @@ class UserManager
             // Update role-specific data
             $this->updateRoleSpecificData($userData['user_id'], $userData);
 
+            // Commit the transaction
+            $this->conn->commit();
+
             echo json_encode([
                 'success' => true,
                 'message' => 'User updated successfully'
             ]);
         } catch (PDOException $e) {
+            // Rollback the transaction on error
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollback();
+            }
             echo json_encode([
                 'success' => false,
                 'message' => 'Database error: ' . $e->getMessage()
+            ]);
+        } catch (Exception $e) {
+            // Rollback the transaction on any other error
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollback();
+            }
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
             ]);
         }
     }

@@ -69,6 +69,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loadRoleSpecificFields(this.value);
             });
         }
+
+        // Also add listener for edit modal role select
+        const editRoleSelect = document.getElementById('editRoleId');
+        if (editRoleSelect) {
+            editRoleSelect.addEventListener('change', function () {
+                const roleSpecificContainer = document.getElementById('roleSpecificFields');
+                if (roleSpecificContainer) {
+                    roleSpecificContainer.innerHTML = '';
+                    loadRoleSpecificFields(this.value);
+                }
+            });
+        }
     }
 
     // Function to load role-specific fields dynamically
@@ -452,14 +464,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('editRoleId').value = user.role_id;
                     document.getElementById('edit_status').value = user.status || 1;
 
-                    // Load role-specific fields for the current role
-                    await loadRoleSpecificFields(user.role_id);
+                    // Clear existing role-specific fields and load new ones
+                    const roleSpecificContainer = document.getElementById('roleSpecificFields');
+                    if (roleSpecificContainer) {
+                        roleSpecificContainer.innerHTML = '';
+                        // Load role-specific fields for the current role
+                        await loadRoleSpecificFields(user.role_id);
 
-                    // Populate role-specific fields with existing values after a short delay
-                    // to ensure DOM elements are fully rendered
-                    setTimeout(() => {
-                        populateRoleSpecificFields(user);
-                    }, 200);
+                        // Populate role-specific fields with existing values after a short delay
+                        // to ensure DOM elements are fully rendered
+                        setTimeout(() => {
+                            populateRoleSpecificFields(user);
+                        }, 200);
+                    }
 
                 } catch (error) {
                     console.error('Error in modal shown event:', error);
@@ -492,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         roleSpecificFields.forEach(field => {
             const fieldName = field.id;
-            if (user[fieldName] !== undefined && user[fieldName] !== null) {
+            if (user[fieldName] !== undefined && user[fieldName] !== null && user[fieldName] !== '') {
                 field.value = user[fieldName];
             }
         });
@@ -622,13 +639,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Collect role-specific data
         const roleSpecificData = {};
         const roleSpecificFields = document.querySelectorAll('#roleSpecificFields input, #roleSpecificFields select');
+        console.log('Found role-specific fields:', roleSpecificFields.length);
         roleSpecificFields.forEach(field => {
             // Include all fields, even if empty, to ensure backend receives expected data structure
             roleSpecificData[field.id] = field.value.trim();
+            console.log(`Field ${field.id}: ${field.value.trim()}`);
         });
 
         // Combine all form data
         const completeFormData = { ...formData, ...roleSpecificData };
+        console.log('Complete form data being sent:', completeFormData);
 
         // Validate basic required fields
         if (!formData.username || !formData.role_id || !formData.first_name || !formData.last_name) {
