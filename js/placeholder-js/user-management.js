@@ -1,10 +1,13 @@
 console.log('user-management.js is working');
+
+const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
     // Ensure session cookies are sent for auth-protected endpoints
     if (window.axios) {
         axios.defaults.withCredentials = true;
     }
+    // Check for user authentication
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
@@ -71,7 +74,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to load role-specific fields dynamically
     async function loadRoleSpecificFields(roleId) {
         const roleSpecificContainer = document.getElementById('roleSpecificFields');
-        if (!roleSpecificContainer) return;
+        if (!roleSpecificContainer) {
+            console.warn('Role-specific fields container not found');
+            return;
+        }
 
         // Clear existing fields
         roleSpecificContainer.innerHTML = '';
@@ -325,7 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>${user.role_name}</td>
                 <td>${statusBadge}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user-id="${user.user_id}">
+                    <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user='${JSON.stringify(user)}'>
                         <i class="fas fa-edit"></i>
                     </button>
                 </td>
@@ -335,7 +341,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Add event listeners to buttons
         document.querySelectorAll('.edit-user-btn').forEach(button => {
-            button.addEventListener('click', () => loadUserDetails(button.dataset.userId));
+            button.addEventListener('click', () => {
+                const userData = JSON.parse(button.dataset.user);
+                loadUserDetails(userData);
+            });
         });
     }
 
@@ -387,33 +396,82 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to load user details for editing
-    async function loadUserDetails(userId) {
+    async function loadUserDetails(user) {
         try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php?operation=getUserById&json=${JSON.stringify({ user_id: userId })}`);
-            const data = response.data;
-            if (data.success) {
-                const user = data.user;
-                document.getElementById('editUserId').value = user.user_id;
-                document.getElementById('editFirstName').value = user.first_name || '';
-                document.getElementById('editMiddleName').value = user.middle_name || '';
-                document.getElementById('editLastName').value = user.last_name || '';
-                document.getElementById('editSuffix').value = user.suffix || '';
-                document.getElementById('editUsername').value = user.username;
-                document.getElementById('editPassword').value = '';
-                document.getElementById('editEmail').value = user.email || '';
-                document.getElementById('editMobileNumber').value = user.mobile_number || '';
-                document.getElementById('editRoleId').value = user.role_id;
-                document.getElementById('edit_status').value = user.status || 1;
-
-                // Open edit modal
-                new bootstrap.Modal(document.getElementById('editUserModal')).show();
-            } else {
+            // First, ensure the edit modal exists and is properly loaded
+            const editModal = document.getElementById('editUserModal');
+            if (!editModal) {
+                console.error('Edit modal not found');
                 Swal.fire({
                     title: 'Error',
-                    text: 'Failed to load user details: ' + data.message,
+                    text: 'Edit modal not found. Please refresh the page and try again.',
                     icon: 'error'
                 });
+                return;
             }
+
+            // Show the modal first to ensure all elements are rendered
+            const modal = new bootstrap.Modal(editModal);
+            modal.show();
+
+            // Wait for the modal to be fully shown before accessing elements
+            editModal.addEventListener('shown.bs.modal', async function onModalShown() {
+                try {
+                    // Remove the event listener to prevent multiple executions
+                    editModal.removeEventListener('shown.bs.modal', onModalShown);
+
+                    // Check if all required form elements exist
+                    const requiredElements = [
+                        'editUserId', 'editFirstName', 'editMiddleName', 'editLastName',
+                        'editSuffix', 'editUsername', 'editPassword', 'editEmail',
+                        'editMobileNumber', 'editRoleId', 'edit_status'
+                    ];
+
+                    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+                    if (missingElements.length > 0) {
+                        console.error('Missing form elements:', missingElements);
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Form elements not found. Please refresh the page and try again.',
+                            icon: 'error'
+                        });
+                        modal.hide();
+                        return;
+                    }
+
+                    // Populate the edit form with user data
+                    document.getElementById('editUserId').value = user.user_id;
+                    document.getElementById('editFirstName').value = user.first_name || '';
+                    document.getElementById('editMiddleName').value = user.middle_name || '';
+                    document.getElementById('editLastName').value = user.last_name || '';
+                    document.getElementById('editSuffix').value = user.suffix || '';
+                    document.getElementById('editUsername').value = user.username;
+                    document.getElementById('editPassword').value = '';
+                    document.getElementById('editEmail').value = user.email || '';
+                    document.getElementById('editMobileNumber').value = user.mobile_number || '';
+                    document.getElementById('editRoleId').value = user.role_id;
+                    document.getElementById('edit_status').value = user.status || 1;
+
+                    // Load role-specific fields for the current role
+                    await loadRoleSpecificFields(user.role_id);
+
+                    // Populate role-specific fields with existing values after a short delay
+                    // to ensure DOM elements are fully rendered
+                    setTimeout(() => {
+                        populateRoleSpecificFields(user);
+                    }, 200);
+
+                } catch (error) {
+                    console.error('Error in modal shown event:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to load user details. Please try again.',
+                        icon: 'error'
+                    });
+                    modal.hide();
+                }
+            }, { once: true });
+
         } catch (error) {
             console.error('Error loading user details:', error);
             Swal.fire({
@@ -422,6 +480,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon: 'error'
             });
         }
+    }
+
+    // Function to populate role-specific fields with existing values
+    function populateRoleSpecificFields(user) {
+        const roleSpecificFields = document.querySelectorAll('#roleSpecificFields input, #roleSpecificFields select');
+        if (roleSpecificFields.length === 0) {
+            console.warn('No role-specific fields found to populate');
+            return;
+        }
+
+        roleSpecificFields.forEach(field => {
+            const fieldName = field.id;
+            if (user[fieldName] !== undefined && user[fieldName] !== null) {
+                field.value = user[fieldName];
+            }
+        });
     }
 
     // Function to add a new user
@@ -545,6 +619,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             status: document.getElementById('edit_status').value
         };
 
+        // Collect role-specific data
+        const roleSpecificData = {};
+        const roleSpecificFields = document.querySelectorAll('#roleSpecificFields input, #roleSpecificFields select');
+        roleSpecificFields.forEach(field => {
+            // Include all fields, even if empty, to ensure backend receives expected data structure
+            roleSpecificData[field.id] = field.value.trim();
+        });
+
+        // Combine all form data
+        const completeFormData = { ...formData, ...roleSpecificData };
+
         // Validate basic required fields
         if (!formData.username || !formData.role_id || !formData.first_name || !formData.last_name) {
             Swal.fire({
@@ -555,10 +640,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Validate role-specific required fields
+        const requiredRoleFields = document.querySelectorAll('#roleSpecificFields input[required], #roleSpecificFields select[required]');
+        for (let field of requiredRoleFields) {
+            if (!field.value.trim()) {
+                Swal.fire({
+                    title: 'Validation',
+                    text: `Please fill in the required field: ${field.previousElementSibling.textContent}`,
+                    icon: 'warning'
+                });
+                return;
+            }
+        }
+
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
                 operation: 'updateUser',
-                json: JSON.stringify(formData)
+                json: JSON.stringify(completeFormData)
             });
             const data = response.data;
             if (data.success) {
