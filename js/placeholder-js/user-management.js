@@ -56,8 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        tableBody.innerHTML = '<tr><td colspan="6">Loading users...</td></tr>';
-
         try {
             const payload = {
                 operation: "getUsers",
@@ -92,45 +90,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // render users
     function renderAllUsers(users) {
-        if (!tableBody) return;
 
-        // Fade out
-        tableBody.style.opacity = 0;
+        if (!users.length) {
+            tableBody.innerHTML = `<tr><td colspan="5">No useres found</td></tr>`;
+            return;
+        }
 
-        setTimeout(() => {
-            if (!users.length) {
-                tableBody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
-            } else {
-                tableBody.innerHTML = users.map(user => {
-                    const fullname =
-                        user.role_name === 'Admin'
-                            ? 'System Administrator'
-                            : [user.first_name, user.middle_name, user.last_name, user.suffix]
-                                .filter(Boolean)
-                                .join(' ');
+        tableBody.innerHTML = users.map(user => {
+            const fullname = user.role_name === 'Admin' ? 'System Administrator' : [user.first_name, user.middle_name, user.last_name, user.suffix]
+                .filter(Boolean)
+                .join(' ');
 
-                    const statusLabel = user.status == 1 ? 'Active' : 'Inactive';
-                    const statusBadge = user.status == 1 ? 'badge bg-success' : 'badge bg-secondary';
+            const statusLabel = user.status == 1 ? 'Active' : 'Inactive';
+            const statusBadge = user.status == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
-                    return `
-                    <tr>
-                        <td>${fullname}</td>
-                        <td>${user.username}</td>
-                        <td>${user.role_name}</td>
-                        <td><span class="${statusBadge}">${statusLabel}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.user_id})" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                }).join('');
-            }
-
-            // Fade back in
-            tableBody.style.opacity = 1;
-        }, 200); // small delay for smoothness
+            return `
+                <tr>
+                    <td>${fullname}</td>
+                    <td>${user.username}</td>
+                    <td>${user.role_name}</td>
+                    <td><span class="${statusBadge}">${statusLabel}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.user_id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // add new user
