@@ -156,11 +156,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ...roleSpecific
         });
 
-        // 🔍 Debugging logs
-        console.group("🚀 Save User Debug");
-        console.log("Final Payload Sent to Backend:", JSON.parse(payload.json));
-        console.groupEnd();
-
         try {
             const response = await axios.post(`${baseApiUrl}/manage-users.php`, payload);
 
@@ -172,17 +167,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success) {
-                alert('User created successfully');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'User created successfully!',
+                    icon: 'success'
+                });
                 addModal.hide();
                 addForm.reset();
                 await loadAllUsers();
             } else {
-                console.error("❌ Backend Error:", data.message);
-                alert(data.message || 'Failed to create user');
+                console.error("Backend Error:", data.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to create user: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (err) {
             console.error('Error saving user: ', err);
-            alert('Server error while saving user');
+            Swal.fire({
+                title: 'Error',
+                text: err,
+                icon: 'error'
+            });
         }
     }
 
@@ -820,16 +827,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
 
             if (data.success) {
-                alert("User updated successfully");
+                Swal.fire({
+                    title: 'Success',
+                    text: 'User updated successfully!',
+                    icon: 'success'
+                });
                 editModal.hide();
                 await loadAllUsers();
             } else {
                 console.error("Update failed:", data);
-                alert(data.message || "Failed to update user");
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to update user: ' + data.message,
+                    icon: 'error'
+                });
             }
         } catch (err) {
             console.error("Error updating user:", err);
-            alert("Server error while updating user");
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to update user. Please try again.',
+                icon: 'error'
+            });
         }
     }
 
