@@ -7,7 +7,7 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-class UserManager
+class Users
 {
     private $conn;
 
@@ -16,155 +16,43 @@ class UserManager
         $this->conn = $conn;
     }
 
-    // to get all doctors for admission
-    function getDoctors($params = [])
+    // get all users
+    function getUsers()
     {
         try {
-            $search = isset($params['search']) ? $params['search'] : '';
-            $where = "WHERE LOWER(r.role_name) LIKE '%doctor%'";
-            $binds = [];
-            if (!empty($search)) {
-                $where .= " AND (d.first_name LIKE :s OR d.last_name LIKE :s OR u.username LIKE :s)";
-                $binds[':s'] = "%$search%";
-            }
-
             $sql = "
-                SELECT 
-                    u.user_id, 
+                SELECT
+                    u.user_id,
                     u.username,
-                    d.first_name, 
-                    d.middle_name, 
-                    d.last_name,
-                    d.suffix,
-                    d.license_number,
-                    d.specialty_id,
-                    u.email, 
-                    u.mobile_number, 
-                    u.role_id, 
-                    r.role_name
+                    COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, bo.first_name) AS first_name,
+                    COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, bo.middle_name) AS middle_name,
+                    COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, bo.last_name) AS last_name,
+                    COALESCE(d.suffix, n.suffix, lt.suffix, p.suffix, t.suffix, c.suffix, bo.suffix) AS suffix,
+                    u.password,
+                    u.email,
+                    u.mobile_number,
+                    u.role_id,
+                    r.role_name,
+                    u.status
                 FROM users u
                 JOIN user_roles r ON u.role_id = r.role_id
                 LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                $where
-                ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')";
+                LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                LEFT JOIN user_billing_officer bo ON bo.user_id = u.user_id
+                ORDER BY last_name, first_name
+            ";
+
             $stmt = $this->conn->prepare($sql);
-            foreach ($binds as $k => $v) {
-                $stmt->bindValue($k, $v);
-            }
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'doctors' => $rows]);
-        } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-        }
-    }
-
-    // get all users with their roles
-    function getAllUsers($params = [])
-    {
-        try {
-            // Get pagination parameters
-            $page = isset($params['page']) ? (int)$params['page'] : 1;
-            $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
-            $search = isset($params['search']) ? $params['search'] : '';
-
-            // Calculate offset
-            $offset = ($page - 1) * $itemsPerPage;
-
-            // Build WHERE clause for search
-            $whereClause = '';
-            $searchParams = [];
-
-            if (!empty($search)) {
-                $whereClause = "WHERE COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) LIKE :search 
-                                OR COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) LIKE :search 
-                                OR u.username LIKE :search 
-                                OR u.email LIKE :search 
-                                OR r.role_name LIKE :search";
-                $searchParams[':search'] = "%$search%";
-            }
-
-            // Get total count
-            $countSql = "
-                        SELECT COUNT(*) as total FROM users u 
-                        JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                        LEFT JOIN user_nurse n ON n.user_id = u.user_id
-                        LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
-                        LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
-                        LEFT JOIN user_therapist t ON t.user_id = u.user_id
-                        LEFT JOIN user_cashier c ON c.user_id = u.user_id
-                        LEFT JOIN user_billing_officer b ON b.user_id = u.user_id
-                        $whereClause
-                    ";
-            $countStmt = $this->conn->prepare($countSql);
-            if (!empty($searchParams)) {
-                $countStmt->execute($searchParams);
-            } else {
-                $countStmt->execute();
-            }
-            $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-            // Get paginated data
-            $sql = "
-                    SELECT 
-                        u.user_id, 
-                        u.username,
-                        u.status,
-                        COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name) as first_name,
-                        COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, b.middle_name) as middle_name,
-                        COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name) as last_name,
-                        COALESCE(d.suffix, n.suffix, lt.suffix, p.suffix, t.suffix, c.suffix, b.suffix) as suffix,
-                        COALESCE(d.license_number, n.license_number, lt.license_number, p.license_number, t.license_number, NULL, NULL) as license_number,
-                        COALESCE(d.specialty_id, NULL, NULL, NULL, t.specialty_id, NULL, NULL) as specialty_id,
-                        COALESCE(NULL, n.department_id, lt.department_id, NULL, NULL, NULL, NULL) as department_id,
-                        COALESCE(NULL, NULL, NULL, NULL, NULL, c.employee_number, b.employee_number) as employee_number,
-                        u.email, 
-                        u.mobile_number, 
-                        u.role_id, 
-                        r.role_name 
-                    FROM users u 
-                    JOIN user_roles r ON u.role_id = r.role_id 
-                    LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                    LEFT JOIN user_nurse n ON n.user_id = u.user_id
-                    LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
-                    LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
-                    LEFT JOIN user_therapist t ON t.user_id = u.user_id
-                    LEFT JOIN user_cashier c ON c.user_id = u.user_id
-                    LEFT JOIN user_billing_officer b ON b.user_id = u.user_id
-                    $whereClause
-                    ORDER BY COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, b.last_name, u.username), 
-                                COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, b.first_name, '')
-                    LIMIT :limit OFFSET :offset";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
-            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-
-            if (!empty($searchParams)) {
-                foreach ($searchParams as $key => $value) {
-                    $stmt->bindValue($key, $value);
-                }
-            }
-
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Calculate pagination info
-            $totalPages = ceil($totalCount / $itemsPerPage);
-            $startIndex = $offset + 1;
-            $endIndex = min($offset + $itemsPerPage, $totalCount);
-
             echo json_encode([
                 'success' => true,
-                'users' => $users,
-                'pagination' => [
-                    'currentPage' => $page,
-                    'itemsPerPage' => $itemsPerPage,
-                    'totalItems' => $totalCount,
-                    'totalPages' => $totalPages,
-                    'startIndex' => $startIndex,
-                    'endIndex' => $endIndex
-                ]
+                'users' => $users
             ]);
         } catch (PDOException $e) {
             echo json_encode([
@@ -174,451 +62,241 @@ class UserManager
         }
     }
 
-    // Add New users
-    function addUser($userData)
+    // add new users
+    function addUser($data)
     {
         try {
-            // Check if username already exists
-            $checkSql = "SELECT COUNT(*) FROM users WHERE username = :username";
-            $checkStmt = $this->conn->prepare($checkSql);
-            $checkStmt->bindParam(':username', $userData['username']);
-            $checkStmt->execute();
-
-            if ($checkStmt->fetchColumn() > 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username already exists'
-                ]);
-                return;
+            if (empty($data['role_id'])) {
+                throw new Exception("Role ID is required to add user");
             }
 
-            // makes sure if one part of the form is not inserted, the whole transaction is rolled back
             $this->conn->beginTransaction();
 
+            // Insert into base `users` table
             $sql = "
-                INSERT INTO users (username, password, email, mobile_number, role_id, status) 
-                VALUES (:username, :password, :email, :mobile_number, :role_id, 1)
-            ";
+            INSERT INTO users (username, password, email, mobile_number, role_id)
+            VALUES (:username, :password, :email, :mobile_number, :role_id)
+        ";
 
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':password', $userData['password']);
-            $stmt->bindParam(':email', $userData['email']);
-            $stmt->bindParam(':mobile_number', $userData['mobile_number']);
-            $stmt->bindParam(':role_id', $userData['role_id']);
 
-            $stmt->execute();
+            $email = !empty($data['email']) ? $data['email'] : null;
+            $mobile = !empty($data['mobile_number']) ? $data['mobile_number'] : null;
+
+            $stmt->execute([
+                ':username' => $data['username'],
+                ':password' => $data['password'],
+                ':email' => $email,
+                ':mobile_number' => $mobile,
+                ':role_id' => $data['role_id'],
+            ]);
+
             $userId = $this->conn->lastInsertId();
 
-            // Insert into role-specific table based on role_id
-            $this->insertRoleSpecificData($userId, $userData);
+            // Decide role-specific table and fields
+            $roleTable = null;
+            $roleFields = [
+                'user_id' => $userId,
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'suffix' => $data['suffix'] ?? null,
+            ];
+
+            switch ($data['role_id']) {
+                case 2: // Doctor
+                    $roleTable = "user_doctor";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['specialty_id'] = $data['specialty_id'] ?? null;
+                    break;
+
+                case 4: // Nurse
+                    $roleTable = "user_nurse";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['department_id'] = $data['department_id'] ?? null;
+                    break;
+
+                case 5: // Lab Technician
+                    $roleTable = "user_lab_technician";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['department_id'] = $data['department_id'] ?? null;
+                    break;
+
+                case 6: // Pharmacist
+                    $roleTable = "user_pharmacist";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    break;
+
+                case 7: // Therapist
+                    $roleTable = "user_therapist";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['specialty_id'] = $data['specialty_id'] ?? null;
+                    break;
+
+                case 8: // Cashier
+                    $roleTable = "user_cashier";
+                    $roleFields['employee_number'] = $data['employee_number'] ?? null;
+                    break;
+
+                case 9: // Billing Officer
+                    $roleTable = "user_billing_officer";
+                    $roleFields['employee_number'] = $data['employee_number'] ?? null;
+                    break;
+            }
+
+            // Insert into role-specific table
+            if ($roleTable) {
+                $columns = array_keys($roleFields);
+                $placeholders = array_map(fn($c) => ':' . $c, $columns);
+
+                $sql = "INSERT INTO $roleTable (" . implode(", ", $columns) . ")
+                    VALUES (" . implode(", ", $placeholders) . ")";
+                $stmt = $this->conn->prepare($sql);
+
+                // Prefix keys with `:` for binding
+                $params = [];
+                foreach ($roleFields as $col => $val) {
+                    $params[":$col"] = $val;
+                }
+
+                $stmt->execute($params);
+            }
 
             $this->conn->commit();
+
             echo json_encode([
                 'success' => true,
-                'message' => 'User added successfully'
-            ]);
-        } catch (PDOException $e) {
-            $this->conn->rollback();
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
+                'message' => 'User added successfully',
+                'user_id' => $userId
             ]);
         } catch (Exception $e) {
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollback();
-            }
+            $this->conn->rollBack();
             echo json_encode([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Failed to add user: ' . $e->getMessage()
             ]);
         }
     }
 
-    /**
-     * Insert data into role-specific table
-     */
-    private function insertRoleSpecificData($userId, $userData)
-    {
-        $roleId = $userData['role_id'];
 
-        switch ($roleId) {
-            // Doctor
-            case '2':
-                $sql = "
-                    INSERT INTO user_doctor (user_id, first_name, middle_name, last_name, suffix, license_number, specialty_id) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :specialty_id)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Nurse
-            case '4':
-                $sql = "
-                    INSERT INTO user_nurse (user_id, first_name, middle_name, last_name, suffix, license_number, department_id) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :department_id)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Lab Technician
-            case '5':
-                $sql = "
-                    INSERT INTO user_lab_technician (user_id, first_name, middle_name, last_name, suffix, license_number, department_id) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :department_id)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Pharmacist 
-            case '6':
-                $sql = "
-                    INSERT INTO user_pharmacist (user_id, first_name, middle_name, last_name, suffix, license_number) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->execute();
-                break;
-
-            // Therapist
-            case '7':
-                $sql = "
-                    INSERT INTO user_therapist (user_id, first_name, middle_name, last_name, suffix, license_number, specialty_id) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :license_number, :specialty_id)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Cashier
-            case '8':
-                $sql = "
-                    INSERT INTO user_cashier (user_id, first_name, middle_name, last_name, suffix, employee_number) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :employee_number)
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
-                $stmt->execute();
-                break;
-
-            // Billing Staff
-            case '9':
-                $query = "
-                    INSERT INTO user_billing_officer (user_id, first_name, middle_name, last_name, suffix, employee_number) 
-                    VALUES (:user_id, :first_name, :middle_name, :last_name, :suffix, :employee_number)
-                ";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
-                $stmt->execute();
-                break;
-
-            default:
-                return;
-        }
-    }
-
-    // Role Specific Data
-    private function updateRoleSpecificData($userId, $userData)
-    {
-        $roleId = $userData['role_id'];
-
-        switch ($roleId) {
-            // Doctor
-            case '2':
-                $sql = "
-                    UPDATE user_doctor 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        license_number = :license_number, 
-                        specialty_id = :specialty_id 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Nurse
-            case '4':
-                $sql = "
-                    UPDATE user_nurse 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        license_number = :license_number, 
-                        department_id = :department_id 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Lab Technician
-            case '5':
-                $sql = "
-                    UPDATE user_lab_technician 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        license_number = :license_number, 
-                        department_id = :department_id 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':department_id', $userData['department_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Pharmacist
-            case '6':
-                $sql = "
-                    UPDATE user_pharmacist 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        license_number = :license_number 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->execute();
-                break;
-
-            // Therapist
-            case '7':
-                $sql = "
-                    UPDATE user_therapist 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        license_number = :license_number, 
-                        specialty_id = :specialty_id 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':license_number', $userData['license_number'] ?? '');
-                $stmt->bindValue(':specialty_id', $userData['specialty_id'] ?? null, PDO::PARAM_INT);
-                $stmt->execute();
-                break;
-
-            // Cashier
-            case '8':
-                $sql = "
-                    UPDATE user_cashier 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        employee_number = :employee_number 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
-                $stmt->execute();
-                break;
-
-            // Billing Staff
-            case '9':
-                $sql = "
-                    UPDATE user_billing_officer 
-                    SET 
-                        first_name = :first_name, 
-                        middle_name = :middle_name, 
-                        last_name = :last_name, 
-                        suffix = :suffix, 
-                        employee_number = :employee_number 
-                    WHERE user_id = :user_id
-                ";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':first_name', $userData['first_name'] ?? '');
-                $stmt->bindValue(':middle_name', $userData['middle_name'] ?? '');
-                $stmt->bindValue(':last_name', $userData['last_name'] ?? '');
-                $stmt->bindValue(':suffix', $userData['suffix'] ?? '');
-                $stmt->bindValue(':employee_number', $userData['employee_number'] ?? null);
-                $stmt->execute();
-                break;
-
-            default:
-                return;
-        }
-    }
-
-    // Update User
-    function updateUser($userData)
+    // update existing users
+    function updateUser($data)
     {
         try {
+            if (empty($data['role_id'])) {
+                throw new Exception("Role ID is required to update user");
+            }
 
-            // Start transaction
             $this->conn->beginTransaction();
 
-            // Check if username already exists for another user
-            $checkSql = "SELECT COUNT(*) FROM users WHERE username = :username AND user_id != :user_id";
-            $checkStmt = $this->conn->prepare($checkSql);
-            $checkStmt->bindParam(':username', $userData['username']);
-            $checkStmt->bindParam(':user_id', $userData['user_id']);
-            $checkStmt->execute();
+            // Update main `users` table
+            $fields = ['username = :username'];
+            $params = [
+                ':username' => $data['username'],
+                ':user_id'  => $data['user_id']
+            ];
 
-            if ($checkStmt->fetchColumn() > 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username already exists'
-                ]);
-                return;
+            if (!empty($data['password'])) {
+                $fields[] = "password = :password";
+                $params[':password'] = $data['password']; // hash if needed
             }
 
-            $sql = "
-                UPDATE users 
-                SET 
-                    username = :username, 
-                    email = :email, 
-                    mobile_number = :mobile_number, 
-                    role_id = :role_id,
-                    status = :status
-            ";
+            $fields[] = "email = :email";
+            $params[':email'] = $data['email'] ?? null;
 
-            // Add password to update sql if provided
-            if (!empty($userData['password'])) {
-                $sql .= ", password = :password";
-            }
+            $fields[] = "mobile_number = :mobile_number";
+            $params[':mobile_number'] = $data['mobile_number'] ?? null;
 
-            $sql .= " WHERE user_id = :user_id";
+            $fields[] = "status = :status";
+            $params[':status'] = isset($data['status']) ? (int)$data['status'] : 1;
 
+            $sql = "UPDATE users SET " . implode(", ", $fields) . " WHERE user_id = :user_id";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':email', $userData['email']);
-            $stmt->bindParam(':mobile_number', $userData['mobile_number']);
-            $stmt->bindParam(':role_id', $userData['role_id']);
-            $stmt->bindParam(':user_id', $userData['user_id']);
-            $stmt->bindParam(':status', $userData['status']);
+            $stmt->execute($params);
 
-            // Bind password if provided
-            if (!empty($userData['password'])) {
-                $stmt->bindParam(':password', $userData['password']);
+
+            // Update role-specific table
+            $updates = [
+                "first_name = :first_name",
+                "middle_name = :middle_name",
+                "last_name = :last_name",
+                "suffix = :suffix"
+            ];
+
+            $params = [
+                ':user_id'    => $data['user_id'],
+                ':first_name' => $data['first_name'],
+                ':middle_name' => $data['middle_name'] ?? null,
+                ':last_name'  => $data['last_name'],
+                ':suffix'     => $data['suffix'] ?? null
+            ];
+
+            switch ($data['role_id']) {
+                case 2: // Doctor
+                case 7: // Therapist
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    if (!empty($data['specialty_id'])) {
+                        $updates[] = "specialty_id = :specialty_id";
+                        $params[':specialty_id'] = $data['specialty_id'];
+                    }
+                    $table = ($data['role_id'] == 2) ? "user_doctor" : "user_therapist";
+                    break;
+
+                case 4: // Nurse
+                case 5: // Lab Technician
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    if (!empty($data['department_id'])) {
+                        $updates[] = "department_id = :department_id";
+                        $params[':department_id'] = $data['department_id'];
+                    }
+                    $table = ($data['role_id'] == 4) ? "user_nurse" : "user_lab_technician";
+                    break;
+
+                case 6: // Pharmacist
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    $table = "user_pharmacist";
+                    break;
+
+                case 8: // Cashier
+                case 9: // Billing Officer
+                    if (!empty($data['employee_number'])) {
+                        $updates[] = "employee_number = :employee_number";
+                        $params[':employee_number'] = $data['employee_number'];
+                    }
+                    $table = ($data['role_id'] == 8) ? "user_cashier" : "user_billing_officer";
+                    break;
+
+                default:
+                    $table = null;
             }
 
-            $stmt->execute();
+            if (!empty($table)) {
+                $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute($params);
+            }
 
-            // Update role-specific data
-            $this->updateRoleSpecificData($userData['user_id'], $userData);
-
-            // Commit the transaction
             $this->conn->commit();
 
             echo json_encode([
                 'success' => true,
-                'message' => 'User updated successfully'
-            ]);
-        } catch (PDOException $e) {
-            // Rollback the transaction on error
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollback();
-            }
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
+                'message' => 'User updated successfully',
+                'user_id' => $data['user_id']
             ]);
         } catch (Exception $e) {
-            // Rollback the transaction on any other error
-            if ($this->conn->inTransaction()) {
-                $this->conn->rollback();
-            }
+            $this->conn->rollBack();
             echo json_encode([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Failed to update user: ' . $e->getMessage()
             ]);
         }
     }
@@ -632,60 +310,31 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
-
-    // Get pagination parameters from GET request
-    $page = $_GET['page'] ?? 1;
-    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
-    $search = $_GET['search'] ?? '';
 } else if ($method === 'POST') {
     if (!empty($_POST)) {
         $operation = $_POST['operation'] ?? '';
         $json = $_POST['json'] ?? '';
-
-        // Get pagination parameters from POST request
-        $page = $_POST['page'] ?? 1;
-        $itemsPerPage = $_POST['itemsPerPage'] ?? 10;
-        $search = $_POST['search'] ?? '';
     } else {
         $body = file_get_contents("php://input");
         $payload = json_decode($body, true);
 
         $operation = $payload['operation'] ?? '';
         $json = $payload['json'] ?? '';
-
-        // Get pagination parameters from POST request
-        $page = $payload['page'] ?? 1;
-        $itemsPerPage = $payload['itemsPerPage'] ?? 10;
-        $search = $payload['search'] ?? '';
     }
 }
 
 $data = json_decode($json, true);
 
-$userManager = new UserManager($conn);
+$users = new Users($conn);
 
 switch ($operation) {
-    case 'getAllUsers':
-        $params = [
-            'page' => $page,
-            'itemsPerPage' => $itemsPerPage,
-            'search' => $search
-        ];
-        $userManager->getAllUsers($params);
+    case 'getUsers':
+        $users->getUsers();
         break;
     case 'addUser':
-        $userManager->addUser($data);
+        $users->addUser($data);
         break;
     case 'updateUser':
-        $userManager->updateUser($data);
+        $users->updateUser($data);
         break;
-    case 'getDoctors':
-        $params = ['search' => $search];
-        $userManager->getDoctors($params);
-        break;
-    default:
-        echo json_encode([
-            'success' => false,
-            'message' => 'Invalid operation'
-        ]);
 }
