@@ -488,15 +488,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
                     </div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">License #</label>
                         <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
                     </div>
+                </div>
+                <div class="row mb-2">
                     <div class="col-md-6">
                         <label class="form-label">Department</label>
                         <select class="form-select" name="department_id" required>
@@ -511,17 +521,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fields = `
             <div class="form-section">
                 <div class="form-section-title">PHARMACIST DETAILS</div>
-                <div class="mb-2">
-                    <label class="form-label">First Name</label>
-                    <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label">Last Name</label>
-                    <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label">License #</label>
-                    <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                    </div>
                 </div>
             </div>`;
                 break;
@@ -537,14 +559,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
                         <label class="form-label">Last Name</label>
                         <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Employee #</label>
+                        <input type="text" class="form-control" name="employee_number" value="${user.employee_number || ""}" required>
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label">Employee #</label>
-                    <input type="text" class="form-control" name="employee_number" value="${user.employee_number || ""}" required>
-                </div>
+                
             </div>`;
                 break;
         }
