@@ -42,10 +42,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('updateUserBtn').addEventListener('click', updateUser);
 
 
-    // load specialties/departments
+    // Initialize PaginationUtility
+    const pagination = new PaginationUtility({
+        itemsPerPage: 10,
+        onPageChange: (page) => loadAllUsers(page, pagination.itemsPerPage),
+        onItemsPerPageChange: (limit) => loadAllUsers(1, limit)
+    });
 
     // fetch users
-    async function loadAllUsers() {
+    async function loadAllUsers(page = 1, limit = 10) {
         if (!tableBody) {
             console.error('Table body not found');
             return;
@@ -54,17 +59,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableBody.innerHTML = '<tr><td colspan="6">Loading users...</td></tr>';
 
         try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php`, {
-                params: { operation: 'getUsers' }
-            });
+            const payload = {
+                operation: "getUsers",
+                json: JSON.stringify({ page, limit })
+            };
+
+            const response = await axios.post(`${baseApiUrl}/manage-users.php`, payload);
 
             const data = response.data;
 
-            if (data.success && Array.isArray(data.users)) {
+            if (!data.success) {
+                console.error("Failed to fetch users:", data.message);
+                tableBody.innerHTML = `<tr><td colspan="6">Error: ${data.message}</td></tr>`;
+                return;
+            }
+
+            if (Array.isArray(data.users) && data.users.length > 0) {
                 allUsers = data.users;
                 renderAllUsers(allUsers);
+
+                // ✅ Update pagination controls
+                pagination.calculatePagination(data.total, data.page, data.limit);
+                pagination.updatePaginationControls("pagination-container");
             } else {
-                tableBody.innerHTML = `<tr><td colspan="5">${data.message || 'No data found'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading users: ', error);
@@ -74,34 +92,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // render users
     function renderAllUsers(users) {
+        if (!tableBody) return;
 
-        if (!users.length) {
-            tableBody.innerHTML = `<tr><td colspan="5">No useres found</td></tr>`;
-            return;
-        }
+        // Fade out
+        tableBody.style.opacity = 0;
 
-        tableBody.innerHTML = users.map(user => {
-            const fullname = user.role_name === 'Admin' ? 'System Administrator' : [user.first_name, user.middle_name, user.last_name, user.suffix]
-                .filter(Boolean)
-                .join(' ');
+        setTimeout(() => {
+            if (!users.length) {
+                tableBody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
+            } else {
+                tableBody.innerHTML = users.map(user => {
+                    const fullname =
+                        user.role_name === 'Admin'
+                            ? 'System Administrator'
+                            : [user.first_name, user.middle_name, user.last_name, user.suffix]
+                                .filter(Boolean)
+                                .join(' ');
 
-            const statusLabel = user.status == 1 ? 'Active' : 'Inactive';
-            const statusBadge = user.status == 1 ? 'badge bg-success' : 'badge bg-secondary';
+                    const statusLabel = user.status == 1 ? 'Active' : 'Inactive';
+                    const statusBadge = user.status == 1 ? 'badge bg-success' : 'badge bg-secondary';
 
-            return `
-                <tr>
-                    <td>${fullname}</td>
-                    <td>${user.username}</td>
-                    <td>${user.role_name}</td>
-                    <td><span class="${statusBadge}">${statusLabel}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.user_id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+                    return `
+                    <tr>
+                        <td>${fullname}</td>
+                        <td>${user.username}</td>
+                        <td>${user.role_name}</td>
+                        <td><span class="${statusBadge}">${statusLabel}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.user_id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+            }
+
+            // Fade back in
+            tableBody.style.opacity = 1;
+        }, 200); // small delay for smoothness
     }
 
     // add new user
@@ -855,5 +884,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // update existing user -- how it's stored in the database
 
-    await loadAllUsers();
+    await loadAllUsers(1, pagination.itemsPerPage);;
 });

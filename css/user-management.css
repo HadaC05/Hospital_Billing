@@ -60,3 +60,7 @@
         .swal2-popup {
             z-index: 20001 !important;
         }
+
+        #users-list {
+  transition: opacity 0.3s ease-in-out;
+}

@@ -17,9 +17,32 @@ class Users
     }
 
     // get all users
-    function getUsers()
+    function getUsers($data)
     {
         try {
+
+            $page = isset($data['page']) ? (int)$data['page'] : 1;
+            $limit = isset($data['limit']) ? (int)$data['limit'] : 10;
+            $offset = ($page - 1) * $limit;
+
+            // Count total users (for pagination UI)
+            $countSql = "
+                SELECT COUNT(*) as total
+                FROM users u
+                JOIN user_roles r ON u.role_id = r.role_id
+                LEFT JOIN user_doctor d ON d.user_id = u.user_id
+                LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                LEFT JOIN user_billing_officer bo ON bo.user_id = u.user_id
+            ";
+            $countStmt = $this->conn->prepare($countSql);
+            $countStmt->execute();
+            $total = (int)$countStmt->fetchColumn();
+
+
             $sql = "
                 SELECT
                     u.user_id,
@@ -44,15 +67,21 @@ class Users
                 LEFT JOIN user_cashier c ON c.user_id = u.user_id
                 LEFT JOIN user_billing_officer bo ON bo.user_id = u.user_id
                 ORDER BY last_name, first_name
+                LIMIT :limit OFFSET :offset
             ";
 
             $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
                 'success' => true,
-                'users' => $users
+                'users' => $users,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
             ]);
         } catch (PDOException $e) {
             echo json_encode([
@@ -329,7 +358,7 @@ $users = new Users($conn);
 
 switch ($operation) {
     case 'getUsers':
-        $users->getUsers();
+        $users->getUsers($data);
         break;
     case 'addUser':
         $users->addUser($data);
