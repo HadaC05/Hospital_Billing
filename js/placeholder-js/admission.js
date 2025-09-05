@@ -200,9 +200,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 operation: 'addAdmission',
                 data: JSON.stringify(formData)
             })
-                .then(function (response) {
+                .then(async function (response) {
                     console.log('Add admission response:', response);
                     if (response.data.status === 'success') {
+                        const newAdmissionId = response.data.admission_id;
+                        const selectedRoomId = addRoomSel && addRoomSel.value ? Number(addRoomSel.value) : 0;
+
+                        // If a room is selected, assign it immediately via AdmissionAPI
+                        if (newAdmissionId && selectedRoomId > 0) {
+                            try {
+                                const assignPayload = {
+                                    operation: 'assignRoom',
+                                    json: JSON.stringify({
+                                        admission_id: Number(newAdmissionId),
+                                        room_id: selectedRoomId,
+                                        assigned_by: user && user.user_id ? Number(user.user_id) : 0,
+                                        start_date: formData.admission_date
+                                    })
+                                };
+                                const assignRes = await axios.post(localApiUrl + 'AdmissionAPI.php', assignPayload);
+                                console.log('Assign room (create) response:', assignRes?.data);
+                            } catch (assignErr) {
+                                console.warn('Room assignment failed after add:', assignErr);
+                                // Non-blocking: proceed but inform user
+                                Swal.fire({
+                                    title: 'Warning',
+                                    text: 'Admission saved, but room assignment failed. You can assign a room from the Edit dialog.',
+                                    icon: 'warning'
+                                });
+                            }
+                        }
+
                         // Close modal and reload admissions
                         const modal = bootstrap.Modal.getInstance(document.getElementById('addAdmissionModal'));
                         modal.hide();
@@ -349,9 +377,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 operation: 'updateAdmission',
                 data: JSON.stringify(formData)
             })
-                .then(function (response) {
+                .then(async function (response) {
                     console.log('Update admission response:', response);
                     if (response.data.status === 'success') {
+                        // If a room is selected on edit, assign/transfer it via AdmissionAPI
+                        const selectedRoomId = editRoomSel && editRoomSel.value ? Number(editRoomSel.value) : 0;
+                        const editAdmissionId = formData.admission_id ? Number(formData.admission_id) : 0;
+                        if (editAdmissionId && selectedRoomId > 0) {
+                            try {
+                                const assignPayload = {
+                                    operation: 'assignRoom',
+                                    json: JSON.stringify({
+                                        admission_id: editAdmissionId,
+                                        room_id: selectedRoomId,
+                                        assigned_by: user && user.user_id ? Number(user.user_id) : 0,
+                                        start_date: formData.admission_date
+                                    })
+                                };
+                                const assignRes = await axios.post(localApiUrl + 'AdmissionAPI.php', assignPayload);
+                                console.log('Assign room (update) response:', assignRes?.data);
+                            } catch (assignErr) {
+                                console.warn('Room assignment failed after update:', assignErr);
+                                Swal.fire({
+                                    title: 'Warning',
+                                    text: 'Admission updated, but room assignment failed. Try assigning the room again.',
+                                    icon: 'warning'
+                                });
+                            }
+                        }
+
                         // Close modal and reload admissions
                         const modal = bootstrap.Modal.getInstance(document.getElementById('editAdmissionModal'));
                         modal.hide();

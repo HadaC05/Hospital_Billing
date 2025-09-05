@@ -153,7 +153,9 @@ class Admissions
                          email = :email, 
                          em_contact_name = :em_contact_name, 
                          em_contact_number = :em_contact_number, 
-                         em_contact_address = :em_contact_address 
+                         em_contact_address = :em_contact_address, 
+                         parent_name = :parent_name,
+                         parent_contact = :parent_contact 
                      WHERE patient_id = :patient_id"
                 );
                 $stmt->bindParam(':patient_id', $patientId, PDO::PARAM_INT);
@@ -167,16 +169,28 @@ class Admissions
                 $stmt->bindParam(':em_contact_name', $data['em_contact_name']);
                 $stmt->bindParam(':em_contact_number', $data['em_contact_number']);
                 $stmt->bindParam(':em_contact_address', $data['em_contact_address']);
+                $parentName = isset($data['parent_name']) && $data['parent_name'] !== '' ? $data['parent_name'] : null;
+                $parentContact = isset($data['parent_contact']) && $data['parent_contact'] !== '' ? $data['parent_contact'] : null;
+                if ($parentName === null) {
+                    $stmt->bindValue(':parent_name', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':parent_name', $parentName, PDO::PARAM_STR);
+                }
+                if ($parentContact === null) {
+                    $stmt->bindValue(':parent_contact', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':parent_contact', $parentContact, PDO::PARAM_STR);
+                }
                 $stmt->execute();
             } else {
                 // Insert new patient
                 $stmt = $conn->prepare(
                     "INSERT INTO patients 
                      (patient_fname, patient_lname, patient_mname, birthdate, address, mobile_number, email, 
-                      em_contact_name, em_contact_number, em_contact_address) 
+                      em_contact_name, em_contact_number, em_contact_address, parent_name, parent_contact) 
                      VALUES 
                      (:patient_fname, :patient_lname, :patient_mname, :birthdate, :address, :mobile_number, :email, 
-                      :em_contact_name, :em_contact_number, :em_contact_address)"
+                      :em_contact_name, :em_contact_number, :em_contact_address, :parent_name, :parent_contact)"
                 );
                 $stmt->bindParam(':patient_fname', $data['patient_fname']);
                 $stmt->bindParam(':patient_lname', $data['patient_lname']);
@@ -188,6 +202,18 @@ class Admissions
                 $stmt->bindParam(':em_contact_name', $data['em_contact_name']);
                 $stmt->bindParam(':em_contact_number', $data['em_contact_number']);
                 $stmt->bindParam(':em_contact_address', $data['em_contact_address']);
+                $parentName = isset($data['parent_name']) && $data['parent_name'] !== '' ? $data['parent_name'] : null;
+                $parentContact = isset($data['parent_contact']) && $data['parent_contact'] !== '' ? $data['parent_contact'] : null;
+                if ($parentName === null) {
+                    $stmt->bindValue(':parent_name', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':parent_name', $parentName, PDO::PARAM_STR);
+                }
+                if ($parentContact === null) {
+                    $stmt->bindValue(':parent_contact', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':parent_contact', $parentContact, PDO::PARAM_STR);
+                }
                 $stmt->execute();
                 $patientId = $conn->lastInsertId();
             }
@@ -245,7 +271,11 @@ class Admissions
             // Commit transaction
             $conn->commit();
 
-            echo json_encode(['status' => 'success', 'message' => 'Admission added successfully']);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Admission added successfully',
+                'admission_id' => (int)$admissionId
+            ]);
         } catch (PDOException $e) {
             // Rollback transaction on error
             $conn->rollBack();
@@ -274,7 +304,9 @@ class Admissions
                      email = :email, 
                      em_contact_name = :em_contact_name, 
                      em_contact_number = :em_contact_number, 
-                     em_contact_address = :em_contact_address 
+                     em_contact_address = :em_contact_address, 
+                     parent_name = :parent_name,
+                     parent_contact = :parent_contact 
                  WHERE patient_id = :patient_id"
             );
 
@@ -289,6 +321,18 @@ class Admissions
             $stmt->bindParam(':em_contact_name', $data['em_contact_name']);
             $stmt->bindParam(':em_contact_number', $data['em_contact_number']);
             $stmt->bindParam(':em_contact_address', $data['em_contact_address']);
+            $parentName = isset($data['parent_name']) && $data['parent_name'] !== '' ? $data['parent_name'] : null;
+            $parentContact = isset($data['parent_contact']) && $data['parent_contact'] !== '' ? $data['parent_contact'] : null;
+            if ($parentName === null) {
+                $stmt->bindValue(':parent_name', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':parent_name', $parentName, PDO::PARAM_STR);
+            }
+            if ($parentContact === null) {
+                $stmt->bindValue(':parent_contact', null, PDO::PARAM_NULL);
+            } else {
+                $stmt->bindValue(':parent_contact', $parentContact, PDO::PARAM_STR);
+            }
 
             $stmt->execute();
 
