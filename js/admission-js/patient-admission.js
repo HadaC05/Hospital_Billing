@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        roomSelect.innerHTML = `<option value="">Loading rooms...</option>`;
+
         try {
             const response = await axios.get(`${baseApiUrl}/admission-php/get-admissions.php`, {
                 params: { operation: "getRooms" }
@@ -62,8 +64,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
+            // Only include rooms that haven't reached max occupancy
+            const availableRooms = rooms.filter(r => (r.current_occupancy || 0) < r.max_occupancy);
+
+            if (availableRooms.length === 0) {
+                roomSelect.innerHTML = `<option value="">No available rooms</option>`;
+                return;
+            }
+
             roomSelect.innerHTML = `<option value="">-- Select Room --</option>` +
-                rooms.map(r => {
+                availableRooms.map(r => {
                     return `<option value="${r.room_id}">
                     ${r.room_number} (${r.room_type_name}) - ${r.current_occupancy || 0}/${r.max_occupancy}
                 </option>`;
@@ -74,6 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             roomSelect.innerHTML = `<option value="">Error loading rooms</option>`;
         }
     }
+
 
 
     // doctor should be loaded

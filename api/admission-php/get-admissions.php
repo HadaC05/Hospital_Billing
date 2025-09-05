@@ -171,17 +171,45 @@ class Admissions
 
             // 5. Insert room (if assigned)
             if (!empty($data['room_assignment'])) {
+                // Check current occupancy
                 $stmt = $this->conn->prepare("
-                INSERT INTO tbl_room_assignment (admission_id, record_date)
-                VALUES (:admission_id, NOW())
-            ");
+                    SELECT COUNT(*) as current_occupancy
+                    FROM tbl_room_stay rs
+                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
+                    JOIN tbl_room r ON rs.room_id = r.room_id
+                    WHERE rs.room_id = :room_id
+                    AND rs.end_date IS NULL
+                ");
+
+                $stmt->execute([':room_id' => $data['room_assignment']]);
+                $occupancy = $stmt->fetch(PDO::FETCH_ASSOC)['current_occupancy'] ?? 0;
+
+                // Get max occupancy
+                $stmt = $this->conn->prepare("SELECT max_occupancy FROM tbl_room WHERE room_id = :room_id");
+                $stmt->execute([':room_id' => $data['room_assignment']]);
+                $max_occupancy = $stmt->fetch(PDO::FETCH_ASSOC)['max_occupancy'] ?? 1;
+
+                if ($occupancy >= $max_occupancy) {
+                    $this->conn->rollBack();
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => "Room is full. Max occupancy is {$max_occupancy}."
+                    ]);
+                    return;
+                }
+
+                // Proceed with room assignment
+                $stmt = $this->conn->prepare("
+                    INSERT INTO tbl_room_assignment (admission_id, record_date)
+                    VALUES (:admission_id, NOW())
+                ");
                 $stmt->execute([':admission_id' => $admission_id]);
                 $room_assignment_id = $this->conn->lastInsertId();
 
                 $stmt = $this->conn->prepare("
-                INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, assigned_by)
-                VALUES (:room_assignment_id, :room_id, NOW(), :assigned_by)
-            ");
+                    INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, assigned_by)
+                    VALUES (:room_assignment_id, :room_id, NOW(), :assigned_by)
+                ");
                 $stmt->execute([
                     ':room_assignment_id' => $room_assignment_id,
                     ':room_id' => $data['room_assignment'],
@@ -199,7 +227,7 @@ class Admissions
         }
     }
 
-    function getRooms($params = [])
+    function getRooms()
     {
         include '../connection-pdo.php';
 
