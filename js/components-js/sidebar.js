@@ -85,7 +85,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         edit_admissions: {
             label: 'Admission Editor',
-            link: '../placeholder-html/admission-editor.html',
+            link: '../admission-html/patient-admission.html',
             icon: 'fas fa-edit'
         },
         view_patient_records: {

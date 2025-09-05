@@ -1,10 +1,9 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
 // require_once __DIR__ . '/require_auth.php';
 
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Origin: http://localhost');
 header('Content-Type: application/json');
 
 class Admissions
@@ -22,42 +21,46 @@ class Admissions
     {
         try {
             $sql = "
-                SELECT 
-                    pa.admission_id, 
-                    pa.patient_id, 
-                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name, ' ', COALESCE(p.suffix, '')) AS patient_name,
-                    p.mobile_number,
-                    p.email,
+            SELECT 
+                pa.admission_id, 
+                pa.patient_id, 
+                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name, ' ', COALESCE(p.suffix, '')) AS patient_name,
+                p.mobile_number,
+                p.email,
 
-                    pa.admission_date, 
-                    pa.discharge_date, 
-                    pa.admission_reason, 
-                    pa.status,
+                pa.admission_date, 
+                pa.discharge_date, 
+                pa.admission_reason, 
+                pa.status,
 
-                    -- doctor assigned
-                    ud.user_id AS doctor_id,
-                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name, ' ', COALESCE(ud.suffix, '')) AS doctor_name,
-                    s.specialty_name,
+                -- doctor assigned
+                ud.user_id AS doctor_id,
+                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name, ' ', COALESCE(ud.suffix, '')) AS doctor_name,
+                s.specialty_name,
 
-                    -- staff who admitted
-                    ab.username AS admitted_by,
+                -- staff who admitted
+                ab.username AS admitted_by,
 
-                    -- current room
-                    r.room_number AS current_room
+                -- current room (subquery to get only active room)
+                (
+                    SELECT r.room_number
+                    FROM tbl_room_stay rs
+                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
+                    JOIN tbl_room r ON rs.room_id = r.room_id
+                    WHERE ra.admission_id = pa.admission_id
+                        AND rs.end_date IS NULL
+                    LIMIT 1
+                ) AS current_room
 
-                FROM patient_admission pa
-                JOIN patients p ON pa.patient_id = p.patient_id
-                LEFT JOIN users d ON pa.doctor_id = d.user_id
-                LEFT JOIN user_doctor ud ON d.user_id = ud.user_id
-                LEFT JOIN user_doctor_specialty s ON ud.specialty_id = s.specialty_id
-                LEFT JOIN users ab ON pa.admitted_by = ab.user_id
-                LEFT JOIN tbl_room_assignment ra ON pa.admission_id = ra.admission_id
-                LEFT JOIN tbl_room_stay rs 
-                    ON ra.room_assignment_id = rs.room_assignment_id 
-                    AND rs.end_date IS NULL
-                LEFT JOIN tbl_room r ON rs.room_id = r.room_id
-                ORDER BY pa.admission_date DESC;
-            ";
+            FROM patient_admission pa
+            JOIN patients p ON pa.patient_id = p.patient_id
+            LEFT JOIN users d ON pa.doctor_id = d.user_id
+            LEFT JOIN user_doctor ud ON d.user_id = ud.user_id
+            LEFT JOIN user_doctor_specialty s ON ud.specialty_id = s.specialty_id
+            LEFT JOIN users ab ON pa.admitted_by = ab.user_id
+
+            ORDER BY pa.admission_date DESC;
+        ";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
@@ -65,7 +68,7 @@ class Admissions
 
             echo json_encode([
                 'status' => 'success',
-                'message' => 'Admission saved successfully',
+                'message' => 'Admissions loaded successfully',
                 'data' => $admissions
             ]);
         } catch (PDOException $e) {
@@ -76,12 +79,15 @@ class Admissions
 
 
 
+
     function addAdmission($data)
     {
         try {
             $this->conn->beginTransaction();
 
-            $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+            $userId = isset($data['admitted_by']) ? (int)$data['admitted_by'] : 0;
+
+            // Check if valid staff user
             $chk = $this->conn->prepare("SELECT user_id FROM users WHERE user_id = :uid LIMIT 1");
             $chk->bindValue(':uid', $userId, PDO::PARAM_INT);
             $chk->execute();
@@ -89,7 +95,10 @@ class Admissions
 
             if (!$validUser) {
                 $this->conn->rollBack();
-                echo json_encode(['success' => false, 'message' => 'Invalid session. Please log in again.']);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Invalid user. Please log in again.'
+                ]);
                 return;
             }
 
@@ -145,7 +154,7 @@ class Admissions
 
             // 4. Insert emergency contact
             $stmt = $this->conn->prepare("
-            INSERT INTO patient_emergency_contacts (patient_id, first_name, middle_name, last_name, suffix, relationship, mobile_number, email, address)
+            INSERT INTO patient_emergency_contact (patient_id, first_name, middle_name, last_name, suffix, relationship, mobile_number, email, address)
             VALUES (:patient_id, :first_name, :middle_name, :last_name, :suffix, :relationship, :mobile_number, :email, :address)
         ");
             $stmt->execute([
@@ -189,6 +198,49 @@ class Admissions
             echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
+
+    function getRooms($params = [])
+    {
+        include '../connection-pdo.php';
+
+        try {
+            $sql = "
+            SELECT 
+                r.room_id,
+                r.room_number,
+                r.max_occupancy,
+                r.is_available,
+                rt.room_type_name,
+                IFNULL((
+                    SELECT COUNT(*) 
+                    FROM tbl_room_stay rs
+                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
+                    WHERE rs.room_id = r.room_id
+                    AND rs.end_date IS NULL
+                ), 0) AS current_occupancy
+            FROM tbl_room r
+            JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+            ORDER BY r.room_number ASC
+        ";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Rooms loaded successfully',
+                'data' => $rooms
+            ]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Database error: ' . $e->getMessage(),
+                'data' => []
+            ]);
+        }
+    }
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -218,5 +270,8 @@ switch ($operation) {
         break;
     case 'addAdmission':
         $admissions->addAdmission($data);
+        break;
+    case 'getRooms':
+        $admissions->getRooms();
         break;
 }

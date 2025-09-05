@@ -19,7 +19,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const addForm = document.getElementById('addAdmissionForm');
 
-    // document.getElementById('savePatientBtn').addEventListener('click', savePatient);
+    const admissionDateInput = document.getElementById("admission_date");
+
+    const roomSelect = document.getElementById("room_assignment");
+
+
+    // when modal is shown
+    document.getElementById("addAdmissionModal").addEventListener("show.bs.modal", () => {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        admissionDateInput.value = today;
+
+        loadRooms();
+    });
+
+    // Attach to save button
+    document.getElementById("saveAdmissionBtn").addEventListener("click", saveAdmission);
+
+    // Load available rooms for admission
+    async function loadRooms() {
+        if (!roomSelect) {
+            console.error("Room select element not found");
+            return;
+        }
+
+        try {
+            const response = await axios.get(`${baseApiUrl}/admission-php/get-admissions.php`, {
+                params: { operation: "getRooms" }
+            });
+
+            const data = response.data;
+
+            if (data.status !== "success") {
+                roomSelect.innerHTML = `<option value="">Failed to load rooms</option>`;
+                console.error("Error fetching rooms:", data.message);
+                return;
+            }
+
+            const rooms = data.data;
+
+            if (!rooms || rooms.length === 0) {
+                roomSelect.innerHTML = `<option value="">No available rooms</option>`;
+                return;
+            }
+
+            roomSelect.innerHTML = `<option value="">-- Select Room --</option>` +
+                rooms.map(r => {
+                    return `<option value="${r.room_id}">
+                    ${r.room_number} (${r.room_type_name}) - ${r.current_occupancy || 0}/${r.max_occupancy}
+                </option>`;
+                }).join("");
+
+        } catch (error) {
+            console.error("Error loading rooms:", error);
+            roomSelect.innerHTML = `<option value="">Error loading rooms</option>`;
+        }
+    }
+
 
     // doctor should be loaded
     async function loadDoctors() {
@@ -67,9 +122,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             doctorSelect.innerHTML = `<option value="">Error loading doctors</option>`;
         }
     }
-
-
-    // add patient
 
     // Load all admissions
     async function loadAdmissions() {
@@ -134,6 +186,67 @@ document.addEventListener('DOMContentLoaded', async () => {
             </tr>
         `;
         }).join("");
+    }
+
+    //  add admission
+    async function saveAdmission(e) {
+        e.preventDefault();
+
+        if (!addForm) {
+            console.error("Admission form not found");
+            return;
+        }
+
+        // Collect form data
+        const formData = new FormData(addForm);
+        const payload = {};
+        formData.forEach((value, key) => {
+            payload[key] = value.trim();
+        });
+
+        // Attach logged-in user
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user && user.user_id) {
+            payload.admitted_by = user.user_id;
+        }
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/admission-php/get-admissions.php`, {
+                operation: "addAdmission",
+                data: payload
+            });
+
+            const result = response.data;
+
+            if (result.status !== "success") {
+                console.error("Error saving admission:", result.message);
+                Swal.fire({
+                    title: 'Error',
+                    text: result.message || 'Admission failed to save',
+                    icon: 'error'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Success',
+                text: "Admission saved successfully",
+                icon: 'success'
+            });
+            addModal.hide();
+            addForm.reset();
+
+            // Reload admissions
+            await loadAdmissions();
+
+        } catch (error) {
+            console.error("Save admission error:", error);
+            Swal.fire({
+                title: 'Error',
+                text: result.message || 'An error occurred while saving admission. Please try again.',
+                icon: 'error'
+            });
+        }
     }
 
     await loadAdmissions();
