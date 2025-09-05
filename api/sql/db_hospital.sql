@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2025 at 03:57 PM
+-- Generation Time: Sep 05, 2025 at 05:37 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -30,11 +30,12 @@ SET time_zone = "+00:00";
 CREATE TABLE `bill_invoice` (
   `invoice_id` int(11) NOT NULL,
   `admission_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
   `created_by` int(11) NOT NULL,
   `invoice_date` date NOT NULL,
-  `insurance_covered_amount` decimal(10,2) NOT NULL,
+  `insurance_covered_amount` decimal(10,2) DEFAULT NULL,
   `total_amount` decimal(10,2) NOT NULL,
-  `amount_due` decimal(10,2) NOT NULL,
+  `amount_due` decimal(10,2) DEFAULT NULL,
   `status` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -48,7 +49,6 @@ CREATE TABLE `bill_invoice_items` (
   `invo_item_id` int(11) NOT NULL,
   `invoice_id` int(11) NOT NULL,
   `svc_type_id` int(11) NOT NULL,
-  `svc_reference_id` int(11) NOT NULL,
   `quantity` decimal(10,2) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
@@ -165,27 +165,30 @@ INSERT INTO `insurance_provider` (`provider_id`, `provider_name`, `prov_email`, 
 
 CREATE TABLE `patients` (
   `patient_id` int(11) NOT NULL,
-  `patient_fname` varchar(100) NOT NULL,
-  `patient_lname` varchar(100) NOT NULL,
-  `patient_mname` varchar(100) NOT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
   `birthdate` date NOT NULL,
   `address` varchar(100) NOT NULL,
   `mobile_number` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `em_contact_name` varchar(100) NOT NULL,
-  `em_contact_number` varchar(50) NOT NULL,
-  `em_contact_address` varchar(50) NOT NULL
+  `suffix` varchar(20) DEFAULT NULL,
+  `gender` enum('Male','Female','Other') NOT NULL,
+  `marital_status` enum('Single','Married','Divorced','Widowed') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patients`
 --
 
-INSERT INTO `patients` (`patient_id`, `patient_fname`, `patient_lname`, `patient_mname`, `birthdate`, `address`, `mobile_number`, `email`, `em_contact_name`, `em_contact_number`, `em_contact_address`) VALUES
-(2, 'john', 'philip', 'baloro', '1980-05-08', 'vcastro', '096666522', 'aa@gmail.com', 'aa', 'a', 'a'),
-(3, 'rona', 'obs', 'ss', '2025-08-22', 'fgfhg', '461613132332', 'dfgd@gmail.com', 'ghjg', '464616161', 'hfghfghvjv'),
-(4, 'hannah', 'cubillan', 'dap', '2001-01-27', 'cdo', '09111111111', 'user@mail.com', 'mama', '09111111112', 'cdo'),
-(6, 'cyrus', 'tadoy', 'mid', '2000-01-01', 'cdo', '09111111111', 'email@gmail.com', 'mama', '09111111112', 'cdo');
+INSERT INTO `patients` (`patient_id`, `first_name`, `last_name`, `middle_name`, `birthdate`, `address`, `mobile_number`, `email`, `suffix`, `gender`, `marital_status`) VALUES
+(2, 'john', 'philip', 'baloro', '1980-05-08', 'vcastro', '096666522', 'aa@gmail.com', NULL, 'Male', 'Single'),
+(3, 'rona', 'obs', 'ss', '2025-08-22', 'fgfhg', '461613132332', 'dfgd@gmail.com', NULL, 'Male', 'Single'),
+(4, 'hannah', 'cubillan', 'dap', '2001-01-27', 'cdo', '09111111111', 'user@mail.com', NULL, 'Male', 'Single'),
+(6, 'cyrus', 'tadoy', 'mid', '2000-01-01', 'cdo', '09111111111', 'email@gmail.com', NULL, 'Male', 'Single'),
+(8, 'Vern', 'Non', '', '2000-01-01', 'SoKor', '09161234567', '', '', 'Male', 'Single'),
+(9, 'Pandan', 'Superstix', '', '2004-02-03', 'Villarica Road', '09123849998', '', '', 'Female', 'Divorced'),
+(10, 'Mod', 'Ciga', '', '2006-05-12', 'CDO', '09123875784', '', '', 'Male', 'Single');
 
 -- --------------------------------------------------------
 
@@ -196,22 +199,71 @@ INSERT INTO `patients` (`patient_id`, `patient_fname`, `patient_lname`, `patient
 CREATE TABLE `patient_admission` (
   `admission_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
   `admitted_by` int(11) NOT NULL,
-  `admission_date` date NOT NULL,
-  `discharge_date` date NOT NULL,
+  `admission_date` datetime DEFAULT NULL,
+  `discharge_date` datetime DEFAULT NULL,
   `admission_reason` varchar(100) NOT NULL,
-  `status` varchar(50) NOT NULL
+  `status` enum('active','discharged','cancelled') NOT NULL DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_admission`
 --
 
-INSERT INTO `patient_admission` (`admission_id`, `patient_id`, `admitted_by`, `admission_date`, `discharge_date`, `admission_reason`, `status`) VALUES
-(1, 2, 1, '2025-08-22', '2025-08-28', 'aa', 'Discharged'),
-(2, 3, 1, '2025-08-22', '2025-08-22', 'jhjh', 'Active'),
-(3, 4, 11, '2025-08-22', '2025-08-23', 'hhh', 'Active'),
-(4, 6, 11, '2025-08-23', '2025-08-29', 'reason', 'Active');
+INSERT INTO `patient_admission` (`admission_id`, `patient_id`, `doctor_id`, `admitted_by`, `admission_date`, `discharge_date`, `admission_reason`, `status`) VALUES
+(1, 2, 2, 1, '2025-08-22 00:00:00', '2025-08-28 00:00:00', 'aa', 'discharged'),
+(2, 3, 2, 1, '2025-08-22 00:00:00', '2025-08-22 00:00:00', 'jhjh', 'active'),
+(3, 4, 2, 11, '2025-08-22 00:00:00', '2025-08-23 00:00:00', 'hhh', 'active'),
+(4, 6, 2, 11, '2025-09-02 00:00:00', '2025-09-12 00:00:00', 'reason', 'active'),
+(6, 8, 27, 1, '2025-09-05 00:00:00', NULL, '', 'active'),
+(7, 9, 2, 1, '2025-09-05 00:00:00', NULL, 'Headache', 'active'),
+(8, 10, 12, 11, '2025-09-05 00:00:00', NULL, '', 'active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_emergency_contact`
+--
+
+CREATE TABLE `patient_emergency_contact` (
+  `contact_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(100) DEFAULT NULL,
+  `relationship` varchar(100) NOT NULL,
+  `mobile_number` varchar(20) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_emergency_contact`
+--
+
+INSERT INTO `patient_emergency_contact` (`contact_id`, `patient_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `relationship`, `mobile_number`, `email`, `address`) VALUES
+(1, 8, 'Mom', '', 'Non', '', 'Mother', '09161234568', '', 'SoKor'),
+(2, 9, 'Chocolate', '', 'Superstix', '', 'Father', '09123849941', '', 'Villarica Road'),
+(3, 10, 'Moderna', '', 'Ciga', '', 'Mother', '09123875722', 'CDO', 'CDO');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_guardian`
+--
+
+CREATE TABLE `patient_guardian` (
+  `guardian_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `suffix` varchar(100) DEFAULT NULL,
+  `mobile_number` varchar(20) DEFAULT NULL,
+  `email` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -299,6 +351,13 @@ CREATE TABLE `tbl_doctor_fee` (
   `doctor_id` int(11) NOT NULL,
   `fee_amount` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_doctor_fee`
+--
+
+INSERT INTO `tbl_doctor_fee` (`doctor_fee_id`, `admission_id`, `doctor_id`, `fee_amount`) VALUES
+(1, 4, 12, 0.00);
 
 -- --------------------------------------------------------
 
@@ -607,6 +666,15 @@ CREATE TABLE `tbl_room_assignment` (
   `record_date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `tbl_room_assignment`
+--
+
+INSERT INTO `tbl_room_assignment` (`room_assignment_id`, `admission_id`, `record_date`) VALUES
+(1, 6, '2025-09-05'),
+(2, 7, '2025-09-05'),
+(3, 8, '2025-09-05');
+
 -- --------------------------------------------------------
 
 --
@@ -622,6 +690,15 @@ CREATE TABLE `tbl_room_stay` (
   `charge` decimal(10,2) NOT NULL,
   `assigned_by` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_room_stay`
+--
+
+INSERT INTO `tbl_room_stay` (`room_stay_id`, `room_assignment_id`, `room_id`, `start_date`, `end_date`, `charge`, `assigned_by`) VALUES
+(1, 1, 13, '2025-09-05', '0000-00-00', 0.00, 1),
+(2, 2, 13, '2025-09-05', '0000-00-00', 0.00, 1),
+(3, 3, 1, '2025-09-05', '0000-00-00', 0.00, 11);
 
 -- --------------------------------------------------------
 
@@ -868,9 +945,24 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `email`, `mobile_number`
 (5, 'pharmacist1', 'pharmacist123', 'pharmacist@email.com', '', 6, 1),
 (7, 'therapist1', 'therapist123', 'therapist@email.com', '', 7, 1),
 (8, 'cashier1', 'cashier123', 'cashier@email.com', '', 8, 1),
-(9, 'biller1', 'biller123', 'biller@email.com', '', 9, 1),
+(9, 'biller1', 'biller123', 'biller@email.com', NULL, 9, 1),
 (11, 'er1', 'er123', 'er@email.com', '', 4, 1),
-(12, 'doctor1st', 'pass1223', 'doc@email.com', '', 2, 1);
+(12, 'doctor1st', 'pass1223', 'doc@email.com', '', 2, 1),
+(27, 'castro.d', 'castro123', 'c.doctor@email.com', '09161883904', 2, 1),
+(30, 'joy.n', 'joy123', '', '', 4, 1),
+(32, 'thera', 'therapassword', 'cc', '', 7, 1),
+(34, 'pharm', 'pharma123', 'pharm@mail.com', '091234556', 6, 1),
+(37, 'test', 'test123', 'testmail@email.com', '09849377482', 2, 1),
+(40, 'test2', 'test123', 'aa@email.com', '', 2, 1),
+(42, 'doc.bautista', 'doctor123', NULL, NULL, 2, 1),
+(43, 'nursetest', 'test123', NULL, NULL, 4, 1),
+(44, 'testlab', 'test123', 'labemail@email.com', NULL, 5, 1),
+(45, 'testpharm', 'test123', NULL, NULL, 6, 1),
+(46, 'testther', 'test123', NULL, NULL, 7, 1),
+(47, 'testcash', 'test123', NULL, NULL, 8, 1),
+(48, 'testbill', 'test123', NULL, NULL, 9, 1),
+(50, 'testRefactor', 'test123', 'testref@email.com', NULL, 4, 1),
+(51, 'mergeTest', 'test123', NULL, NULL, 2, 1);
 
 -- --------------------------------------------------------
 
@@ -893,7 +985,8 @@ CREATE TABLE `user_billing_officer` (
 --
 
 INSERT INTO `user_billing_officer` (`billing_officer_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `employee_number`) VALUES
-(1, 9, 'biller_f', 'biller_mid', 'biller_l', NULL, NULL);
+(1, 9, 'Billy', '', 'Eilish', 'II', NULL),
+(2, 48, 'Biller', '', 'Billing', '', '12345');
 
 -- --------------------------------------------------------
 
@@ -916,7 +1009,8 @@ CREATE TABLE `user_cashier` (
 --
 
 INSERT INTO `user_cashier` (`cashier_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `employee_number`) VALUES
-(1, 8, 'cash_f', 'cash_mid', 'cash_l', NULL, NULL);
+(1, 8, 'Cashew', 'Nut', 'Dela Cruz', '', ''),
+(2, 47, 'Cashier', '', 'Cash', '', '1234');
 
 -- --------------------------------------------------------
 
@@ -941,7 +1035,12 @@ CREATE TABLE `user_doctor` (
 
 INSERT INTO `user_doctor` (`doctor_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `license_number`, `specialty_id`, `suffix`) VALUES
 (1, 2, 'Ramon', NULL, 'Reyes', NULL, 1, NULL),
-(2, 12, 'Melissa', NULL, 'Garcia', NULL, 2, NULL);
+(2, 12, 'Melissa', NULL, 'Garcia', NULL, 2, NULL),
+(3, 27, 'Mike', '', 'Castro', 'cc11', 2, 'III'),
+(4, 37, 'test', 'mid', 'last', '11', 12, 'III'),
+(5, 40, 'Doctor', '', 'Last', '11', 2, ''),
+(6, 42, 'Raymund', '', 'Bautista', '41', 20, ''),
+(7, 51, 'Marge', '', 'Doctor', '123456', 9, '');
 
 -- --------------------------------------------------------
 
@@ -1030,7 +1129,8 @@ CREATE TABLE `user_lab_technician` (
 --
 
 INSERT INTO `user_lab_technician` (`technician_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `department_id`) VALUES
-(1, 4, 'lab_f', 'lab_mid', 'lab_l', NULL, '', 1);
+(1, 4, 'lab_f', 'lab_mid', 'lab_l', '', '', 1),
+(2, 44, 'test', NULL, 'lab', NULL, '123', 4);
 
 -- --------------------------------------------------------
 
@@ -1067,7 +1167,10 @@ CREATE TABLE `user_nurse` (
 --
 
 INSERT INTO `user_nurse` (`nurse_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `department_id`) VALUES
-(1, 11, 'er_f', 'er_mid', 'er_l', NULL, '', 1);
+(1, 11, 'er_f', 'er_mid', 'er_l', '', '', 1),
+(4, 30, 'Joy', '', 'Batolata', '', 'aaa', 5),
+(5, 43, 'test', '', 'nurse', '', '111', 4),
+(6, 50, 'ref', NULL, 'tor', NULL, '12345', 5);
 
 -- --------------------------------------------------------
 
@@ -1155,7 +1258,9 @@ CREATE TABLE `user_pharmacist` (
 --
 
 INSERT INTO `user_pharmacist` (`pharmacist_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`) VALUES
-(1, 5, 'pharma_f', 'pharma_mid', 'pharma_l', NULL, '');
+(1, 5, 'pharma_f', 'pharma_mid', 'pharma_l', '', ''),
+(3, 34, 'Dante', NULL, 'Aug', NULL, 'sss'),
+(4, 45, 'test', '', 'pharma', '', '113');
 
 -- --------------------------------------------------------
 
@@ -1220,7 +1325,6 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 21, 1),
 (2, 4, 1),
 (2, 12, 1),
-(4, 4, 1),
 (4, 5, 1),
 (4, 12, 1),
 (4, 21, 1),
@@ -1254,7 +1358,9 @@ CREATE TABLE `user_therapist` (
 --
 
 INSERT INTO `user_therapist` (`therapist_id`, `user_id`, `first_name`, `middle_name`, `last_name`, `suffix`, `license_number`, `specialty_id`) VALUES
-(1, 7, 'therapist_f', 'therapist_m', 'therapist_l', NULL, NULL, 1);
+(1, 7, 'therapist_f', 'therapist_m', 'therapist_l', NULL, NULL, 1),
+(2, 32, 'Threa', 'Ther', 'Therapist', '', '', 10),
+(3, 46, 'test', '', 'therapist', '', '123', 9);
 
 -- --------------------------------------------------------
 
@@ -1295,7 +1401,8 @@ INSERT INTO `user_therapist_specialty` (`specialty_id`, `specialty_name`, `descr
 ALTER TABLE `bill_invoice`
   ADD PRIMARY KEY (`invoice_id`),
   ADD KEY `invoice_fk_1` (`admission_id`),
-  ADD KEY `invoice_fk_2` (`created_by`);
+  ADD KEY `invoice_fk_2` (`created_by`),
+  ADD KEY `fk_patient` (`patient_id`);
 
 --
 -- Indexes for table `bill_invoice_items`
@@ -1363,7 +1470,22 @@ ALTER TABLE `patients`
 ALTER TABLE `patient_admission`
   ADD PRIMARY KEY (`admission_id`),
   ADD KEY `fk_admission_1` (`patient_id`),
-  ADD KEY `fk_admission_2` (`admitted_by`);
+  ADD KEY `fk_admission_2` (`admitted_by`),
+  ADD KEY `fk_admission_doctor` (`doctor_id`);
+
+--
+-- Indexes for table `patient_emergency_contact`
+--
+ALTER TABLE `patient_emergency_contact`
+  ADD PRIMARY KEY (`contact_id`),
+  ADD KEY `fk_emergency_patient` (`patient_id`);
+
+--
+-- Indexes for table `patient_guardian`
+--
+ALTER TABLE `patient_guardian`
+  ADD PRIMARY KEY (`guardian_id`),
+  ADD KEY `fk_guardian_patient` (`patient_id`);
 
 --
 -- Indexes for table `patient_labtest`
@@ -1715,13 +1837,25 @@ ALTER TABLE `insurance_provider`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `patient_admission`
 --
 ALTER TABLE `patient_admission`
-  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `patient_emergency_contact`
+--
+ALTER TABLE `patient_emergency_contact`
+  MODIFY `contact_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `patient_guardian`
+--
+ALTER TABLE `patient_guardian`
+  MODIFY `guardian_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `patient_labtest`
@@ -1751,7 +1885,7 @@ ALTER TABLE `tbl_coverage_type`
 -- AUTO_INCREMENT for table `tbl_doctor_fee`
 --
 ALTER TABLE `tbl_doctor_fee`
-  MODIFY `doctor_fee_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `doctor_fee_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `tbl_labtest`
@@ -1805,13 +1939,13 @@ ALTER TABLE `tbl_room`
 -- AUTO_INCREMENT for table `tbl_room_assignment`
 --
 ALTER TABLE `tbl_room_assignment`
-  MODIFY `room_assignment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `room_assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_room_stay`
 --
 ALTER TABLE `tbl_room_stay`
-  MODIFY `room_stay_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `room_stay_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_room_type`
@@ -1865,25 +1999,25 @@ ALTER TABLE `tbl_treatment_session`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT for table `user_billing_officer`
 --
 ALTER TABLE `user_billing_officer`
-  MODIFY `billing_officer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `billing_officer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `user_cashier`
 --
 ALTER TABLE `user_cashier`
-  MODIFY `cashier_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `cashier_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `user_doctor`
 --
 ALTER TABLE `user_doctor`
-  MODIFY `doctor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `doctor_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `user_doctor_specialty`
@@ -1901,7 +2035,7 @@ ALTER TABLE `user_labtech_department`
 -- AUTO_INCREMENT for table `user_lab_technician`
 --
 ALTER TABLE `user_lab_technician`
-  MODIFY `technician_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `technician_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `user_log`
@@ -1913,7 +2047,7 @@ ALTER TABLE `user_log`
 -- AUTO_INCREMENT for table `user_nurse`
 --
 ALTER TABLE `user_nurse`
-  MODIFY `nurse_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `nurse_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `user_nurse_department`
@@ -1931,7 +2065,7 @@ ALTER TABLE `user_permission`
 -- AUTO_INCREMENT for table `user_pharmacist`
 --
 ALTER TABLE `user_pharmacist`
-  MODIFY `pharmacist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `pharmacist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `user_roles`
@@ -1943,7 +2077,7 @@ ALTER TABLE `user_roles`
 -- AUTO_INCREMENT for table `user_therapist`
 --
 ALTER TABLE `user_therapist`
-  MODIFY `therapist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `therapist_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `user_therapist_specialty`
@@ -1959,6 +2093,7 @@ ALTER TABLE `user_therapist_specialty`
 -- Constraints for table `bill_invoice`
 --
 ALTER TABLE `bill_invoice`
+  ADD CONSTRAINT `fk_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `invoice_fk_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
   ADD CONSTRAINT `invoice_fk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`);
 
@@ -2004,7 +2139,20 @@ ALTER TABLE `insurance_policy_coverage`
 --
 ALTER TABLE `patient_admission`
   ADD CONSTRAINT `fk_admission_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`),
-  ADD CONSTRAINT `fk_admission_2` FOREIGN KEY (`admitted_by`) REFERENCES `users` (`user_id`);
+  ADD CONSTRAINT `fk_admission_2` FOREIGN KEY (`admitted_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_admission_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `users` (`user_id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient_emergency_contact`
+--
+ALTER TABLE `patient_emergency_contact`
+  ADD CONSTRAINT `fk_emergency_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `patient_guardian`
+--
+ALTER TABLE `patient_guardian`
+  ADD CONSTRAINT `fk_guardian_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `patient_labtest`
