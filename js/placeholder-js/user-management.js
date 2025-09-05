@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     roleSelect.addEventListener('change', renderRoleSpecificFields);
 
-
     // modals
     const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
     const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));

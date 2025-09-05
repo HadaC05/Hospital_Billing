@@ -16,6 +16,40 @@ class Users
         $this->conn = $conn;
     }
 
+    function getDoctors()
+    {
+        try {
+            $sql = "
+                SELECT 
+                    u.user_id,
+                    d.first_name,
+                    d.middle_name,
+                    d.last_name,
+                    d.suffix,
+                    d.specialty_id,
+                    s.specialty_name
+                FROM users u
+                JOIN user_roles r ON u.role_id = r.role_id
+                JOIN user_doctor d ON d.user_id = u.user_id
+                LEFT JOIN user_doctor_specialty s ON d.specialty_id = s.specialty_id
+                WHERE u.role_id = 2
+                AND u.status = 1
+                ORDER BY d.last_name, d.first_name
+                ";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'doctors' => $doctors
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+    }
+
+
     // get all users
     function getUsers($data)
     {
@@ -357,6 +391,9 @@ $data = json_decode($json, true);
 $users = new Users($conn);
 
 switch ($operation) {
+    case 'getDoctors':
+        $users->getDoctors();
+        break;
     case 'getUsers':
         $users->getUsers($data);
         break;
