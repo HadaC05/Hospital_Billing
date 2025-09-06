@@ -247,8 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             addModal.hide();
             addForm.reset();
 
-            // Reload admissions
-            await loadAdmissions();
+            loadAdmissions();
 
         } catch (error) {
             console.error("Save admission error:", error);
