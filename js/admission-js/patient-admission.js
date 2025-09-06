@@ -16,11 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allPatients = [];
 
     const addModal = new bootstrap.Modal(document.getElementById('addAdmissionModal'));
-
     const addForm = document.getElementById('addAdmissionForm');
-
     const admissionDateInput = document.getElementById("admission_date");
-
     const roomSelect = document.getElementById("room_assignment");
 
 
@@ -233,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error("Error saving admission:", result.message);
                 Swal.fire({
                     title: 'Error',
-                    text: result.message || 'Admission failed to save',
+                    text: 'Admission failed to save' || result.message,
                     icon: 'error'
                 });
                 return;
@@ -253,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Save admission error:", error);
             Swal.fire({
                 title: 'Error',
-                text: result.message || 'An error occurred while saving admission. Please try again.',
+                text: 'An error occurred while saving admission. Please try again.' || result.message,
                 icon: 'error'
             });
         }
