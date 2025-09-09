@@ -18,9 +18,18 @@ class Billing
         try {
             $conditions = [];
             $params = [];
-            if ($start) { $conditions[] = 'bi.invoice_date >= :start'; $params[':start'] = $start; }
-            if ($end) { $conditions[] = 'bi.invoice_date <= :end'; $params[':end'] = $end; }
-            if ($status && $status !== 'ALL') { $conditions[] = 'bi.status = :status'; $params[':status'] = $status; }
+            if ($start) {
+                $conditions[] = 'bi.invoice_date >= :start';
+                $params[':start'] = $start;
+            }
+            if ($end) {
+                $conditions[] = 'bi.invoice_date <= :end';
+                $params[':end'] = $end;
+            }
+            if ($status && $status !== 'ALL') {
+                $conditions[] = 'bi.status = :status';
+                $params[':status'] = $status;
+            }
             $where = count($conditions) ? ('WHERE ' . implode(' AND ', $conditions)) : '';
 
             // list
@@ -34,21 +43,25 @@ class Billing
                 ORDER BY bi.invoice_date DESC, bi.invoice_id DESC
             ";
             $stmt = $conn->prepare($sql);
-            foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
+            foreach ($params as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
             $stmt->execute();
             $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // kpis
             $sql2 = "
-                SELECT COUNT(*) AS total_invoices,
-                       COALESCE(SUM(bi.total_amount),0) AS total_billed,
-                       COALESCE(SUM(bi.insurance_covered_amount),0) AS total_covered,
-                       COALESCE(SUM(bi.amount_due),0) AS total_due
-                FROM bill_invoice bi
-                $where
+                    SELECT COUNT(*) AS total_invoices,
+                        COALESCE(SUM(bi.total_amount),0) AS total_billed,
+                        COALESCE(SUM(bi.insurance_covered_amount),0) AS total_covered,
+                        COALESCE(SUM(bi.amount_due),0) AS total_due
+                    FROM bill_invoice bi
+                    $where
             ";
             $stmt2 = $conn->prepare($sql2);
-            foreach ($params as $k => $v) { $stmt2->bindValue($k, $v); }
+            foreach ($params as $k => $v) {
+                $stmt2->bindValue($k, $v);
+            }
             $stmt2->execute();
             $kpis = $stmt2->fetch(PDO::FETCH_ASSOC);
 
@@ -81,5 +94,3 @@ switch ($operation) {
         echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
-
-

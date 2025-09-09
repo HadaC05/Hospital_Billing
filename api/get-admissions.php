@@ -27,10 +27,10 @@ class Admissions
 
             if (!empty($search)) {
                 $whereClause = "WHERE p.patient_fname LIKE :search 
-                               OR p.patient_lname LIKE :search 
-                               OR p.patient_mname LIKE :search 
-                               OR p.mobile_number LIKE :search 
-                               OR pa.admission_reason LIKE :search";
+                                OR p.patient_lname LIKE :search 
+                                OR p.patient_mname LIKE :search 
+                                OR p.mobile_number LIKE :search 
+                                OR pa.admission_reason LIKE :search";
                 $searchParams[':search'] = "%$search%";
             }
 
