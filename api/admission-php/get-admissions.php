@@ -67,13 +67,13 @@ class Admissions
             $admissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'Admissions loaded successfully',
                 'data' => $admissions
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
@@ -138,7 +138,7 @@ class Admissions
             // 3. Insert guardian (if under 18 toggle was on)
             if (!empty($data['guardian_first_name'])) {
                 $stmt = $this->conn->prepare("
-                INSERT INTO patient_guardians (patient_id, first_name, middle_name, last_name, suffix, mobile_number, email)
+                INSERT INTO patient_guardian (patient_id, first_name, middle_name, last_name, suffix, mobile_number, email)
                 VALUES (:patient_id, :first_name, :middle_name, :last_name, :suffix, :mobile_number, :email)
             ");
                 $stmt->execute([
@@ -256,14 +256,14 @@ class Admissions
             $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'Rooms loaded successfully',
                 'data' => $rooms
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Database error: ' . $e->getMessage(),
                 'data' => []
             ]);

@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const admissionDateInput = document.getElementById("admission_date");
     const roomSelect = document.getElementById("room_assignment");
 
+    // Under 18 toggle (Add form)
+    const under18Toggle = document.getElementById("under_18_toggle");
+    const under18Section = document.getElementById("under_18_section");
+
 
     // when modal is shown
     document.getElementById("addAdmissionModal").addEventListener("show.bs.modal", () => {
@@ -48,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = response.data;
 
-            if (data.status !== "success") {
+            if (!data.success) {
                 roomSelect.innerHTML = `<option value="">Failed to load rooms</option>`;
                 console.error("Error fetching rooms:", data.message);
                 return;
@@ -146,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = response.data;
             console.log("Admissions API response:", data);
 
-            if (data.status !== "success") {
+            if (!data.success) {
 
                 console.error("Failed to fetch admissions:", data.message || "Unknown error");
                 tableBody.innerHTML = `<tr><td colspan="5">Failed to load admissions</td></tr>`;
@@ -226,11 +230,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const result = response.data;
 
-            if (result.status !== "success") {
+            if (!result.success) {
                 console.error("Error saving admission:", result.message);
                 Swal.fire({
                     title: 'Error',
-                    text: 'Admission failed to save' || result.message,
+                    text: result.message || 'Admission failed to save',
                     icon: 'error'
                 });
                 return;
@@ -238,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             Swal.fire({
                 title: 'Success',
-                text: "Admission saved successfully",
+                text: result.message || "Admission saved successfully",
                 icon: 'success'
             });
             addModal.hide();
@@ -254,6 +258,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon: 'error'
             });
         }
+    }
+
+    // Hide section initially
+    if (under18Section) {
+        under18Section.style.display = "none";
+    }
+
+    // Listen for toggle
+    if (under18Toggle) {
+        under18Toggle.addEventListener("change", function () {
+            if (this.checked) {
+                under18Section.style.display = "block";
+
+                // make guardian fields required
+                document.getElementById("guardian_first_name").required = true;
+                document.getElementById("guardian_last_name").required = true;
+                document.getElementById("guardian_mobile_number").required = true;
+
+            } else {
+                under18Section.style.display = "none";
+
+                // clear values
+                document.querySelectorAll("#under_18_section input").forEach(input => {
+                    input.value = "";
+                    input.required = false;
+                });
+            }
+        });
     }
 
     await loadAdmissions();
