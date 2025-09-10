@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const apiBase = '../../api';
+    const apiBase = `${window.location.origin}/hospital_billing/api`;
 
     // Elements
     const newRequestBtn = document.getElementById('newRequestBtn');
@@ -18,15 +18,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cancelRequestBtn = document.getElementById('cancelRequestBtn');
 
     // Filter elements
-    const patientFilter = document.getElementById('patientFilter');
-    const requestTypeFilter = document.getElementById('requestTypeFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const applyFiltersBtn = document.getElementById('applyFiltersBtn');
-    const printBtn = document.getElementById('printBtn');
+    // const patientFilter = document.getElementById('patientFilter');
+    // const requestTypeFilter = document.getElementById('requestTypeFilter');
+    // const statusFilter = document.getElementById('statusFilter');
+    // const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+    // const printBtn = document.getElementById('printBtn');
 
     // Table elements
-    const requestsBody = document.getElementById('requestsBody');
-    const requestsPagination = document.getElementById('requestsPagination');
+    const requestsBody = document.getElementById('resquest-list');
+    // const requestsPagination = document.getElementById('requestsPagination');
 
     // Form elements
     const requestPatient = document.getElementById('requestPatient');
@@ -43,59 +43,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         status: ''
     };
 
-    // Pagination
-    const pagination = new PaginationUtility({
-        itemsPerPage: 10,
-        onPageChange: (page) => loadRequests(page, pagination.getItemsPerPage(), currentFilters),
-        onItemsPerPageChange: (items) => loadRequests(1, items, currentFilters),
-    });
+    // // Pagination
+    // const pagination = new PaginationUtility({
+    //     itemsPerPage: 10,
+    //     onPageChange: (page) => loadRequests(page, pagination.getItemsPerPage(), currentFilters),
+    //     onItemsPerPageChange: (items) => loadRequests(1, items, currentFilters),
+    // });
 
     // Initialize
-    await loadPatients();
-    await loadRequests(1, pagination.getItemsPerPage(), currentFilters);
+    // await loadPatients();
+    // await loadRequests(1, pagination.getItemsPerPage(), currentFilters);
 
-    // Load patients for dropdowns
-    async function loadPatients() {
+    // Load patients for dropdowns - han
+    async function loadDoctorPatientsDropdown() {
+        const select = document.getElementById('request_patient'); // <select id="request_patient">
+
         try {
-            const response = await axios.get(`${apiBase}/get-patients.php`, {
-                params: {
-                    operation: 'getPatients',
-                    json: JSON.stringify({})
-                }
+            const response = await axios.get(`${apiBase}/doctor-php/get-doctor-patients.php`, {
+                params: { operation: "getDoctorAdmissions" },
+                withCredentials: true
             });
 
-            if (response.data.success && Array.isArray(response.data.patients)) {
-                const patients = response.data.patients;
-
-                // Populate filter dropdown
-                patientFilter.innerHTML = '<option value="">All Patients</option>';
-                patients.forEach(patient => {
-                    const option = document.createElement('option');
-                    option.value = patient.patient_id;
-                    option.textContent = `${patient.patient_fname} ${patient.patient_lname}`;
-                    patientFilter.appendChild(option);
-                });
-
-                // Populate form dropdown
-                requestPatient.innerHTML = '<option value="">Select Patient</option>';
-                patients.forEach(patient => {
-                    const option = document.createElement('option');
-                    option.value = patient.patient_id;
-                    option.textContent = `${patient.patient_fname} ${patient.patient_lname}`;
-                    requestPatient.appendChild(option);
-                });
+            const data = response.data;
+            if (!data.success || !data.data) {
+                console.error("Could not load patients:", data.message);
+                select.innerHTML = `<option value="">No patients available</option>`;
+                return;
             }
-        } catch (error) {
-            console.error('Error loading patients:', error);
+
+            select.innerHTML = '<option value="">-- Select Patient --</option>';
+            data.data.forEach(patient => {
+                const opt = document.createElement('option');
+                opt.value = patient.patient_id;  // you’ll probably need patient_id in requests
+                opt.textContent = `${patient.patient_name} (${patient.room_number || 'No room'})`;
+                select.appendChild(opt);
+            });
+
+        } catch (err) {
+            console.error("API error loading patients:", err);
+            select.innerHTML = `<option value="">Error loading patients</option>`;
         }
     }
+
 
     // Load requests
     async function loadRequests(page = 1, itemsPerPage = 10, filters = {}) {
         try {
             requestsBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
-            const response = await axios.post(`${apiBase}/DoctorRequestAPI.php`, {
+            const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
                 operation: 'getRequests',
                 json: JSON.stringify({
                     page: page,
@@ -188,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show request details
     async function showRequestDetails(requestId) {
         try {
-            const response = await axios.post(`${apiBase}/DoctorRequestAPI.php`, {
+            const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
                 operation: 'getRequestDetails',
                 json: JSON.stringify({ request_id: requestId })
             });
@@ -269,7 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            const response = await axios.post(`${apiBase}/DoctorRequestAPI.php`, {
+            const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
                 operation: 'cancelRequest',
                 json: JSON.stringify({ request_id: requestId })
             });
@@ -348,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitRequestBtn.disabled = true;
             submitRequestBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
 
-            const response = await axios.post(`${apiBase}/DoctorRequestAPI.php`, {
+            const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
                 operation: 'createRequest',
                 json: JSON.stringify(formData)
             });
