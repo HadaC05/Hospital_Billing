@@ -156,7 +156,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Admission Management': ['view_admissions', 'edit_admissions'],
                     'Billing': ['access_billing', 'generate_invoice'],
                     'Inventory': ['manage_rooms', 'manage_medicine', 'manage_labtests', 'manage_surgeries', 'manage_treatments', 'manage_room_types', 'manage_surgery_types', 'manage_treatment_types', 'manage_labtest_types', 'manage_medicine_types'],
-                    'Insurance': ['approve_insurance']
+                    'Insurance': ['approve_insurance'],
+                    'Doctor Requests': ['doctor_requests', 'request_management']
                 };
 
                 // Create checkboxes grouped by category

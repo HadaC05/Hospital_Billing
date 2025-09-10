@@ -138,6 +138,21 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../dashboard-html/pharmacist-dashboard.html',
             icon: 'fas fa-pills'
         },
+        cashier_dashboard: {
+            label: 'Cashier Dashboard',
+            link: '../dashboard-html/cashier-dashboard.html',
+            icon: 'fas fa-cash-register'
+        },
+        doctor_requests: {
+            label: 'Doctor Requests',
+            link: '../doctor-html/doctor-requests.html',
+            icon: 'fas fa-prescription-bottle-alt'
+        },
+        request_management: {
+            label: 'Request Management',
+            link: '../placeholder-html/request-management.html',
+            icon: 'fas fa-tasks'
+        },
     };
 
     const inventoryMap = {
@@ -262,7 +277,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add doctor-only links
         if (isDoctor) {
-            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_my_patients];
+            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_my_patients, moduleMap.doctor_requests];
             doctorLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
