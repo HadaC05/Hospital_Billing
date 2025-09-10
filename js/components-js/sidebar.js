@@ -115,7 +115,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         doctor_my_patients: {
             label: 'My Patients',
-            link: '../placeholder-html/my-patients.html',
+            link: '../doctor-html/my-patients.html',
             icon: 'fas fa-user-injured'
         },
         biller_dashboard: {
