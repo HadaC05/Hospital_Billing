@@ -8,9 +8,9 @@ class DoctorPatients
 {
     function getDoctorAdmissions($params = [])
     {
-        include 'connection-pdo.php';
+        include '../connection-pdo.php';
         try {
-            // Logged-in user
+            // Logged-in users
             if (!isset($_SESSION['user_id'])) {
                 echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
                 return;

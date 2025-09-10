@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const apiUrl = '../../api/get-doctor-patients.php';
+    const apiUrl = '../../api/doctor-php/get-doctor-patients.php';
 
     const tbody = document.getElementById('mp_list');
     const searchInput = document.getElementById('mp_searchInput');
