@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td>${safe(r.room_number || 'Not assigned')}</td>
                 <td>${truncate(r.admission_reason || '', 60)}</td>
                 <td class="${statusClass}">${safe(r.status || '')}</td>
+                <td>Placeholder</td>
             `;
             tbody.appendChild(tr);
         });
