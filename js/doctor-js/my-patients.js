@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             tr.innerHTML = `
                 <td>${admissionDate}</td>
                 <td>${safe(r.patient_name)}</td>
-                <td>${safe(r.room_number || 'Not assigned')}</td>
+                <td>${safe(r.room_number)}</td>
                 <td>${truncate(r.admission_reason || '', 60)}</td>
                 <td class="${statusClass}">${safe(r.status || '')}</td>
                 <td>Placeholder</td>

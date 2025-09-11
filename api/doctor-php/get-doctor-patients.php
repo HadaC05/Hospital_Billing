@@ -25,7 +25,7 @@ class DoctorPatients
                     pa.discharge_date, 
                     pa.admission_reason,
                     pa.status,
-                    r.room_number
+                    COALESCE(r.room_number, 'Not assigned') AS room_number
                 FROM patient_admission pa
                 JOIN patients p ON pa.patient_id = p.patient_id
                 LEFT JOIN tbl_room_stay rs 
