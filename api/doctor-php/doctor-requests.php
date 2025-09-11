@@ -6,7 +6,7 @@ header('Access-Control-Allow-Origin: http://localhost:3000');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json');
 
-class DoctorRequestAPI
+class Doctor_Request
 {
 
     private $pdo;
@@ -65,6 +65,90 @@ class DoctorRequestAPI
             ]);
         }
     }
+
+    public function createRequest($data)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $doctorId = $data['doctor_id'] ?? null;
+            $patientId = $data['patient_id'] ?? null;
+            $svcTypeId = $data['svc_type_id'] ?? null;
+            $itemId = $data['item_id'] ?? null;
+            $quantity = $data['quantity'] ?? 1;
+            $notes = $data['notes'] ?? null;
+
+            // Validation
+            if (!$doctorId || !$patientId || !$svcTypeId || !$itemId) {
+                throw new Exception('Missing required fields');
+            }
+
+            // Fetch service type name from tbl_service_type 
+            $svcStmt = $this->pdo->prepare("SELECT name FROM tbl_service_type WHERE id = :id");
+            $svcStmt->execute([':id' => $svcTypeId]);
+            $svcRow = $svcStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$svcRow) {
+                throw new Exception('Invalid service type selected');
+            }
+
+            $svcTypeName = strtolower($svcRow['svc_name']);
+
+            // Determine which item table to use
+            if ($svcTypeName === 'medication') {
+                $itemTable = 'tbl_medicine';
+                $itemIdField = 'med_id';
+            } elseif ($svcTypeName === 'lab test') {
+                $itemTable = 'tbl_labtest';
+                $itemIdField = 'labtest_id';
+            } else {
+                $itemTable = null;
+                $itemIdField = null;
+            }
+
+            // If item table exists, validate item
+            if ($itemTable) {
+                $checkSql = "SELECT 1 FROM $itemTable WHERE $itemIdField = :item_id AND is_active = 1";
+                $checkStmt = $this->pdo->prepare($checkSql);
+                $checkStmt->execute([':item_id' => $itemId]);
+                if (!$checkStmt->fetch()) {
+                    throw new Exception('Invalid item selected');
+                }
+            }
+
+            // Insert request
+            $sql = "
+                INSERT INTO doctor_requests 
+                (doctor_id, patient_id, svc_type_id, item_id, quantity, notes, status, request_date)
+                VALUES (:doctor_id, :patient_id, :svc_type_id, :item_id, :quantity, :notes, 'pending', NOW())
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':doctor_id' => $doctorId,
+                ':patient_id' => $patientId,
+                ':svc_type_id' => $svcTypeId,
+                ':item_id' => $itemId,
+                ':quantity' => $quantity,
+                ':notes' => $notes
+            ]);
+
+            $requestId = $this->pdo->lastInsertId();
+            $this->pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Request created successfully',
+                'request_id' => $requestId
+            ]);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 }
 
 // Handle requests
@@ -81,11 +165,14 @@ if ($method === 'GET') {
 }
 
 $data = json_decode($json, true);
-$api = new DoctorRequestAPI();
+$request = new Doctor_Request();
 
 switch ($operation) {
     case 'getRequests':
-        $api->getRequests();
+        $request->getRequests();
+        break;
+    case 'createRequest':
+        $request->createRequest($data);
         break;
     default:
         echo json_encode(['status' => false, 'message' => 'Invalid operation']);

@@ -9,8 +9,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const apiBase = `${window.location.origin}/hospital_billing/api`;
 
+    // Elements for new request
+    const newRequestBtn = document.getElementById('newRequestBtn');
+    const newRequestModal = new bootstrap.Modal(document.getElementById('newRequestModal'));
+    const newRequestForm = document.getElementById('newRequestForm');
+    const submitRequestBtn = document.getElementById('submitRequestBtn');
+
     // Table elements
     const tbody = document.getElementById('request-list');
+
+    // Form elements
+    const requestPatient = document.getElementById('request_patient');
+    const requestType = document.getElementById('request_type');
+    const requestItem = document.getElementById('request_item');
+    const requestQuantity = document.getElementById('request_quantity');
+    const requestNotes = document.getElementById('request_notes');
+
+    // Load patients for dropdowns - han
+
+    async function loadDoctorPatientsDropdown() {
+        const select = document.getElementById('request_patient');
+
+        try {
+            const response = await axios.get(`${apiBase}/doctor-php/get-doctor-patients.php`, {
+                params: { operation: "getDoctorAdmissions" },
+                withCredentials: true
+            });
+
+            const data = response.data;
+            if (!data.success || !data.data) {
+                console.error("Could not load patients:", data.message);
+                select.innerHTML = `<option value="">No patients available</option>`;
+                return;
+            }
+
+            select.innerHTML = '<option value="">-- Select Patient --</option>';
+            data.data.forEach(patient => {
+                const opt = document.createElement('option');
+                opt.value = patient.patient_id;  // you’ll probably need patient_id in requests
+                opt.textContent = `${patient.patient_name} (${patient.room_number || 'No room'})`;
+                select.appendChild(opt);
+            });
+
+        } catch (err) {
+            console.error("API error loading patients:", err);
+            select.innerHTML = `<option value="">Error loading patients</option>`;
+        }
+    }
+
 
     // Load doctor requests
     async function loadRequests() {
@@ -130,6 +176,96 @@ document.addEventListener('DOMContentLoaded', async () => {
             .replaceAll(">", "&gt;");
     }
 
+    // Load items based on request type
+    async function loadItems(type) {
+        requestItem.innerHTML = '<option value="">Loading...</option>';
+        requestItem.disabled = true;
+
+        try {
+            const endpoint = type === 'medicine' ? 'get-medicines.php' : 'get-labtests.php';
+            const response = await axios.get(`${apiBase}/${endpoint}`, {
+                params: {
+                    operation: 'getItems',
+                    json: JSON.stringify({})
+                }
+            });
+
+            if (response.data && response.data.success) {
+                const items = response.data.items || [];
+                requestItem.innerHTML = '<option value="">Select Item</option>';
+
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    requestItem.appendChild(option);
+                });
+
+                requestItem.disabled = false;
+            } else {
+                requestItem.innerHTML = '<option value="">No items available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading items:', error);
+            requestItem.innerHTML = '<option value="">Error loading items</option>';
+        }
+    }
+
+    // Event listeners
+    newRequestBtn.addEventListener('click', () => {
+        newRequestModal.show();
+    });
+
+    // Submit new request
+    async function submitRequest() {
+        const formData = {
+            patient_id: requestPatient.value,
+            request_type: requestType.value,
+            item_id: requestItem.value,
+            quantity: requestQuantity.value,
+            notes: requestNotes.value,
+            doctor_id: user.user_id
+        };
+
+        // Validation
+        if (!formData.patient_id || !formData.request_type || !formData.item_id || !formData.quantity) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        if (parseInt(formData.quantity) < 1) {
+            alert('Quantity must be at least 1.');
+            return;
+        }
+
+        try {
+            submitRequestBtn.disabled = true;
+            submitRequestBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+
+            const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
+                operation: 'createRequest',
+                json: JSON.stringify(formData)
+            });
+
+            if (response.data && response.data.status === 'success') {
+                alert('Request submitted successfully!');
+                newRequestModal.hide();
+                newRequestForm.reset();
+                requestItem.innerHTML = '<option value="">Select Type First</option>';
+                requestItem.disabled = true;
+                await loadRequests(1, pagination.getItemsPerPage(), currentFilters);
+            } else {
+                alert('Failed to submit request: ' + (response.data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error submitting request:', error);
+            alert('Network error while submitting request.');
+        } finally {
+            submitRequestBtn.disabled = false;
+            submitRequestBtn.innerHTML = 'Submit Request';
+        }
+    }
+
     // Show request details modal
     function showRequestDetails(requestId) {
         // For now, just show an alert with the request ID
@@ -146,5 +282,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    submitRequestBtn.addEventListener('click', submitRequest);
+
+
     await loadRequests();
+    await loadDoctorPatientsDropdown();
 });

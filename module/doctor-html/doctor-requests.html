@@ -139,32 +139,33 @@
                     <form id="newRequestForm">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="requestPatient" class="form-label">Patient *</label>
-                                <select class="form-select" id="requestPatient" required>
+                                <label for="request_patient" class="form-label">Patient *</label>
+                                <select class="form-select" name="request_patient" id="request_patient" required>
                                     <option value="">Select Patient</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="requestType" class="form-label">Request Type *</label>
-                                <select class="form-select" id="requestType" required>
+                                <label for="request_type" class="form-label">Request Type *</label>
+                                <select class="form-select" name="request_type" id="request_type" required>
                                     <option value="">Select Type</option>
                                     <option value="medicine">Medicine</option>
                                     <option value="labtest">Lab Test</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="requestItem" class="form-label">Item *</label>
-                                <select class="form-select" id="requestItem" required disabled>
+                                <label for="request_item" class="form-label">Item *</label>
+                                <select class="form-select" name="request_item" id="request_item" required disabled>
                                     <option value="">Select Type First</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="requestQuantity" class="form-label">Quantity *</label>
-                                <input type="number" class="form-control" id="requestQuantity" min="1" required>
+                                <label for="request_quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" name="request_quantity" id="request_quantity"
+                                    min="1" required>
                             </div>
                             <div class="col-12">
-                                <label for="requestNotes" class="form-label">Notes</label>
-                                <textarea class="form-control" id="requestNotes" rows="3"
+                                <label for="request_notes" class="form-label">Notes</label>
+                                <textarea class="form-control" name="request_notes" id="request_notes" rows="3"
                                     placeholder="Additional instructions or notes..."></textarea>
                             </div>
                         </div>
