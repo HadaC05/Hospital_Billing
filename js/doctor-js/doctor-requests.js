@@ -51,15 +51,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         requests.forEach((request) => {
             const row = document.createElement("tr");
             const statusBadge = getStatusBadge(request.status);
-            const typeIcon =
-                request.request_type === "medicine"
-                    ? "fas fa-pills"
-                    : "fas fa-vial";
+            let typeIcon = "fas fa-concierge-bell";
+            switch (request.svc_name) {
+                case "Medication":
+                    typeIcon = "fas fa-pills";
+                    break;
+                case "Lab Test":
+                    typeIcon = "fas fa-vial";
+                    break;
+                case "Surgery":
+                    typeIcon = "fas fa-procedures";
+                    break;
+                case "Room":
+                    typeIcon = "fas fa-bed";
+                    break;
+                case "Treatment":
+                    typeIcon = "fas fa-stethoscope";
+                    break;
+            }
 
             row.innerHTML = `
             <td>${formatDate(request.request_date)}</td>
             <td>${safe(request.patient_name)}</td>
-            <td><i class="${typeIcon} me-1"></i>${safe(request.request_type)}</td>
+            <td><i class="${typeIcon} me-1"></i>${safe(request.svc_name)}</td>
             <td>${safe(request.item_name || "-")}</td>
             <td>${safe(request.quantity || "-")}</td>
             <td>${statusBadge}</td>

@@ -27,7 +27,8 @@ class DoctorRequestAPI
             $sql = "
                 SELECT 
                     dr.request_id,
-                    dr.request_type,
+                    dr.svc_type_id,
+                    st.svc_name,
                     dr.quantity,
                     dr.notes,
                     dr.status,
@@ -35,14 +36,15 @@ class DoctorRequestAPI
                     CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name, ' ', COALESCE(p.suffix, '')) AS patient_name,
                     u.username AS doctor_name,
                     CASE 
-                        WHEN dr.request_type = 'medicine' THEN m.med_name
-                        WHEN dr.request_type = 'labtest' THEN lt.test_name
+                        WHEN st.svc_name = 'Medication' THEN m.med_name
+                        WHEN st.svc_name = 'Lab Test' THEN lt.test_name
                     END AS item_name
                 FROM doctor_requests dr
                 JOIN patients p ON dr.patient_id = p.patient_id
                 JOIN users u ON dr.doctor_id = u.user_id
-                LEFT JOIN tbl_medicine m ON dr.request_type = 'medicine' AND dr.item_id = m.med_id
-                LEFT JOIN tbl_labtest lt ON dr.request_type = 'labtest' AND dr.item_id = lt.labtest_id
+                JOIN tbl_service_type st ON dr.svc_type_id = st.svc_type_id
+                LEFT JOIN tbl_medicine m ON st.svc_name = 'Medication' AND dr.item_id = m.med_id
+                LEFT JOIN tbl_labtest lt ON st.svc_name = 'Lab Test' AND dr.item_id = lt.labtest_id
                 WHERE dr.doctor_id = :doctor_id
                 ORDER BY dr.request_date DESC
             ";
