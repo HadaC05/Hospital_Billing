@@ -16,7 +16,6 @@ class Admissions
         $this->conn = $conn;
     }
 
-
     function getAdmissions()
     {
         try {
@@ -45,9 +44,8 @@ class Admissions
                 (
                     SELECT r.room_number
                     FROM tbl_room_stay rs
-                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
                     JOIN tbl_room r ON rs.room_id = r.room_id
-                    WHERE ra.admission_id = pa.admission_id
+                    WHERE rs.admission_id = pa.admission_id
                         AND rs.end_date IS NULL
                     LIMIT 1
                 ) AS current_room
@@ -76,9 +74,6 @@ class Admissions
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
-
-
-
 
     function addAdmission($data)
     {
@@ -175,8 +170,6 @@ class Admissions
                 $stmt = $this->conn->prepare("
                     SELECT COUNT(*) as current_occupancy
                     FROM tbl_room_stay rs
-                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
-                    JOIN tbl_room r ON rs.room_id = r.room_id
                     WHERE rs.room_id = :room_id
                     AND rs.end_date IS NULL
                 ");
@@ -192,26 +185,20 @@ class Admissions
                 if ($occupancy >= $max_occupancy) {
                     $this->conn->rollBack();
                     echo json_encode([
-                        'status' => 'error',
+                        'success' => true,
                         'message' => "Room is full. Max occupancy is {$max_occupancy}."
                     ]);
                     return;
                 }
 
-                // Proceed with room assignment
+                // Proceed with room stay (directly link admission_id here)
                 $stmt = $this->conn->prepare("
-                    INSERT INTO tbl_room_assignment (admission_id, record_date)
-                    VALUES (:admission_id, NOW())
-                ");
-                $stmt->execute([':admission_id' => $admission_id]);
-                $room_assignment_id = $this->conn->lastInsertId();
+                        INSERT INTO tbl_room_stay (admission_id, room_id, start_date, assigned_by)
+                        VALUES (:admission_id, :room_id, NOW(), :assigned_by)
+                    ");
 
-                $stmt = $this->conn->prepare("
-                    INSERT INTO tbl_room_stay (room_assignment_id, room_id, start_date, assigned_by)
-                    VALUES (:room_assignment_id, :room_id, NOW(), :assigned_by)
-                ");
                 $stmt->execute([
-                    ':room_assignment_id' => $room_assignment_id,
+                    ':admission_id' => $admission_id,
                     ':room_id' => $data['room_assignment'],
                     ':assigned_by' => $userId,
                 ]);
@@ -233,23 +220,22 @@ class Admissions
 
         try {
             $sql = "
-            SELECT 
-                r.room_id,
-                r.room_number,
-                r.max_occupancy,
-                r.is_available,
-                rt.room_type_name,
-                IFNULL((
-                    SELECT COUNT(*) 
-                    FROM tbl_room_stay rs
-                    JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
-                    WHERE rs.room_id = r.room_id
-                    AND rs.end_date IS NULL
-                ), 0) AS current_occupancy
-            FROM tbl_room r
-            JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
-            ORDER BY r.room_number ASC
-        ";
+                SELECT 
+                    r.room_id,
+                    r.room_number,
+                    r.max_occupancy,
+                    r.is_available,
+                    rt.room_type_name,
+                    IFNULL((
+                        SELECT COUNT(*) 
+                        FROM tbl_room_stay rs
+                        WHERE rs.room_id = r.room_id
+                            AND rs.end_date IS NULL
+                    ), 0) AS current_occupancy
+                FROM tbl_room r
+                JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+                ORDER BY r.room_number ASC
+            ";
 
             $stmt = $conn->prepare($sql);
             $stmt->execute();

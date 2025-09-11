@@ -28,9 +28,8 @@ class DoctorPatients
                     r.room_number
                 FROM patient_admission pa
                 JOIN patients p ON pa.patient_id = p.patient_id
-                LEFT JOIN tbl_room_assignment ra ON pa.admission_id = ra.admission_id
                 LEFT JOIN tbl_room_stay rs 
-                    ON ra.room_assignment_id = rs.room_assignment_id AND rs.end_date IS NULL
+                    ON pa.admission_id = rs.admission_id AND rs.end_date IS NULL
                 LEFT JOIN tbl_room r ON rs.room_id = r.room_id
                 WHERE pa.doctor_id = :doctor_id
                 ORDER BY pa.admission_date DESC
