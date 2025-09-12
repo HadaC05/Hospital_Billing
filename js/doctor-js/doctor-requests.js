@@ -287,16 +287,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Submit new request
     async function submitRequest() {
         const formData = {
+            doctor_id: user.user_id,
             patient_id: requestPatient.value,
-            request_type: requestType.value,
+            svc_type_id: requestType.value,
             item_id: requestItem.value,
-            quantity: requestQuantity.value,
-            notes: requestNotes.value,
-            doctor_id: user.user_id
+            quantity: requestQuantity.value || 1,
+            notes: requestNotes.value
         };
 
         // Validation
-        if (!formData.patient_id || !formData.request_type || !formData.item_id || !formData.quantity) {
+        if (!formData.patient_id || !formData.svc_type_id || !formData.item_id || !formData.quantity) {
             alert('Please fill in all required fields.');
             return;
         }
@@ -308,20 +308,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             submitRequestBtn.disabled = true;
-            submitRequestBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+            submitRequestBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
 
             const response = await axios.post(`${apiBase}/doctor-php/doctor-requests.php`, {
-                operation: 'createRequest',
+                operation: "createRequest",
                 json: JSON.stringify(formData)
-            });
+            }, { withCredentials: true });
 
-            if (response.data && response.data.status === 'success') {
+            console.log("Create request response:", response.data);
+
+            if (response.data.success) {
                 alert('Request submitted successfully!');
                 newRequestModal.hide();
                 newRequestForm.reset();
                 requestItem.innerHTML = '<option value="">Select Type First</option>';
                 requestItem.disabled = true;
-                await loadRequests(1, pagination.getItemsPerPage(), currentFilters);
+
+                await loadRequests(); // reload table after submit
             } else {
                 alert('Failed to submit request: ' + (response.data.message || 'Unknown error'));
             }
@@ -333,6 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitRequestBtn.innerHTML = 'Submit Request';
         }
     }
+
 
     // Show request details modal
     function showRequestDetails(requestId) {
