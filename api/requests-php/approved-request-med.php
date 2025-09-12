@@ -30,6 +30,7 @@ class Approved_Requests
                     m.med_name,
                     mu.unit_name,
                     dr.quantity,
+                    m.stock_quantity,
                     dr.notes
                 FROM doctor_requests dr
                 JOIN user_doctor d ON dr.doctor_id = d.doctor_id
@@ -260,8 +261,8 @@ switch ($operation) {
         $request->getApprovedRequests();
         break;
     case 'dispenseRequest':
-        $requestId = $payload['request_id'] ?? null;
-        $userId = $_SESSION['user_id'] ?? null;
+        $requestId = $payload['request_id'];
+        $userId = $_SESSION['user_id'];
         if ($requestId && $userId) {
             $request->dispenseRequest($requestId, $userId);
         } else {
