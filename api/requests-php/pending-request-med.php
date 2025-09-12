@@ -58,16 +58,21 @@ class Pending_Requests
         }
     }
 
-    public function approveRequest($requestId)
+    public function approveRequest($requestId, $approvedBy)
     {
         try {
             $sql = "
                 UPDATE doctor_requests 
-                SET status = 'approved' 
+                SET status = 'approved',
+                    approved_by = :approved_by,
+                    approved_date = NOW() 
                 WHERE request_id = :id
             ";
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([':id' => $requestId]);
+            $stmt->execute([
+                ':id' => $requestId,
+                ':approved_by' => $approvedBy
+            ]);
 
             echo json_encode([
                 'success' => true,
@@ -105,8 +110,11 @@ switch ($operation) {
         break;
     case 'approveRequest':
         $requestId = $payload['request_id'] ?? null;
-        if ($requestId) {
-            $request->approveRequest($requestId);
+
+        $approvedBy = $_SESSION['user_id'] ?? null;
+
+        if ($requestId && $approvedBy) {
+            $request->approveRequest($requestId, $approvedBy);
         } else {
             echo json_encode(['success' => false, 'message' => 'Missing request ID']);
         }
