@@ -57,6 +57,29 @@ class Pending_Requests
             ]);
         }
     }
+
+    public function approveRequest($requestId)
+    {
+        try {
+            $sql = "
+                UPDATE doctor_requests 
+                SET status = 'approved' 
+                WHERE request_id = :id
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id' => $requestId]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Request approved successfully.'
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to approve request: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
 
 // Handle requests
@@ -79,6 +102,14 @@ $request = new Pending_Requests();
 switch ($operation) {
     case 'getPendingRequests':
         $request->getPendingRequests();
+        break;
+    case 'approveRequest':
+        $requestId = $payload['request_id'] ?? null;
+        if ($requestId) {
+            $request->approveRequest($requestId);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Missing request ID']);
+        }
         break;
     default:
         echo json_encode(['status' => false, 'message' => 'Invalid operation']);

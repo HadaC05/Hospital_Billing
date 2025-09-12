@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                         if (res.data.success) {
                             alert("Request approved!");
-                            loadPendingRequests(); // reload table
+                            loadPendingRequests();
                         } else {
                             alert("Failed: " + res.data.message);
                         }
