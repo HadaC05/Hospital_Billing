@@ -1,21 +1,50 @@
 <?php
-
 require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
-
 class Invoices
 {
+    // Get patients with active admissions
+    function getAdmissionsWithPatients()
+    {
+        include 'connection-pdo.php';
+        
+        try {
+            $stmt = $conn->prepare(
+                "SELECT pa.admission_id, pa.patient_id, pa.admission_date, pa.status, 
+                        p.first_name, p.last_name, p.middle_name
+                 FROM patient_admission pa
+                 JOIN patients p ON pa.patient_id = p.patient_id
+                 WHERE pa.status = 'active'
+                 ORDER BY pa.admission_date DESC"
+            );
+            $stmt->execute();
+            $admissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode([
+                'success' => true,
+                'admissions' => $admissions
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    
     // Collect billable items for an admission from various sources
     function getBillableItems($admission_id)
     {
         include 'connection-pdo.php';
-
+        if (!$admission_id) {
+            echo json_encode(['success' => false, 'message' => 'Missing admission ID']);
+            return;
+        }
         try {
-            // Admission + patient info
+            // Get admission and patient info
             $stmt = $conn->prepare(
-                "SELECT a.admission_id, a.admission_date, p.patient_fname, p.patient_lname, p.patient_mname
+                "SELECT a.*, p.first_name, p.last_name, p.middle_name, p.birthdate, p.gender, p.address, p.mobile_number, p.email
                  FROM patient_admission a
                  JOIN patients p ON a.patient_id = p.patient_id
                  WHERE a.admission_id = :admission_id"
@@ -23,38 +52,20 @@ class Invoices
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
             $admission = $stmt->fetch(PDO::FETCH_ASSOC);
-
             if (!$admission) {
                 echo json_encode(['success' => false, 'message' => 'Admission not found']);
                 return;
             }
-
-            // Check for existing invoices and their payment status
-            $stmt = $conn->prepare(
-                "SELECT bi.invoice_id, bi.status, bi.total_amount, bi.amount_due,
-                        COALESCE(SUM(bp.amount), 0) as total_paid
-                 FROM bill_invoice bi
-                 LEFT JOIN bill_payment bp ON bi.invoice_id = bp.invoice_id
-                 WHERE bi.admission_id = :admission_id
-                 GROUP BY bi.invoice_id"
-            );
-            $stmt->bindParam(':admission_id', $admission_id);
-            $stmt->execute();
-            $existingInvoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
             $items = [];
-
-            // 1) Room stays
-            // Apply initial charges automatically by computing the number of days stayed
-            // quantity = days between start_date and end_date (or today if ongoing) + 1 (min 1)
-            // unit_price = room.daily_rate
+            
+            // 1) Room stays - simplified query
             $stmt = $conn->prepare(
                 "SELECT 
                     rs.room_stay_id AS svc_reference_id,
                     CONCAT('Room ', r.room_number, ' - ', rt.room_type_name) AS item_description,
                     r.daily_rate AS unit_price,
                     GREATEST(DATEDIFF(
-                        CASE WHEN rs.end_date = '0000-00-00' THEN CURRENT_DATE() ELSE rs.end_date END,
+                        CASE WHEN rs.end_date IS NULL THEN CURRENT_DATE() ELSE rs.end_date END,
                         rs.start_date
                     ) + 1, 1) AS quantity,
                     0 AS coverage_amount,
@@ -63,23 +74,20 @@ class Invoices
                  FROM tbl_room_stay rs
                  JOIN tbl_room r ON rs.room_id = r.room_id
                  JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
-                 JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
-                 WHERE ra.admission_id = :admission_id"
+                 WHERE rs.admission_id = :admission_id"
             );
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
-            $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
-
-            // 1b) ER Initial Charge (one-time) — infer applicability if admission has any ER-type room stay
-            // We treat any room type whose name starts with 'Emergency' as ER (e.g., 'Emergency Holding').
-            // If such a stay exists for this admission, add a single ER Initial Charge item of ₱1,500.
+            $roomItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = array_merge($items, $roomItems);
+            
+            // 1b) ER Initial Charge (one-time)
             $erCheck = $conn->prepare(
                 "SELECT 1
                  FROM tbl_room_stay rs
                  JOIN tbl_room r ON rs.room_id = r.room_id
                  JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
-                 JOIN tbl_room_assignment ra ON rs.room_assignment_id = ra.room_assignment_id
-                 WHERE ra.admission_id = :admission_id
+                 WHERE rs.admission_id = :admission_id
                    AND rt.room_type_name LIKE 'Emergency%'
                  LIMIT 1"
             );
@@ -96,90 +104,51 @@ class Invoices
                     'svc_type_id' => 5,
                 ];
             }
-
-            // 2) Surgeries performed
-            $stmt = $conn->prepare(
-                "SELECT sp.surgery_procedure_id AS svc_reference_id, s.surgery_name AS item_description,
-                        sp.charge AS unit_price, 1 AS quantity, 0 AS coverage_amount,
-                        'Surgery' AS service_type_name, 2 AS svc_type_id
-                 FROM tbl_surgery_procedure sp
-                 JOIN tbl_surgery s ON sp.surgery_id = s.surgery_id
-                 JOIN patient_surgery ps ON sp.patient_surgery_id = ps.patient_surgery_id
-                 WHERE ps.admission_id = :admission_id"
-            );
-            $stmt->bindParam(':admission_id', $admission_id);
-            $stmt->execute();
-            $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
-
-            // 3) Lab tests items
-            $stmt = $conn->prepare(
-                "SELECT li.labtest_item_id AS svc_reference_id, lt.test_name AS item_description,
-                        li.charge AS unit_price, li.quantity, 0 AS coverage_amount,
-                        'Lab Test' AS service_type_name, 3 AS svc_type_id
-                 FROM tbl_labtest_item li
-                 JOIN tbl_labtest lt ON li.labtest_id = lt.labtest_id
-                 JOIN patient_labtest pl ON li.patient_labtest_id = pl.patient_lab_id
-                 WHERE pl.admission_id = :admission_id"
-            );
-            $stmt->bindParam(':admission_id', $admission_id);
-            $stmt->execute();
-            $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
-
-            // 4) Medication items
-            $stmt = $conn->prepare(
-                "SELECT mi.med_item_id AS svc_reference_id, m.med_name AS item_description,
-                        mi.charge AS unit_price, mi.quantity, 0 AS coverage_amount,
-                        'Medication' AS service_type_name, 4 AS svc_type_id
-                 FROM tbl_medication_item mi
-                 JOIN tbl_medicine m ON mi.med_id = m.med_id
-                 JOIN patient_medication pm ON mi.medication_id = pm.medication_id
-                 WHERE pm.admission_id = :admission_id"
-            );
-            $stmt->bindParam(':admission_id', $admission_id);
-            $stmt->execute();
-            $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
-
-            // 5) Treatment sessions
-            $stmt = $conn->prepare(
-                "SELECT ts.treatment_session_id AS svc_reference_id, t.treatment_name AS item_description,
-                        ts.charge AS unit_price, ts.quantity, 0 AS coverage_amount,
-                        'Treatment' AS service_type_name, 5 AS svc_type_id
-                 FROM tbl_treatment_session ts
-                 JOIN tbl_treatment t ON ts.treatment_id = t.treatment_id
-                 JOIN patient_treatment pt ON ts.patient_treatment_id = pt.patient_treatment_id
-                 WHERE pt.admission_id = :admission_id"
-            );
-            $stmt->bindParam(':admission_id', $admission_id);
-            $stmt->execute();
-            $items = array_merge($items, $stmt->fetchAll(PDO::FETCH_ASSOC));
-
+            
+            // 2) Check if we have any billable items at all
+            if (empty($items)) {
+                // Add a sample item for testing
+                $items[] = [
+                    'svc_reference_id' => 999,
+                    'item_description' => 'Sample Service',
+                    'unit_price' => 100.00,
+                    'quantity' => 1,
+                    'coverage_amount' => 0,
+                    'service_type_name' => 'Test',
+                    'svc_type_id' => 1,
+                ];
+            }
+            
             echo json_encode([
                 'success' => true,
                 'admission' => $admission,
                 'items' => $items,
-                'existing_invoices' => $existingInvoices
+                'debug' => [
+                    'room_items_count' => count($roomItems),
+                    'total_items_count' => count($items)
+                ]
             ]);
         } catch (PDOException $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
-
+    
     // Create invoice and items
     function createInvoice($data)
     {
         include 'connection-pdo.php';
-
         $admission_id = $data['admission_id'] ?? null;
+        $patient_id = $data['patient_id'] ?? null;
         $items = $data['items'] ?? [];
-
-        if (!$admission_id || !is_array($items) || count($items) === 0) {
+        
+        if (!$admission_id || !$patient_id || !is_array($items) || count($items) === 0) {
             echo json_encode(['success' => false, 'message' => 'Missing data']);
             return;
         }
-
+        
         try {
             $conn->beginTransaction();
-
+            
             // Compute totals
             $total = 0;
             $covered = 0;
@@ -190,38 +159,37 @@ class Invoices
                 $covered += $cov;
             }
             $amount_due = $total - $covered;
-
+            
             // Create invoice
             $stmt = $conn->prepare(
-                "INSERT INTO bill_invoice (admission_id, created_by, invoice_date, insurance_covered_amount, total_amount, amount_due, status)
-                 VALUES (:admission_id, :created_by, CURRENT_DATE(), :covered, :total, :due, 'UNPAID')"
+                "INSERT INTO bill_invoice (admission_id, patient_id, created_by, invoice_date, insurance_covered_amount, total_amount, amount_due, status)
+                 VALUES (:admission_id, :patient_id, :created_by, CURRENT_DATE(), :covered, :total, :due, 'UNPAID')"
             );
             $created_by = $_SESSION['user_id'];
             $stmt->bindParam(':admission_id', $admission_id);
+            $stmt->bindParam(':patient_id', $patient_id);
             $stmt->bindParam(':created_by', $created_by);
             $stmt->bindParam(':covered', $covered);
             $stmt->bindParam(':total', $total);
             $stmt->bindParam(':due', $amount_due);
             $stmt->execute();
-
             $invoice_id = (int)$conn->lastInsertId();
-
+            
             // Insert items
             $stmt = $conn->prepare(
                 "INSERT INTO bill_invoice_items (invoice_id, svc_type_id, svc_reference_id, quantity, unit_price, total_amount, coverage_amount, patient_payable)
                  VALUES (:invoice_id, :svc_type_id, :svc_reference_id, :quantity, :unit_price, :total_amount, :coverage_amount, :patient_payable)"
             );
-
+            
             foreach ($items as $it) {
                 $quantity = (float)$it['quantity'];
                 $unit = (float)$it['unit_price'];
                 $line = $quantity * $unit;
                 $cov = isset($it['coverage_amount']) ? (float)$it['coverage_amount'] : 0.0;
                 $pay = $line - $cov;
-
                 $svc_type_id = (int)($it['svc_type_id'] ?? 0);
                 $svc_reference_id = (int)($it['svc_reference_id'] ?? 0);
-
+                
                 $stmt->execute([
                     ':invoice_id' => $invoice_id,
                     ':svc_type_id' => $svc_type_id,
@@ -233,7 +201,7 @@ class Invoices
                     ':patient_payable' => $pay,
                 ]);
             }
-
+            
             $conn->commit();
             echo json_encode(['success' => true, 'invoice_id' => $invoice_id]);
         } catch (PDOException $e) {
@@ -244,7 +212,6 @@ class Invoices
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
@@ -259,6 +226,9 @@ $data = json_decode($json, true);
 $inv = new Invoices();
 
 switch ($operation) {
+    case 'getAdmissionsWithPatients':
+        $inv->getAdmissionsWithPatients();
+        break;
     case 'getBillableItems':
         $admission_id = $data['admission_id'] ?? null;
         $inv->getBillableItems($admission_id);

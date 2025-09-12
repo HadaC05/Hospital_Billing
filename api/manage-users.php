@@ -7,7 +7,7 @@ header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
-class UserManager
+class Users
 {
     private $conn;
 
@@ -16,119 +16,106 @@ class UserManager
         $this->conn = $conn;
     }
 
-    /**
-     * Get all doctors (users whose role name contains 'doctor')
-     */
-    function getDoctors($params = [])
+    function getDoctors()
     {
         try {
-            $search = isset($params['search']) ? $params['search'] : '';
-            $where = "WHERE LOWER(r.role_name) LIKE '%doctor%'";
-            $binds = [];
-            if (!empty($search)) {
-                $where .= " AND (d.first_name LIKE :s OR d.last_name LIKE :s OR u.username LIKE :s)";
-                $binds[':s'] = "%$search%";
-            }
-
-            $sql = "SELECT u.user_id, u.username,
-                           d.first_name, d.middle_name, d.last_name,
-                           u.email, u.mobile_number, u.role_id, r.role_name
-                    FROM users u
-                    JOIN user_roles r ON u.role_id = r.role_id
-                    LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                    $where
-                    ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')";
+            $sql = "
+                SELECT 
+                    u.user_id,
+                    d.first_name,
+                    d.middle_name,
+                    d.last_name,
+                    d.suffix,
+                    d.specialty_id,
+                    s.specialty_name
+                FROM users u
+                JOIN user_roles r ON u.role_id = r.role_id
+                JOIN user_doctor d ON d.user_id = u.user_id
+                LEFT JOIN user_doctor_specialty s ON d.specialty_id = s.specialty_id
+                WHERE u.role_id = 2
+                AND u.status = 1
+                ORDER BY d.last_name, d.first_name
+                ";
             $stmt = $this->conn->prepare($sql);
-            foreach ($binds as $k => $v) {
-                $stmt->bindValue($k, $v);
-            }
             $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'doctors' => $rows]);
+            $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'doctors' => $doctors
+            ]);
         } catch (PDOException $e) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
     }
 
-    /**
-     * Get all users with their roles
-     */
-    function getAllUsers($params = [])
+
+    // get all users
+    function getUsers($data)
     {
         try {
-            // Get pagination parameters
-            $page = isset($params['page']) ? (int)$params['page'] : 1;
-            $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
-            $search = isset($params['search']) ? $params['search'] : '';
 
-            // Calculate offset
-            $offset = ($page - 1) * $itemsPerPage;
+            $page = isset($data['page']) ? (int)$data['page'] : 1;
+            $limit = isset($data['limit']) ? (int)$data['limit'] : 10;
+            $offset = ($page - 1) * $limit;
 
-            // Build WHERE clause for search
-            $whereClause = '';
-            $searchParams = [];
+            // Count total users (for pagination UI)
+            $countSql = "
+                SELECT COUNT(*) as total
+                FROM users u
+                JOIN user_roles r ON u.role_id = r.role_id
+                LEFT JOIN user_doctor d ON d.user_id = u.user_id
+                LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                LEFT JOIN user_billing_officer bo ON bo.user_id = u.user_id
+            ";
+            $countStmt = $this->conn->prepare($countSql);
+            $countStmt->execute();
+            $total = (int)$countStmt->fetchColumn();
 
-            if (!empty($search)) {
-                $whereClause = "WHERE d.first_name LIKE :search 
-                               OR d.last_name LIKE :search 
-                               OR u.username LIKE :search 
-                               OR u.email LIKE :search 
-                               OR r.role_name LIKE :search";
-                $searchParams[':search'] = "%$search%";
-            }
 
-            // Get total count
-            $countQuery = "SELECT COUNT(*) as total FROM users u 
-                          JOIN user_roles r ON u.role_id = r.role_id 
-                          LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                          $whereClause";
-            $countStmt = $this->conn->prepare($countQuery);
-            if (!empty($searchParams)) {
-                $countStmt->execute($searchParams);
-            } else {
-                $countStmt->execute();
-            }
-            $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+            $sql = "
+                SELECT
+                    u.user_id,
+                    u.username,
+                    COALESCE(d.first_name, n.first_name, lt.first_name, p.first_name, t.first_name, c.first_name, bo.first_name) AS first_name,
+                    COALESCE(d.middle_name, n.middle_name, lt.middle_name, p.middle_name, t.middle_name, c.middle_name, bo.middle_name) AS middle_name,
+                    COALESCE(d.last_name, n.last_name, lt.last_name, p.last_name, t.last_name, c.last_name, bo.last_name) AS last_name,
+                    COALESCE(d.suffix, n.suffix, lt.suffix, p.suffix, t.suffix, c.suffix, bo.suffix) AS suffix,
+                    u.password,
+                    u.email,
+                    u.mobile_number,
+                    u.role_id,
+                    r.role_name,
+                    u.status
+                FROM users u
+                JOIN user_roles r ON u.role_id = r.role_id
+                LEFT JOIN user_doctor d ON d.user_id = u.user_id
+                LEFT JOIN user_nurse n ON n.user_id = u.user_id
+                LEFT JOIN user_lab_technician lt ON lt.user_id = u.user_id
+                LEFT JOIN user_pharmacist p ON p.user_id = u.user_id
+                LEFT JOIN user_therapist t ON t.user_id = u.user_id
+                LEFT JOIN user_cashier c ON c.user_id = u.user_id
+                LEFT JOIN user_billing_officer bo ON bo.user_id = u.user_id
+                ORDER BY last_name, first_name
+                LIMIT :limit OFFSET :offset
+            ";
 
-            // Get paginated data
-            $query = "SELECT u.user_id, u.username,
-                        d.first_name, d.middle_name, d.last_name,
-                        u.email, u.mobile_number, u.role_id, r.role_name 
-                        FROM users u 
-                        JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                        $whereClause
-                        ORDER BY COALESCE(d.last_name, u.username), COALESCE(d.first_name, '')
-                        LIMIT :limit OFFSET :offset";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
-            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-
-            if (!empty($searchParams)) {
-                foreach ($searchParams as $key => $value) {
-                    $stmt->bindValue($key, $value);
-                }
-            }
-
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Calculate pagination info
-            $totalPages = ceil($totalCount / $itemsPerPage);
-            $startIndex = $offset + 1;
-            $endIndex = min($offset + $itemsPerPage, $totalCount);
 
             echo json_encode([
                 'success' => true,
                 'users' => $users,
-                'pagination' => [
-                    'currentPage' => $page,
-                    'itemsPerPage' => $itemsPerPage,
-                    'totalItems' => $totalCount,
-                    'totalPages' => $totalPages,
-                    'startIndex' => $startIndex,
-                    'endIndex' => $endIndex
-                ]
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
             ]);
         } catch (PDOException $e) {
             echo json_encode([
@@ -138,194 +125,241 @@ class UserManager
         }
     }
 
-    /**
-     * Get a specific user by ID
-     */
-    function getUserById($userId)
+    // add new users
+    function addUser($data)
     {
         try {
-            $query = "SELECT u.user_id, u.username,
-                        d.first_name, d.middle_name, d.last_name,
-                        u.email, u.mobile_number, u.role_id, r.role_name 
-                        FROM users u 
-                        JOIN user_roles r ON u.role_id = r.role_id 
-                        LEFT JOIN user_doctor d ON d.user_id = u.user_id
-                        WHERE u.user_id = :user_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->execute();
-
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($user) {
-                echo json_encode([
-                    'success' => true,
-                    'user' => $user
-                ]);
-            } else {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'User not found'
-                ]);
+            if (empty($data['role_id'])) {
+                throw new Exception("Role ID is required to add user");
             }
-        } catch (PDOException $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
+
+            $this->conn->beginTransaction();
+
+            // Insert into base `users` table
+            $sql = "
+            INSERT INTO users (username, password, email, mobile_number, role_id)
+            VALUES (:username, :password, :email, :mobile_number, :role_id)
+        ";
+
+            $stmt = $this->conn->prepare($sql);
+
+            $email = !empty($data['email']) ? $data['email'] : null;
+            $mobile = !empty($data['mobile_number']) ? $data['mobile_number'] : null;
+
+            $stmt->execute([
+                ':username' => $data['username'],
+                ':password' => $data['password'],
+                ':email' => $email,
+                ':mobile_number' => $mobile,
+                ':role_id' => $data['role_id'],
             ]);
-        }
-    }
 
-    /**
-     * Add a new user
-     */
-    function addUser($userData)
-    {
-        try {
-            // Check if username already exists
-            $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username";
-            $checkStmt = $this->conn->prepare($checkQuery);
-            $checkStmt->bindParam(':username', $userData['username']);
-            $checkStmt->execute();
+            $userId = $this->conn->lastInsertId();
 
-            if ($checkStmt->fetchColumn() > 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username already exists'
-                ]);
-                return;
+            // Decide role-specific table and fields
+            $roleTable = null;
+            $roleFields = [
+                'user_id' => $userId,
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'suffix' => $data['suffix'] ?? null,
+            ];
+
+            switch ($data['role_id']) {
+                case 2: // Doctor
+                    $roleTable = "user_doctor";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['specialty_id'] = $data['specialty_id'] ?? null;
+                    break;
+
+                case 4: // Nurse
+                    $roleTable = "user_nurse";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['department_id'] = $data['department_id'] ?? null;
+                    break;
+
+                case 5: // Lab Technician
+                    $roleTable = "user_lab_technician";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['department_id'] = $data['department_id'] ?? null;
+                    break;
+
+                case 6: // Pharmacist
+                    $roleTable = "user_pharmacist";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    break;
+
+                case 7: // Therapist
+                    $roleTable = "user_therapist";
+                    $roleFields['license_number'] = $data['license_number'] ?? null;
+                    $roleFields['specialty_id'] = $data['specialty_id'] ?? null;
+                    break;
+
+                case 8: // Cashier
+                    $roleTable = "user_cashier";
+                    $roleFields['employee_number'] = $data['employee_number'] ?? null;
+                    break;
+
+                case 9: // Billing Officer
+                    $roleTable = "user_billing_officer";
+                    $roleFields['employee_number'] = $data['employee_number'] ?? null;
+                    break;
             }
 
+            // Insert into role-specific table
+            if ($roleTable) {
+                $columns = array_keys($roleFields);
+                $placeholders = array_map(fn($c) => ':' . $c, $columns);
 
-            // Insert new user (users table has no name columns)
-            $query = "INSERT INTO users (username, password, email, mobile_number, role_id) 
-                        VALUES (:username, :password, :email, :mobile_number, :role_id)";
+                $sql = "INSERT INTO $roleTable (" . implode(", ", $columns) . ")
+                    VALUES (" . implode(", ", $placeholders) . ")";
+                $stmt = $this->conn->prepare($sql);
 
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':password', $userData['password']);
-            $stmt->bindParam(':email', $userData['email']);
-            $stmt->bindParam(':mobile_number', $userData['mobile_number']);
-            $stmt->bindParam(':role_id', $userData['role_id']);
+                // Prefix keys with `:` for binding
+                $params = [];
+                foreach ($roleFields as $col => $val) {
+                    $params[":$col"] = $val;
+                }
 
-            $stmt->execute();
-            echo json_encode([
-                'success' => true,
-                'message' => 'User added successfully'
-            ]);
-        } catch (PDOException $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Update an existing user
-     */
-    function updateUser($userData)
-    {
-        try {
-            // Check if username already exists for another user
-            $checkQuery = "SELECT COUNT(*) FROM users WHERE username = :username AND user_id != :user_id";
-            $checkStmt = $this->conn->prepare($checkQuery);
-            $checkStmt->bindParam(':username', $userData['username']);
-            $checkStmt->bindParam(':user_id', $userData['user_id']);
-            $checkStmt->execute();
-
-            if ($checkStmt->fetchColumn() > 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Username already exists'
-                ]);
-                return;
+                $stmt->execute($params);
             }
 
-            // Start building the update query
-            $query = "UPDATE users SET 
-                        username = :username, 
-                        email = :email, 
-                        mobile_number = :mobile_number, 
-                        role_id = :role_id";
-
-            // Add password to update query if provided
-            if (!empty($userData['password'])) {
-                $query .= ", password = :password";
-            }
-
-            $query .= " WHERE user_id = :user_id";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':username', $userData['username']);
-            $stmt->bindParam(':first_name', $userData['first_name']);
-            $stmt->bindParam(':middle_name', $userData['middle_name']);
-            $stmt->bindParam(':last_name', $userData['last_name']);
-            $stmt->bindParam(':email', $userData['email']);
-            $stmt->bindParam(':mobile_number', $userData['mobile_number']);
-            $stmt->bindParam(':role_id', $userData['role_id']);
-            $stmt->bindParam(':user_id', $userData['user_id']);
-
-            // Bind password if provided
-            if (!empty($userData['password'])) {
-                $stmt->bindParam(':password', $userData['password']);  // Store plain text password
-            }
-
-            $stmt->execute();
-            echo json_encode([
-                'success' => true,
-                'message' => 'User updated successfully'
-            ]);
-        } catch (PDOException $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Delete a user
-     */
-    function deleteUser($userId)
-    {
-        try {
-            // Check if user exists
-            $checkQuery = "SELECT COUNT(*) FROM users WHERE user_id = :user_id";
-            $checkStmt = $this->conn->prepare($checkQuery);
-            $checkStmt->bindParam(':user_id', $userId);
-            $checkStmt->execute();
-
-            if ($checkStmt->fetchColumn() == 0) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'User not found'
-                ]);
-                return;
-            }
-
-            // Prevent deleting the current logged-in user
-            if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $userId) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Cannot delete your own account'
-                ]);
-                return;
-            }
-
-            // Delete user
-            $query = "DELETE FROM users WHERE user_id = :user_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $userId);
-            $stmt->execute();
+            $this->conn->commit();
 
             echo json_encode([
                 'success' => true,
-                'message' => 'User deleted successfully'
+                'message' => 'User added successfully',
+                'user_id' => $userId
             ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
+            $this->conn->rollBack();
             echo json_encode([
                 'success' => false,
-                'message' => 'Database error: ' . $e->getMessage()
+                'message' => 'Failed to add user: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
+    // update existing users
+    function updateUser($data)
+    {
+        try {
+            if (empty($data['role_id'])) {
+                throw new Exception("Role ID is required to update user");
+            }
+
+            $this->conn->beginTransaction();
+
+            // Update main `users` table
+            $fields = ['username = :username'];
+            $params = [
+                ':username' => $data['username'],
+                ':user_id'  => $data['user_id']
+            ];
+
+            if (!empty($data['password'])) {
+                $fields[] = "password = :password";
+                $params[':password'] = $data['password']; // hash if needed
+            }
+
+            $fields[] = "email = :email";
+            $params[':email'] = $data['email'] ?? null;
+
+            $fields[] = "mobile_number = :mobile_number";
+            $params[':mobile_number'] = $data['mobile_number'] ?? null;
+
+            $fields[] = "status = :status";
+            $params[':status'] = isset($data['status']) ? (int)$data['status'] : 1;
+
+            $sql = "UPDATE users SET " . implode(", ", $fields) . " WHERE user_id = :user_id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+
+
+            // Update role-specific table
+            $updates = [
+                "first_name = :first_name",
+                "middle_name = :middle_name",
+                "last_name = :last_name",
+                "suffix = :suffix"
+            ];
+
+            $params = [
+                ':user_id'    => $data['user_id'],
+                ':first_name' => $data['first_name'],
+                ':middle_name' => $data['middle_name'] ?? null,
+                ':last_name'  => $data['last_name'],
+                ':suffix'     => $data['suffix'] ?? null
+            ];
+
+            switch ($data['role_id']) {
+                case 2: // Doctor
+                case 7: // Therapist
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    if (!empty($data['specialty_id'])) {
+                        $updates[] = "specialty_id = :specialty_id";
+                        $params[':specialty_id'] = $data['specialty_id'];
+                    }
+                    $table = ($data['role_id'] == 2) ? "user_doctor" : "user_therapist";
+                    break;
+
+                case 4: // Nurse
+                case 5: // Lab Technician
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    if (!empty($data['department_id'])) {
+                        $updates[] = "department_id = :department_id";
+                        $params[':department_id'] = $data['department_id'];
+                    }
+                    $table = ($data['role_id'] == 4) ? "user_nurse" : "user_lab_technician";
+                    break;
+
+                case 6: // Pharmacist
+                    if (!empty($data['license_number'])) {
+                        $updates[] = "license_number = :license_number";
+                        $params[':license_number'] = $data['license_number'];
+                    }
+                    $table = "user_pharmacist";
+                    break;
+
+                case 8: // Cashier
+                case 9: // Billing Officer
+                    if (!empty($data['employee_number'])) {
+                        $updates[] = "employee_number = :employee_number";
+                        $params[':employee_number'] = $data['employee_number'];
+                    }
+                    $table = ($data['role_id'] == 8) ? "user_cashier" : "user_billing_officer";
+                    break;
+
+                default:
+                    $table = null;
+            }
+
+            if (!empty($table)) {
+                $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE user_id = :user_id";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute($params);
+            }
+
+            $this->conn->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'User updated successfully',
+                'user_id' => $data['user_id']
+            ]);
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to update user: ' . $e->getMessage()
             ]);
         }
     }
@@ -333,57 +367,20 @@ class UserManager
 
 include 'connection-pdo.php';
 $conn = $GLOBALS['conn'];
-$userManager = new UserManager($conn);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
     $json = $_GET['json'] ?? '';
-
-    // Get pagination parameters from GET request
-    $page = $_GET['page'] ?? 1;
-    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
-    $search = $_GET['search'] ?? '';
-
-    // For backward compatibility
-    if (isset($_GET['user_id'])) {
-        $operation = 'getUserById';
-        $json = json_encode(['user_id' => $_GET['user_id']]);
-    } else if (empty($operation)) {
-        $operation = 'getAllUsers';
-    }
 } else if ($method === 'POST') {
-    $body = file_get_contents("php://input");
-    $payload = json_decode($body, true);
-
-    // Get pagination parameters from POST request
-    $page = $payload['page'] ?? 1;
-    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
-    $search = $payload['search'] ?? '';
-
-    // For backward compatibility
-    if (isset($payload['action'])) {
-        switch ($payload['action']) {
-            case 'add':
-                $operation = 'addUser';
-                break;
-            case 'update':
-                $operation = 'updateUser';
-                break;
-            case 'delete':
-                $operation = 'deleteUser';
-                $payload['user_id'] = $payload['user_id'] ?? null;
-                break;
-            default:
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Invalid action'
-                ]);
-                exit;
-        }
-        $json = json_encode($payload);
+    if (!empty($_POST)) {
+        $operation = $_POST['operation'] ?? '';
+        $json = $_POST['json'] ?? '';
     } else {
+        $body = file_get_contents("php://input");
+        $payload = json_decode($body, true);
+
         $operation = $payload['operation'] ?? '';
         $json = $payload['json'] ?? '';
     }
@@ -391,36 +388,19 @@ if ($method === 'GET') {
 
 $data = json_decode($json, true);
 
+$users = new Users($conn);
+
 switch ($operation) {
-    case 'getAllUsers':
-        $params = [
-            'page' => $page,
-            'itemsPerPage' => $itemsPerPage,
-            'search' => $search
-        ];
-        $userManager->getAllUsers($params);
+    case 'getDoctors':
+        $users->getDoctors();
         break;
-    case 'getUserById':
-        $user_id = $data['user_id'] ?? null;
-        $userManager->getUserById($user_id);
+    case 'getUsers':
+        $users->getUsers($data);
         break;
     case 'addUser':
-        $userManager->addUser($data);
+        $users->addUser($data);
         break;
     case 'updateUser':
-        $userManager->updateUser($data);
+        $users->updateUser($data);
         break;
-    case 'deleteUser':
-        $user_id = $data['user_id'] ?? null;
-        $userManager->deleteUser($user_id);
-        break;
-    case 'getDoctors':
-        $params = ['search' => $search];
-        $userManager->getDoctors($params);
-        break;
-    default:
-        echo json_encode([
-            'success' => false,
-            'message' => 'Invalid operation'
-        ]);
 }

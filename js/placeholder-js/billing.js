@@ -12,9 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const applyFiltersBtn = document.getElementById('applyFiltersBtn');
     const printBtn = document.getElementById('printBtn');
     const invoiceBody = document.getElementById('invoiceBody');
-    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
-    const paymentForm = document.getElementById('paymentForm');
-    const paymentMethodSelect = document.getElementById('paymentMethod');
 
     function peso(n) { return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
@@ -65,7 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td class="text-end">${peso(inv.insurance_covered_amount)}</td>
                 <td class="text-end">${peso(inv.amount_due)}</td>
                 <td>${inv.status}</td>
-                <td><button class="btn btn-sm btn-success" data-invoice='${JSON.stringify(inv)}'>Make Payment</button></td>
             `;
             invoiceBody.appendChild(tr);
         });
@@ -82,58 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         location.reload();
     });
 
-    invoiceBody.addEventListener('click', e => {
-        if (e.target.classList.contains('btn-success')) {
-            const inv = JSON.parse(e.target.dataset.invoice);
-            paymentForm.invoiceId.value = inv.invoice_id;
-            paymentForm.amountDue.value = peso(inv.amount_due);
-            paymentModal.show();
-        }
-    });
-
-    async function loadPaymentMethods() {
-        try {
-            const resp = await axios.get(`${apiBase}/PaymentAPI.php?operation=getPaymentMethods`);
-            if (resp.data && resp.data.status === 'success') {
-                paymentMethodSelect.innerHTML = '';
-                resp.data.methods.forEach(m => {
-                    paymentMethodSelect.innerHTML += `<option value="${m.payment_method_id}">${m.method_name}</option>`;
-                });
-            }
-        } catch (e) { 
-            console.error('Error loading payment methods:', e); 
-        }
-    }
-
-    paymentForm.addEventListener('submit', async e => {
-        e.preventDefault();
-        try {
-            const resp = await axios.post(`${apiBase}/PaymentAPI.php`, {
-                operation: 'addPayment',
-                json: JSON.stringify({
-                    invoice_id: paymentForm.invoiceId.value,
-                    received_by: user.user_id,
-                    amount: paymentForm.paymentAmount.value,
-                    payment_method_id: paymentMethodSelect.value,
-                    payment_date: new Date().toISOString().split('T')[0]
-                })
-            });
-            if (resp.data && resp.data.status === 'success') {
-                paymentModal.hide();
-                await loadOverview();
-                alert('Payment processed successfully!');
-            } else {
-                alert('Payment failed: ' + (resp.data.message || 'Unknown error'));
-            }
-        } catch (e) {
-            console.error('Payment error:', e);
-            alert('Network error.');
-        }
-    });
-
     applyFiltersBtn.addEventListener('click', loadOverview);
-
-    await loadPaymentMethods();
 
     await loadOverview();
 });

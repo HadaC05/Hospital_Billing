@@ -495,7 +495,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td class="${statusClass}">${status}</td>
                 <td>
                     <button class="btn btn-sm btn-primary edit-btn" data-id="${admission.admission_id}" data-patient-id="${admission.patient_id}">Edit</button>
-                    <button class="btn btn-sm btn-danger delete-btn" data-id="${admission.admission_id}">Delete</button>
                 </td>
             `;
             admissionList.appendChild(row);
@@ -506,24 +505,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const admissionId = this.getAttribute('data-id');
                 const patientId = this.getAttribute('data-patient-id');
                 loadAdmissionDetails(admissionId, patientId);
-            });
-        });
-        // Add event listeners to delete buttons with SweetAlert confirmation
-        document.querySelectorAll('.delete-btn').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const admissionId = this.getAttribute('data-id');
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: 'This will permanently delete the admission record.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, delete it',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        deleteAdmission(admissionId);
-                    }
-                });
             });
         });
     }
@@ -650,37 +631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
     }
-    // Function to delete admission
-    function deleteAdmission(admissionId) {
-        axios.post(localApiUrl + 'get-admissions.php', {
-            operation: 'deleteAdmission',
-            admission_id: admissionId
-        })
-            .then(function (response) {
-                if (response.data.status === 'success') {
-                    loadAdmissions();
-                    Swal.fire({
-                        title: 'Deleted',
-                        text: 'Admission deleted successfully!',
-                        icon: 'success'
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Error: ' + response.data.message,
-                        icon: 'error'
-                    });
-                }
-            })
-            .catch(function (error) {
-                console.error('Error:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: 'An error occurred while deleting the admission.',
-                    icon: 'error'
-                });
-            });
-    }
+
     // Load doctors for dropdowns
     async function loadDoctors() {
         try {

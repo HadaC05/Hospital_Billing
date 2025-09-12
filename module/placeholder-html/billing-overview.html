@@ -112,7 +112,6 @@
                                         <th class="text-end">Covered</th>
                                         <th class="text-end">Due</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="invoiceBody">
@@ -121,41 +120,6 @@
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment Modal -->
-            <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="paymentModalLabel">Process Payment</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="paymentForm">
-                                <input type="hidden" id="invoiceId" />
-                                <div class="mb-3">
-                                    <label for="amountDue" class="form-label">Amount Due</label>
-                                    <input type="text" id="amountDue" class="form-control" readonly />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="paymentAmount" class="form-label">Payment Amount</label>
-                                    <input type="number" id="paymentAmount" class="form-control" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="paymentMethod" class="form-label">Payment Method</label>
-                                    <select id="paymentMethod" class="form-select" required>
-                                        <!-- Options will be loaded dynamically -->
-                                    </select>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" form="paymentForm" class="btn btn-primary">Submit Payment</button>
                         </div>
                     </div>
                 </div>

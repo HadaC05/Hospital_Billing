@@ -152,12 +152,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Group permissions by category
                 const categories = {
                     'User Management': ['manage_users', 'manage_roles', 'admin_dashboard'],
-                    'Patient Management': ['view_patient_records'],
+                    // 'Patient Management': ['view_patient_records', 'doctor_my_patients'],
+                    // 'Patient Management': ['view_patient_records'], 
                     'Admission Management': ['view_admissions', 'edit_admissions'],
                     'Billing': ['access_billing', 'generate_invoice'],
                     'Inventory': ['manage_rooms', 'manage_medicine', 'manage_labtests', 'manage_surgeries', 'manage_treatments', 'manage_room_types', 'manage_surgery_types', 'manage_treatment_types', 'manage_labtest_types', 'manage_medicine_types'],
                     'Insurance': ['approve_insurance'],
-                    'Doctor Requests': ['doctor_requests', 'request_management']
+                    'Doctor Requests': ['doctor_requests'],
+                    'Doctor_my_patient': ['doctor_my_patients'],
                 };
 
                 // Create checkboxes grouped by category
