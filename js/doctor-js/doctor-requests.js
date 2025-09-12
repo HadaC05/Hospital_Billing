@@ -297,12 +297,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Validation
         if (!formData.patient_id || !formData.svc_type_id || !formData.item_id || !formData.quantity) {
-            alert('Please fill in all required fields.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
             return;
         }
 
         if (parseInt(formData.quantity) < 1) {
-            alert('Quantity must be at least 1.');
+            Swal.fire({
+                title: 'Warning',
+                text: 'Quantity must be at least 1.',
+                icon: 'warning'
+            });
             return;
         }
 
@@ -318,7 +326,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("Create request response:", response.data);
 
             if (response.data.success) {
-                alert('Request submitted successfully!');
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Request submitted successfully!',
+                    icon: 'success'
+                });
                 newRequestModal.hide();
                 newRequestForm.reset();
                 requestItem.innerHTML = '<option value="">Select Type First</option>';
@@ -326,11 +338,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 await loadRequests(); // reload table after submit
             } else {
-                alert('Failed to submit request: ' + (response.data.message || 'Unknown error'));
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to submit request: ' + (response.data.message || 'Unknown error'),
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('Error submitting request:', error);
-            alert('Network error while submitting request.');
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while submitting request.',
+                icon: 'error'
+            });
         } finally {
             submitRequestBtn.disabled = false;
             submitRequestBtn.innerHTML = 'Submit Request';
