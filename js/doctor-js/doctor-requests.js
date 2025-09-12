@@ -57,6 +57,109 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    async function loadServiceTypes() {
+        try {
+            const response = await axios.get(`${apiBase}/doctor-php/doctor-requests.php`, {
+                params: { operation: "getServiceTypes" },
+                withCredentials: true
+            });
+
+            const data = response.data;
+            if (!data.success) {
+                console.error("Error fetching service types:", data.message);
+                return;
+            }
+
+            requestType.innerHTML = `<option value="">Select Type</option>`;
+            data.service_types.forEach(type => {
+                const option = document.createElement("option");
+                option.value = type.svc_type_id;
+                option.textContent = type.svc_name;
+                requestType.appendChild(option);
+            });
+        } catch (err) {
+            console.error("API error:", err);
+        }
+    }
+
+    // Load items based on selected service type
+    async function loadRequestItems(svcTypeId) {
+        requestItem.innerHTML = `<option value="">Loading...</option>`;
+        requestItem.disabled = true;
+
+        try {
+            let response;
+
+            if (svcTypeId === "4") {
+                // Medication
+                response = await axios.get(`${apiBase}/masterfiles-php/get-medicines.php`, {
+                    params: { operation: "getMedicines" },
+                    withCredentials: true
+                });
+
+                if (response.data.success) {
+                    requestItem.innerHTML = `<option value="">Select Medicine</option>`;
+
+                    const activeMeds = response.data.medicines.filter(
+                        med => med.is_active === "1" || med.is_active === 1
+                    );
+
+                    if (activeMeds.length > 0) {
+                        activeMeds.forEach(med => {
+                            const opt = document.createElement("option");
+                            opt.value = med.med_id;
+                            opt.textContent = `${med.med_name} (${med.unit_name})`;
+                            requestItem.appendChild(opt);
+                        });
+                        requestItem.disabled = false;
+                    } else {
+                        requestItem.innerHTML = `<option value="">No active medicines available</option>`;
+                    }
+                }
+            } else if (svcTypeId === "3") {
+                // Lab Test
+                response = await axios.get(`${apiBase}/masterfiles-php/get-labtests.php`, {
+                    params: { operation: "getLabtests" },
+                    withCredentials: true
+                });
+
+                if (response.data.success) {
+                    requestItem.innerHTML = `<option value="">Select Lab Test</option>`;
+
+                    const activeTests = response.data.labtests.filter(
+                        test => test.is_active === "1" || test.is_active === 1
+                    );
+
+                    if (activeTests.length > 0) {
+                        activeTests.forEach(test => {
+                            const opt = document.createElement("option");
+                            opt.value = test.labtest_id;
+                            opt.textContent = test.test_name;
+                            requestItem.appendChild(opt);
+                        });
+                        requestItem.disabled = false;
+                    } else {
+                        requestItem.innerHTML = `<option value="">No active lab tests available</option>`;
+                    }
+                }
+            } else {
+                requestItem.innerHTML = `<option value="">Select a service type first</option>`;
+            }
+        } catch (error) {
+            console.error("Error loading items:", error);
+            requestItem.innerHTML = `<option value="">Failed to load items</option>`;
+        }
+    }
+
+    requestType.addEventListener("change", (e) => {
+        const svcTypeId = e.target.value;
+        if (svcTypeId) {
+            loadRequestItems(svcTypeId);
+        } else {
+            requestItem.innerHTML = `<option value="">Select a service type first</option>`;
+            requestItem.disabled = true;
+        }
+    });
 
     // Load doctor requests
     async function loadRequests() {
@@ -176,41 +279,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .replaceAll(">", "&gt;");
     }
 
-    // Load items based on request type
-    async function loadItems(type) {
-        requestItem.innerHTML = '<option value="">Loading...</option>';
-        requestItem.disabled = true;
-
-        try {
-            const endpoint = type === 'medicine' ? 'get-medicines.php' : 'get-labtests.php';
-            const response = await axios.get(`${apiBase}/${endpoint}`, {
-                params: {
-                    operation: 'getItems',
-                    json: JSON.stringify({})
-                }
-            });
-
-            if (response.data && response.data.success) {
-                const items = response.data.items || [];
-                requestItem.innerHTML = '<option value="">Select Item</option>';
-
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.name;
-                    requestItem.appendChild(option);
-                });
-
-                requestItem.disabled = false;
-            } else {
-                requestItem.innerHTML = '<option value="">No items available</option>';
-            }
-        } catch (error) {
-            console.error('Error loading items:', error);
-            requestItem.innerHTML = '<option value="">Error loading items</option>';
-        }
-    }
-
     // Event listeners
     newRequestBtn.addEventListener('click', () => {
         newRequestModal.show();
@@ -287,4 +355,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadRequests();
     await loadDoctorPatientsDropdown();
+    await loadServiceTypes();
 });

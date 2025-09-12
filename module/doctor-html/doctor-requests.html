@@ -44,45 +44,6 @@
                         </div>
                     </div>
 
-                    <!-- Filters -->
-                    <!-- <div class="col-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-3">
-                                        <label for="patientFilter" class="form-label">Patient</label>
-                                        <select class="form-select" id="patientFilter">
-                                            <option value="">All Patients</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="requestTypeFilter" class="form-label">Request Type</label>
-                                        <select class="form-select" id="requestTypeFilter">
-                                            <option value="">All Types</option>
-                                            <option value="medicine">Medicine</option>
-                                            <option value="labtest">Lab Test</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="statusFilter" class="form-label">Status</label>
-                                        <select class="form-select" id="statusFilter">
-                                            <option value="">All Status</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="approved">Approved</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="cancelled">Cancelled</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <button class="btn btn-outline-primary w-100" id="applyFiltersBtn">
-                                            <i class="fas fa-filter me-2"></i>Apply Filters
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
-
                     <!-- Requests Table -->
                     <div class="col-12">
                         <div class="card">
@@ -147,9 +108,7 @@
                             <div class="col-md-6">
                                 <label for="request_type" class="form-label">Request Type *</label>
                                 <select class="form-select" name="request_type" id="request_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="medicine">Medicine</option>
-                                    <option value="labtest">Lab Test</option>
+                                    <option value="">Loading Service Types...</option>
                                 </select>
                             </div>
                             <div class="col-md-6">

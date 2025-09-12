@@ -84,8 +84,8 @@ class Doctor_Request
             }
 
             // Fetch service type name from tbl_service_type 
-            $svcStmt = $this->pdo->prepare("SELECT name FROM tbl_service_type WHERE id = :id");
-            $svcStmt->execute([':id' => $svcTypeId]);
+            $svcStmt = $this->pdo->prepare("SELECT svc_name FROM tbl_service_type WHERE svc_type_id = :svc_type_id");
+            $svcStmt->execute([':svc_type_id' => $svcTypeId]);
             $svcRow = $svcStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$svcRow) {
@@ -108,7 +108,10 @@ class Doctor_Request
 
             // If item table exists, validate item
             if ($itemTable) {
-                $checkSql = "SELECT 1 FROM $itemTable WHERE $itemIdField = :item_id AND is_active = 1";
+                $checkSql = "
+                    SELECT 1 FROM $itemTable 
+                    WHERE $itemIdField = :item_id AND is_active = 1
+                ";
                 $checkStmt = $this->pdo->prepare($checkSql);
                 $checkStmt->execute([':item_id' => $itemId]);
                 if (!$checkStmt->fetch()) {
@@ -149,6 +152,29 @@ class Doctor_Request
             ]);
         }
     }
+
+    public function getServiceTypes()
+    {
+        try {
+            $sql = "
+                SELECT svc_type_id, svc_name 
+                FROM tbl_service_type 
+                WHERE svc_name IN ('Medication', 'Lab Test')
+                ORDER BY svc_type_id ASC";
+            $stmt = $this->pdo->query($sql);
+            $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'service_types' => $types
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch service types: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
 
 // Handle requests
@@ -174,6 +200,10 @@ switch ($operation) {
     case 'createRequest':
         $request->createRequest($data);
         break;
+    case 'getServiceTypes':
+        $request->getServiceTypes();
+        break;
+
     default:
         echo json_encode(['status' => false, 'message' => 'Invalid operation']);
         break;
