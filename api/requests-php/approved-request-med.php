@@ -57,6 +57,185 @@ class Approved_Requests
             ]);
         }
     }
+
+    private function getOrCreateInvoice($admissionId, $patientId, $userId)
+    {
+        try {
+            // 1. Look for an existing draft invoice
+            $sql = "
+            SELECT * 
+            FROM bill_invoice 
+            WHERE admission_id = :admission_id 
+                AND patient_id = :patient_id 
+                AND status = 'draft'
+            ORDER BY invoice_id DESC
+            LIMIT 1
+        ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':admission_id' => $admissionId,
+                ':patient_id'   => $patientId
+            ]);
+            $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($invoice) {
+                return $invoice['invoice_id'];
+            }
+
+            // 2. If no draft found, create new invoice
+            $sqlInsert = "
+            INSERT INTO bill_invoice 
+                (admission_id, patient_id, created_by, invoice_date, total_amount, amount_due, status)
+            VALUES 
+                (:admission_id, :patient_id, :created_by, NOW(), 0, 0, 'draft')
+        ";
+            $stmtInsert = $this->pdo->prepare($sqlInsert);
+            $stmtInsert->execute([
+                ':admission_id' => $admissionId,
+                ':patient_id'   => $patientId,
+                ':created_by'   => $userId
+            ]);
+
+            return $this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            throw new Exception("Failed to create or fetch invoice: " . $e->getMessage());
+        }
+    }
+
+    private function recalcInvoiceTotals($invoiceId)
+    {
+        $sql = "
+            UPDATE bill_invoice b
+            JOIN (
+                SELECT invoice_id,
+                    SUM(total_amount) AS new_total
+                FROM bill_invoice_items
+                WHERE invoice_id = :invoice_id
+                GROUP BY invoice_id
+            ) i ON b.invoice_id = i.invoice_id
+            SET b.total_amount = i.new_total,
+                b.amount_due   = i.new_total
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':invoice_id' => $invoiceId]);
+    }
+
+
+
+    public function dispenseRequest($requestId, $userId)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $sql = "
+                SELECT 
+                    dr.*, 
+                    m.med_id, 
+                    m.stock_quantity, 
+                    m.unit_price
+                FROM doctor_requests dr
+                JOIN tbl_medicine m ON dr.item_id = m.med_id
+                WHERE dr.request_id = :id AND dr.status = 'approved'
+            ";
+
+            // 1. Get request details
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id' => $requestId]);
+            $req = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$req) {
+                throw new Exception("Request not found or not approved");
+            }
+
+            if ($req['stock_quantity'] < $req['quantity']) {
+                throw new Exception("Insufficient stock");
+            }
+
+            // 2. Deduct stock
+            $updSql = "
+                UPDATE tbl_medicine 
+                SET stock_quantity = stock_quantity - :qty 
+                WHERE med_id = :med_id
+            ";
+
+            $upd = $this->pdo->prepare($updSql);
+            $upd->execute([
+                ':qty' => $req['quantity'],
+                ':med_id' => $req['med_id']
+            ]);
+
+            // 3. Record in patient_medication
+
+            $pmSql = "
+                INSERT INTO patient_medication (admission_id, request_id, med_id, quantity, unit_price, record_date, dispensed_by)
+                VALUES (:admission_id, :request_id, :med_id, :quantity, :unit_price, NOW(), :dispensed_by)
+            ";
+
+            $pm = $this->pdo->prepare($pmSql);
+            $pm->execute([
+                ':admission_id' => $req['admission_id'],
+                ':request_id' => $req['request_id'],
+                ':med_id' => $req['med_id'],
+                ':quantity' => $req['quantity'],
+                ':unit_price' => $req['unit_price'],
+                ':dispensed_by' => $userId
+            ]);
+            $medicationId = $this->pdo->lastInsertId();
+
+            // 4. Add invoice item
+            $invoiceId = $this->getOrCreateInvoice($req['admission_id'], $req['patient_id'], $userId);
+
+            $total = $req['quantity'] * $req['unit_price'];
+
+            $biSql = "
+                INSERT INTO bill_invoice_items (invoice_id, reference_table, reference_id, quantity, unit_price, total_amount)
+                VALUES (:invoice_id, 'patient_medication', :medication_id, :quantity, :unit_price, :total)
+            ";
+            $bi = $this->pdo->prepare($biSql);
+            $bi->execute([
+                ':invoice_id'   => $invoiceId,
+                ':medication_id' => $medicationId,
+                ':quantity'     => $req['quantity'],
+                ':unit_price'   => $req['unit_price'],
+                ':total'        => $total
+            ]);
+
+            // 4b. Update invoice header
+            $updInvoiceSql = "
+                UPDATE bill_invoice
+                SET total_amount = total_amount + :total,
+                    amount_due   = amount_due + :total
+                WHERE invoice_id = :invoice_id
+            ";
+            $updInvoice = $this->pdo->prepare($updInvoiceSql);
+            $updInvoice->execute([
+                ':total'      => $total,
+                ':invoice_id' => $invoiceId
+            ]);
+
+            // 4c. Recalculate totals (safety net)
+            $this->recalcInvoiceTotals($invoiceId);
+
+            // 5. Update doctor request status
+            $updReqSql = "
+                UPDATE doctor_requests 
+                SET status = 'completed', dispensed_by = :user_id, dispensed_date = NOW()
+                WHERE request_id = :id
+            ";
+            $updReq = $this->pdo->prepare($updReqSql);
+            $updReq->execute([
+                ':user_id' => $userId,
+                ':id' => $requestId
+            ]);
+
+            $this->pdo->commit();
+
+            echo json_encode(['success' => true, 'message' => 'Medicine dispensed successfully']);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }
 
 // Handle requests
@@ -80,7 +259,15 @@ switch ($operation) {
     case 'getApprovedRequests':
         $request->getApprovedRequests();
         break;
-
+    case 'dispenseRequest':
+        $requestId = $payload['request_id'] ?? null;
+        $userId = $_SESSION['user_id'] ?? null;
+        if ($requestId && $userId) {
+            $request->dispenseRequest($requestId, $userId);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Missing request ID or user ID']);
+        }
+        break;
     default:
         echo json_encode(['status' => false, 'message' => 'Invalid operation']);
         break;

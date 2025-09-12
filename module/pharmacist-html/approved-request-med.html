@@ -88,6 +88,62 @@
         </main>
     </div>
 
+    <!-- Dispense Modal -->
+    <div class="modal fade" id="dispenseModal" tabindex="-1" aria-labelledby="dispenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="dispenseModalLabel"><i class="fas fa-pills me-2"></i> Dispense Medicine
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dispenseForm">
+                        <input type="hidden" id="dispenseRequestId">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Doctor</label>
+                            <p id="dispenseDoctor" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Patient</label>
+                            <p id="dispensePatient" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Medicine</label>
+                            <p id="dispenseMedicine" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Quantity Requested</label>
+                                <p id="dispenseQuantity" class="form-control-plaintext"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Available Stock</label>
+                                <p id="dispenseStock" class="form-control-plaintext text-success"></p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Notes</label>
+                            <p id="dispenseNotes" class="form-control-plaintext"></p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmDispenseBtn" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i> Confirm Dispense
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>
