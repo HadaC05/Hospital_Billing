@@ -1,120 +1,93 @@
 <?php
-
-require_once __DIR__ . '/require_auth.php';
-
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Medicines
-{
-    function getMedicines()
-    {
+class MedicineAPI {
+    
+    private $pdo;
+    
+    public function __construct() {
         include 'connection-pdo.php';
-
-        $sql = "
-            SELECT 
-                m.med_id,
-                m.med_name,
-                mt.med_type_name,
-                m.unit_price,
-                m.stock_quantity,
-                m.med_unit,
-                m.is_active
-            FROM tbl_medicine m
-            JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id
-            ORDER BY m.med_name ASC
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->execute();
-        $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $response = [
-            'success' => true,
-            'medicines' => $medicines
-        ];
-
-        echo json_encode($response);
+        $this->pdo = $pdo;
     }
-
-    function addMedicine($data)
-    {
-        include 'connection-pdo.php';
-
-        $sql = "
-            INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, med_unit, is_active)
-            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :med_unit, :is_active)
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':med_name', $data['med_name']);
-        $stmt->bindParam(':med_type_id', $data['med_type_id']);
-        $stmt->bindParam(':unit_price', $data['unit_price']);
-        $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
-        $stmt->bindParam(':med_unit', $data['med_unit']);
-        $stmt->bindParam(':is_active', $data['is_active']);
-
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Medicine added']);
-        } else {
-            echo json_encode(['success' => true, 'message' => 'Insert failed']);
+    
+    /**
+     * Get all medicines
+     */
+    public function getItems() {
+        try {
+            $sql = "
+                SELECT 
+                    med_id as id,
+                    med_name as name,
+                    unit_price,
+                    stock_quantity,
+                    is_active
+                FROM tbl_medicine 
+                WHERE is_active = 1
+                ORDER BY med_name ASC
+            ";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute();
+            $medicines = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode([
+                'success' => true,
+                'items' => $medicines
+            ]);
+            
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to get medicines: ' . $e->getMessage()
+            ]);
         }
     }
-
-    function getTypes()
-    {
-        include 'connection-pdo.php';
-
-        $sql = "
-            SELECT med_type_id, med_type_name
-            FROM tbl_medicine_type
-            ORDER BY med_type_name ASC
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->execute();
-
-        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode([
-            'success' => true,
-            'types' => $types
-        ]);
-    }
-
-    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active)
-    {
-        include 'connection-pdo.php';
-
-        $sql = "
-            UPDATE tbl_medicine
-            SET med_name = :med_name,
-                med_type_id = :med_type_id,
-                unit_price = :unit_price,
-                stock_quantity = :stock_quantity,
-                med_unit = :med_unit,
-                is_active = :is_active
-            WHERE med_id = :med_id
-        ";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':med_name', $med_name);
-        $stmt->bindParam(':med_type_id', $med_type_id);
-        $stmt->bindParam(':unit_price', $unit_price);
-        $stmt->bindParam(':stock_quantity', $stock_quantity);
-        $stmt->bindParam(':med_unit', $med_unit);
-        $stmt->bindParam(':is_active', $is_active);
-        $stmt->bindParam(':med_id', $med_id);
-
-        $success = $stmt->execute();
-
-        echo json_encode([
-            'success' => $success,
-            'message' => $success ? 'Updated successfully' : 'Failed to update'
-        ]);
+    
+    /**
+     * Get medicine by ID
+     */
+    public function getMedicineById($medId) {
+        try {
+            $sql = "
+                SELECT 
+                    med_id as id,
+                    med_name as name,
+                    unit_price,
+                    stock_quantity,
+                    is_active
+                FROM tbl_medicine 
+                WHERE med_id = :med_id AND is_active = 1
+            ";
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':med_id', $medId);
+            $stmt->execute();
+            $medicine = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($medicine) {
+                echo json_encode([
+                    'success' => true,
+                    'medicine' => $medicine
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Medicine not found'
+                ]);
+            }
+            
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to get medicine: ' . $e->getMessage()
+            ]);
+        }
     }
 }
 
+// Handle requests
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
@@ -123,33 +96,23 @@ if ($method === 'GET') {
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
-
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
 }
 
 $data = json_decode($json, true);
-
-$med = new Medicines();
+$api = new MedicineAPI();
 
 switch ($operation) {
-    case 'getMedicines':
-        $med->getMedicines();
+    case 'getItems':
+        $api->getItems();
         break;
-    case 'addMedicine':
-        $med->addMedicine($data);
+    case 'getMedicineById':
+        $medId = $data['med_id'] ?? null;
+        $api->getMedicineById($medId);
         break;
-    case 'getTypes':
-        $med->getTypes();
-        break;
-    case 'updateMedicine':
-        $med_id = $data['med_id'];
-        $med_name = $data['med_name'];
-        $med_type_id = $data['med_type_id'];
-        $unit_price = $data['unit_price'];
-        $stock_quantity = $data['stock_quantity'];
-        $med_unit = $data['med_unit'];
-        $is_active = $data['is_active'];
-        $med->updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $med_unit, $is_active);
+    default:
+        echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
+?>

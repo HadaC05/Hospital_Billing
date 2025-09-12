@@ -1,0 +1,428 @@
+<?php
+
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+class LabTestManager
+{
+    private $conn;
+
+    public function __construct()
+    {
+        include '../connection-pdo.php';
+        $this->conn = $conn;
+    }
+
+    // Get all lab tests
+    public function getLabtests($params = [])
+    {
+        include '../connection-pdo.php';
+
+        // Get pagination parameters
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
+        $search = isset($params['search']) ? $params['search'] : '';
+
+        // Get filter parameters
+        $statusFilter = isset($params['statusFilter']) ? $params['statusFilter'] : '';
+        $categoryFilter = isset($params['categoryFilter']) ? $params['categoryFilter'] : '';
+
+        // Get sorting parameters
+        $sortBy = isset($params['sortBy']) ? $params['sortBy'] : 'test_name';
+        $sortOrder = isset($params['sortOrder']) ? $params['sortOrder'] : 'ASC';
+
+        // Calculate offset
+        $offset = ($page - 1) * $itemsPerPage;
+
+        // Build WHERE clause for search and filters
+        $whereConditions = [];
+        $searchParams = [];
+
+        if (!empty($search)) {
+            $whereConditions[] = "(l.test_name LIKE :search OR lc.labtest_category_name LIKE :search)";
+            $searchParams[':search'] = "%$search%";
+        }
+
+        if (!empty($statusFilter)) {
+            $whereConditions[] = "l.is_active = :statusFilter";
+            $searchParams[':statusFilter'] = $statusFilter;
+        }
+
+        if (!empty($categoryFilter)) {
+            $whereConditions[] = "l.labtest_category_id = :categoryFilter";
+            $searchParams[':categoryFilter'] = $categoryFilter;
+        }
+
+        $whereClause = '';
+        if (!empty($whereConditions)) {
+            $whereClause = "WHERE " . implode(' AND ', $whereConditions);
+        }
+
+        // Validate sort parameters
+        $allowedSortFields = ['test_name', 'labtest_category_name', 'unit_price'];
+        $allowedSortOrders = ['ASC', 'DESC'];
+
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'test_name';
+        }
+        if (!in_array(strtoupper($sortOrder), $allowedSortOrders)) {
+            $sortOrder = 'ASC';
+        }
+
+        // Build ORDER BY clause
+        $orderByClause = "ORDER BY ";
+        if ($sortBy === 'test_name') {
+            $orderByClause .= "l.test_name $sortOrder";
+        } elseif ($sortBy === 'labtest_category_name') {
+            $orderByClause .= "lc.labtest_category_name $sortOrder";
+        } elseif ($sortBy === 'unit_price') {
+            $orderByClause .= "l.unit_price $sortOrder";
+        }
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM tbl_labtest l 
+                        JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id 
+                        $whereClause";
+        $countStmt = $conn->prepare($countSql);
+        if (!empty($searchParams)) {
+            $countStmt->execute($searchParams);
+        } else {
+            $countStmt->execute();
+        }
+        $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        $sql = "
+            SELECT 
+                l.labtest_id,
+                l.test_name, 
+                l.labtest_category_id,
+                lc.labtest_category_name,
+                l.unit_price,
+                l.is_active
+            FROM tbl_labtest l
+            JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
+            $whereClause
+            $orderByClause
+            LIMIT :limit OFFSET :offset
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+
+        if (!empty($searchParams)) {
+            foreach ($searchParams as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+        }
+        $stmt->execute();
+        $labtests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Calculate pagination info
+        $totalPages = ceil($totalCount / $itemsPerPage);
+        $startIndex = $offset + 1;
+        $endIndex = min($offset + $itemsPerPage, $totalCount);
+
+        echo json_encode([
+            'success' => true,
+            'labtests' => $labtests,
+            'pagination' => [
+                'currentPage' => $page,
+                'itemsPerPage' => $itemsPerPage,
+                'totalItems' => $totalCount,
+                'totalPages' => $totalPages,
+                'startIndex' => $startIndex,
+                'endIndex' => $endIndex
+            ]
+        ]);
+    }
+
+    // Get all lab test categories
+    public function getTypes()
+    {
+        $sql = "
+            SELECT labtest_category_id, labtest_category_name, is_active
+            FROM tbl_labtest_category
+            ORDER BY labtest_category_name ASC
+        ";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'types' => $types
+        ]);
+    }
+
+    // Create new lab test
+    public function createLabtest($data)
+    {
+        try {
+            // Validate required fields
+            if (empty($data['test_name']) || empty($data['labtest_category_id']) || !isset($data['unit_price'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required fields: test_name, labtest_category_id, unit_price'
+                ]);
+                return;
+            }
+
+            // Check if test name already exists
+            $checkSql = "SELECT COUNT(*) FROM tbl_labtest WHERE test_name = :test_name";
+            $checkStmt = $this->conn->prepare($checkSql);
+            $checkStmt->bindParam(':test_name', $data['test_name']);
+            $checkStmt->execute();
+
+            if ($checkStmt->fetchColumn() > 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'A lab test with this name already exists'
+                ]);
+                return;
+            }
+
+            // Set default is_active to 1 if not provided
+            $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+            // Insert new lab test
+            $sql = "INSERT INTO tbl_labtest (test_name, labtest_category_id, unit_price, is_active) 
+                    VALUES (:test_name, :labtest_category_id, :unit_price, 1)";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':test_name', $data['test_name']);
+            $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
+            $stmt->bindParam(':unit_price', $data['unit_price']);
+
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Lab test created successfully',
+                    'labtest_id' => $this->conn->lastInsertId()
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to create lab test'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error creating lab test: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    // Update existing lab test
+    public function updateLabtest($data)
+    {
+        try {
+            // Validate required fields
+            if (empty($data['labtest_id']) || empty($data['test_name']) || empty($data['labtest_category_id']) || !isset($data['unit_price'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required fields: labtest_id, test_name, labtest_category_id, unit_price'
+                ]);
+                return;
+            }
+
+            // Check if test exists
+            $checkSql = "SELECT COUNT(*) FROM tbl_labtest WHERE labtest_id = :labtest_id";
+            $checkStmt = $this->conn->prepare($checkSql);
+            $checkStmt->bindParam(':labtest_id', $data['labtest_id']);
+            $checkStmt->execute();
+
+            if ($checkStmt->fetchColumn() == 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Lab test not found'
+                ]);
+                return;
+            }
+
+            // Check if test name already exists for another record
+            $checkNameSql = "SELECT COUNT(*) FROM tbl_labtest WHERE test_name = :test_name AND labtest_id != :labtest_id";
+            $checkNameStmt = $this->conn->prepare($checkNameSql);
+            $checkNameStmt->bindParam(':test_name', $data['test_name']);
+            $checkNameStmt->bindParam(':labtest_id', $data['labtest_id']);
+            $checkNameStmt->execute();
+
+            if ($checkNameStmt->fetchColumn() > 0) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'A lab test with this name already exists'
+                ]);
+                return;
+            }
+
+            // Update lab test
+            $sql = "UPDATE tbl_labtest 
+                    SET test_name = :test_name, 
+                        labtest_category_id = :labtest_category_id, 
+                        unit_price = :unit_price, 
+                        is_active = :is_active 
+                    WHERE labtest_id = :labtest_id";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':labtest_id', $data['labtest_id']);
+            $stmt->bindParam(':test_name', $data['test_name']);
+            $stmt->bindParam(':labtest_category_id', $data['labtest_category_id']);
+            $stmt->bindParam(':unit_price', $data['unit_price']);
+
+            // Set is_active to 1 if not provided
+            $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+            $stmt->bindParam(':is_active', $isActive);
+
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Lab test updated successfully'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to update lab test'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error updating lab test: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    // Get single lab test details
+    public function getLabtestDetails($data)
+    {
+        try {
+            if (empty($data['labtest_id'])) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Missing required field: labtest_id'
+                ]);
+                return;
+            }
+
+            $sql = "SELECT 
+                        l.labtest_id,
+                        l.test_name,
+                        l.labtest_category_id,
+                        lc.labtest_category_name,
+                        l.unit_price,
+                        l.is_active
+                    FROM tbl_labtest l
+                    JOIN tbl_labtest_category lc ON l.labtest_category_id = lc.labtest_category_id
+                    WHERE l.labtest_id = :labtest_id";
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':labtest_id', $data['labtest_id']);
+            $stmt->execute();
+
+            $labtest = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($labtest) {
+                echo json_encode([
+                    'success' => true,
+                    'labtest' => $labtest
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Lab test not found'
+                ]);
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error retrieving lab test: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+// Handle the request
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Initialize the manager
+$manager = new LabTestManager();
+
+// Parse the request data
+if ($method === 'GET') {
+    $operation = $_GET['operation'] ?? '';
+    $json = $_GET['json'] ?? '{}';
+
+    // Get pagination parameters from GET request
+    $page = $_GET['page'] ?? 1;
+    $itemsPerPage = $_GET['itemsPerPage'] ?? 10;
+    $search = $_GET['search'] ?? '';
+
+    // Get filter and sort parameters from GET request
+    $statusFilter = $_GET['statusFilter'] ?? '';
+    $categoryFilter = $_GET['categoryFilter'] ?? '';
+    $sortBy = $_GET['sortBy'] ?? 'test_name';
+    $sortOrder = $_GET['sortOrder'] ?? 'ASC';
+} else if ($method === 'POST') {
+    $body = file_get_contents("php://input");
+    $payload = json_decode($body, true);
+
+    $operation = $payload['operation'] ?? '';
+    $json = $payload['json'] ?? '{}';
+
+    // Get pagination parameters from POST request
+    $page = $payload['page'] ?? 1;
+    $itemsPerPage = $payload['itemsPerPage'] ?? 10;
+    $search = $payload['search'] ?? '';
+
+    // Get filter and sort parameters from POST request
+    $statusFilter = $payload['statusFilter'] ?? '';
+    $categoryFilter = $payload['categoryFilter'] ?? '';
+    $sortBy = $payload['sortBy'] ?? 'test_name';
+    $sortOrder = $payload['sortOrder'] ?? 'ASC';
+}
+
+$data = json_decode($json, true) ?? [];
+
+// Route the request to the appropriate method
+switch ($operation) {
+    case 'getLabtests':
+        $params = [
+            'page' => $page,
+            'itemsPerPage' => $itemsPerPage,
+            'search' => $search,
+            'statusFilter' => $statusFilter,
+            'categoryFilter' => $categoryFilter,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder
+        ];
+        $manager->getLabtests($params);
+        break;
+    case 'getTypes':
+        $manager->getTypes();
+        break;
+    case 'createLabtest':
+        $manager->createLabtest($data);
+        break;
+    case 'updateLabtest':
+        $manager->updateLabtest($data);
+        break;
+    case 'getLabtestDetails':
+        $manager->getLabtestDetails($data);
+        break;
+    default:
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid operation or operation not specified'
+        ]);
+        break;
+}
