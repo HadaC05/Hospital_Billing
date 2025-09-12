@@ -51,14 +51,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                         });
 
                         if (res.data.success) {
-                            alert("Request approved!");
+                            Swal.fire({
+                                title: 'Success',
+                                text: 'Request approved!',
+                                icon: 'success'
+                            });
                             loadPendingRequests();
                         } else {
-                            alert("Failed: " + res.data.message);
+                            Swal.fire({
+                                title: 'Failed',
+                                text: "Failed: " + res.data.message,
+                                icon: 'error'
+                            });
                         }
                     } catch (err) {
                         console.error(err);
-                        alert("Error approving request");
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error approving request',
+                            icon: 'error'
+                        });
                     }
                 });
             });
