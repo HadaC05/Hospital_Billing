@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Patients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="../../css/hospital-theme.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../js/components-js/sidebar.js" defer></script>
+    <script src="../../js/components-js/header-loader.js" defer></script>
+    <script src="../../js/utility-js/pagination-utility.js" defer></script>
+    <script src="../../js/doctor-js/doctor-merge.js" defer></script>
+    <script src="../../js/utility-js/theme-loader.js" defer></script>
+</head>
+
+<body class="d-flex flex-column vh-100">
+    <!-- Header -->
+    <div id="header-placeholder"></div>
+    <div id="page-container" class="d-flex flex-grow-1">
+        <!-- Sidebar -->
+        <div id="sidebar-placeholder"></div>
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-user-injured me-2"></i>My Patients</h2>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Admission Date</th>
+                                    <th>Patient Name</th>
+                                    <th>Room</th>
+                                    <th>Admission Reason</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mp_list"></tbody>
+                        </table>
+                    </div>
+                    <!-- pagination container  -->
+                    <div id="mp_pagination" class="mt-3"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Patient Requests Modal -->
+    <div class="modal fade" id="patientRequestsModal" tabindex="-1" aria-labelledby="patientRequestsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="patientRequestsModalLabel">Patient Requests</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Patient Info -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 id="modalPatientName" class="card-title"></h5>
+                                    <p class="card-text">
+                                        <strong>Room:</strong> <span id="modalRoomNumber"></span><br>
+                                        <strong>Admission Date:</strong> <span id="modalAdmissionDate"></span><br>
+                                        <strong>Admission Reason:</strong> <span id="modalAdmissionReason"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" id="requestTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="existing-requests-tab" data-bs-toggle="tab"
+                                data-bs-target="#existing-requests" type="button" role="tab"
+                                aria-controls="existing-requests" aria-selected="true">Existing Requests</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="new-requests-tab" data-bs-toggle="tab"
+                                data-bs-target="#new-requests" type="button" role="tab" aria-controls="new-requests"
+                                aria-selected="false">Create New Requests</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="requestTabsContent">
+                        <!-- Existing Requests Tab -->
+                        <div class="tab-pane fade show active" id="existing-requests" role="tabpanel"
+                            aria-labelledby="existing-requests-tab">
+                            <div class="table-responsive mt-3">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Request Date</th>
+                                            <th>Type</th>
+                                            <th>Item</th>
+                                            <th>Quantity</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="existingRequestsList">
+                                        <!-- Existing requests will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- New Requests Tab -->
+                        <div class="tab-pane fade" id="new-requests" role="tabpanel" aria-labelledby="new-requests-tab">
+                            <div class="mt-3">
+                                <form id="newRequestsForm">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="newRequestsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Service Type</th>
+                                                    <th>Item</th>
+                                                    <th>Quantity</th>
+                                                    <th>Notes</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Initial row -->
+                                                <tr>
+                                                    <td>
+                                                        <select class="form-select service-type-select" required>
+                                                            <option value="">Select Type</option>
+                                                            <!-- Service types will be loaded here -->
+                                                            <option value="4">Medication</option>
+                                                            <option value="3">Lab Test</option>
+                                                            <option value="2">Surgery</option>
+                                                            <option value="5">Treatment</option>
+                                                            <option value="1">Room</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <select class="form-select item-select" required disabled>
+                                                            <option value="">Select Type First</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="number" class="form-control quantity-input" min="1"
+                                                            value="1" required>
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" class="form-control notes-input"
+                                                            placeholder="Optional notes">
+                                                    </td>
+                                                    <td>
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-danger remove-row-btn" disabled>
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <button type="button" class="btn btn-success" id="addRequestRowBtn">
+                                            <i class="fas fa-plus"></i> Add Row
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">Submit Requests</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
