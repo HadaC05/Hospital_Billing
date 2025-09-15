@@ -105,20 +105,25 @@ class Approved_Requests
 
     private function recalcInvoiceTotals($invoiceId)
     {
-        $sql = "
-            UPDATE bill_invoice b
-            JOIN (
-                SELECT invoice_id,
-                    SUM(total_amount) AS new_total
-                FROM bill_invoice_items
-                WHERE invoice_id = :invoice_id
-                GROUP BY invoice_id
-            ) i ON b.invoice_id = i.invoice_id
-            SET b.total_amount = i.new_total,
-                b.amount_due   = i.new_total
-        ";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':invoice_id' => $invoiceId]);
+        try {
+            $sql = "
+                UPDATE bill_invoice b
+                JOIN (
+                    SELECT invoice_id,
+                        SUM(total_amount) AS new_total
+                    FROM bill_invoice_items
+                    WHERE invoice_id = :invoice_id
+                    GROUP BY invoice_id
+                ) i ON b.invoice_id = i.invoice_id
+                SET b.total_amount = i.new_total,
+                    b.amount_due   = i.new_total
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':invoice_id' => $invoiceId]);
+        } catch (PDOException $e) {
+            error_log("Recalc Invoice Totals Error: " . $e->getMessage());
+            throw new Exception("Failed to recalculate invoice totals: " . $e->getMessage());
+        }
     }
 
 
@@ -133,10 +138,12 @@ class Approved_Requests
                     dr.*, 
                     m.med_id, 
                     m.stock_quantity, 
-                    m.unit_price
+                    m.unit_price,
+                    pa.admission_id
                 FROM doctor_requests dr
                 JOIN tbl_medicine m ON dr.item_id = m.med_id
-                WHERE dr.request_id = :id AND dr.status = 'approved'
+                JOIN patient_admission pa ON dr.patient_id = pa.patient_id AND dr.doctor_id = pa.doctor_id
+                WHERE dr.request_id = :id AND dr.status = 'approved' AND pa.status = 'active'
             ";
 
             // 1. Get request details
@@ -189,12 +196,13 @@ class Approved_Requests
             $total = $req['quantity'] * $req['unit_price'];
 
             $biSql = "
-                INSERT INTO bill_invoice_items (invoice_id, reference_table, reference_id, quantity, unit_price, total_amount)
-                VALUES (:invoice_id, 'patient_medication', :medication_id, :quantity, :unit_price, :total)
+                INSERT INTO bill_invoice_items (invoice_id, svc_type_id, reference_table, reference_id, quantity, unit_price, total_amount)
+                VALUES (:invoice_id, :svc_type_id, 'patient_medication', :medication_id, :quantity, :unit_price, :total)
             ";
             $bi = $this->pdo->prepare($biSql);
             $bi->execute([
                 ':invoice_id'   => $invoiceId,
+                ':svc_type_id'  => $req['svc_type_id'],
                 ':medication_id' => $medicationId,
                 ':quantity'     => $req['quantity'],
                 ':unit_price'   => $req['unit_price'],
@@ -220,7 +228,7 @@ class Approved_Requests
             // 5. Update doctor request status
             $updReqSql = "
                 UPDATE doctor_requests 
-                SET status = 'completed', dispensed_by = :user_id, dispensed_date = NOW()
+                SET status = 'completed', completed_by = :user_id, completed_date = NOW()
                 WHERE request_id = :id
             ";
             $updReq = $this->pdo->prepare($updReqSql);
@@ -231,10 +239,15 @@ class Approved_Requests
 
             $this->pdo->commit();
 
-            echo json_encode(['success' => true, 'message' => 'Medicine dispensed successfully']);
+            echo json_encode(['success' => true, 'message' => 'Medicine dispensed successfu lly']);
         } catch (Exception $e) {
             $this->pdo->rollBack();
+            error_log("Dispense Request Error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Dispense Request PDO Error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
         }
     }
 }
