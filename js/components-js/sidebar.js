@@ -113,11 +113,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../placeholder-html/doctor-prescription.html',
             icon: 'fas fa-prescription-bottle'
         },
-        doctor_my_patients: {
-            label: 'My Patients',
-            link: '../doctor-html/my-patients.html',
-            icon: 'fas fa-user-injured'
-        },
         biller_dashboard: {
             label: 'Biller Dashboard',
             link: '../dashboard-html/biller-dashboard.html',
@@ -145,7 +140,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         doctor_requests: {
             label: 'Doctor Requests',
-            link: '../doctor-html/doctor-requests.html',
+            link: '../doctor-html/doctor-merge.html',
             icon: 'fas fa-prescription-bottle-alt'
         },
         pending_request_med: {
@@ -158,11 +153,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../pharmacist-html/approved-request-med.html',
             icon: 'fas fa-pills'
         }
-        // request_management: {
-        //     label: 'Request Management',
-        //     link: '../placeholder-html/request-management.html',
-        //     icon: 'fas fa-tasks'
-        // },
     };
 
     const inventoryMap = {
@@ -287,7 +277,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add doctor-only links
         if (isDoctor) {
-            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_my_patients, moduleMap.doctor_requests];
+            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_requests];
             doctorLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);

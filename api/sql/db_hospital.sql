@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 12, 2025 at 10:22 PM
+-- Generation Time: Sep 15, 2025 at 05:54 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -39,6 +39,18 @@ CREATE TABLE `bill_invoice` (
   `status` enum('draft','pending','approved','paid','partial','cancelled') NOT NULL DEFAULT 'draft'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `bill_invoice`
+--
+
+INSERT INTO `bill_invoice` (`invoice_id`, `admission_id`, `patient_id`, `created_by`, `invoice_date`, `insurance_covered_amount`, `total_amount`, `amount_due`, `status`) VALUES
+(1, 24, 26, 5, '2025-09-13 09:30:19', NULL, 25.50, 25.50, 'draft'),
+(2, 26, 28, 5, '2025-09-13 09:56:54', NULL, 8.00, 0.00, 'paid'),
+(3, 24, 26, 1, '2025-09-13 00:00:00', 0.00, 1025.50, 1025.50, 'draft'),
+(4, 25, 27, 1, '2025-09-13 00:00:00', 0.00, 2200.00, 2200.00, 'draft'),
+(5, 28, 30, 5, '2025-09-13 10:52:25', NULL, 5.00, 0.00, 'paid'),
+(6, 28, 30, 9, '2025-09-13 00:00:00', 0.00, 1005.00, 1005.00, 'draft');
+
 -- --------------------------------------------------------
 
 --
@@ -58,6 +70,20 @@ CREATE TABLE `bill_invoice_items` (
   `patient_payable` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `bill_invoice_items`
+--
+
+INSERT INTO `bill_invoice_items` (`invo_item_id`, `invoice_id`, `svc_type_id`, `quantity`, `unit_price`, `total_amount`, `reference_table`, `reference_id`, `coverage_amount`, `patient_payable`) VALUES
+(1, 1, 4, 3.00, 8.50, 25.50, 'patient_medication', 1, NULL, NULL),
+(2, 2, 4, 2.00, 4.00, 8.00, 'patient_medication', 2, NULL, NULL),
+(3, 3, 1, 1.00, 1000.00, 1000.00, '', 13, 0.00, 1000.00),
+(4, 3, 4, 3.00, 8.50, 25.50, 'patient_medication', 1, 0.00, 25.50),
+(5, 4, 1, 1.00, 2200.00, 2200.00, '', 14, 0.00, 2200.00),
+(6, 5, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, NULL, NULL),
+(7, 6, 1, 1.00, 1000.00, 1000.00, '', 16, 0.00, 1000.00),
+(8, 6, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, 0.00, 5.00);
+
 -- --------------------------------------------------------
 
 --
@@ -74,6 +100,14 @@ CREATE TABLE `bill_payment` (
   `status` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `bill_payment`
+--
+
+INSERT INTO `bill_payment` (`payment_id`, `invoice_id`, `received_by`, `amount`, `payment_method_id`, `payment_date`, `status`) VALUES
+(1, 2, 9, 8.00, 1, '2025-09-13', 'completed'),
+(2, 5, 8, 5.00, 1, '2025-09-13', 'completed');
+
 -- --------------------------------------------------------
 
 --
@@ -85,6 +119,13 @@ CREATE TABLE `bill_payment_method` (
   `method_name` varchar(100) NOT NULL,
   `isActive` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bill_payment_method`
+--
+
+INSERT INTO `bill_payment_method` (`payment_method_id`, `method_name`, `isActive`) VALUES
+(1, 'Cash', 1);
 
 -- --------------------------------------------------------
 
@@ -106,7 +147,7 @@ CREATE TABLE `doctor_requests` (
   `approved_by` int(11) DEFAULT NULL,
   `approved_date` timestamp NULL DEFAULT NULL,
   `completed_by` int(11) DEFAULT NULL,
-  `completed_date` timestamp NULL DEFAULT NULL,
+  `completed_date` datetime DEFAULT NULL,
   `cancelled_by` int(11) DEFAULT NULL,
   `cancelled_date` timestamp NULL DEFAULT NULL,
   `cancellation_reason` text DEFAULT NULL
@@ -117,13 +158,21 @@ CREATE TABLE `doctor_requests` (
 --
 
 INSERT INTO `doctor_requests` (`request_id`, `doctor_id`, `patient_id`, `svc_type_id`, `request_type`, `item_id`, `quantity`, `notes`, `status`, `request_date`, `approved_by`, `approved_date`, `completed_by`, `completed_date`, `cancelled_by`, `cancelled_date`, `cancellation_reason`) VALUES
-(1, 2, 2, 4, 'medicine', 1, 2, 'Patient needs pain relief', 'pending', '2025-09-11 02:52:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(1, 2, 2, 4, 'medicine', 1, 2, 'Patient needs pain relief', 'cancelled', '2025-09-11 02:52:29', 5, '2025-09-12 20:27:43', NULL, NULL, NULL, '2025-09-15 13:42:33', NULL),
 (2, 2, 3, 3, 'labtest', 1, 1, 'Routine blood work', 'approved', '2025-09-11 02:52:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (3, 12, 4, 4, 'medicine', 3, 1, 'Fever management', 'completed', '2025-09-11 02:52:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (4, 2, 6, 3, 'labtest', 2, 1, 'Check hemoglobin levels', 'pending', '2025-09-11 02:52:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (5, 2, 24, 3, 'medicine', 14, 1, 'test', 'pending', '2025-09-12 14:58:47', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (6, 2, 9, 4, 'medicine', 6, 2, 'test', 'pending', '2025-09-12 15:17:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(7, 2, 21, 4, 'medicine', 3, 3, 'test', 'approved', '2025-09-12 15:21:23', 5, '2025-09-12 18:26:27', NULL, NULL, NULL, NULL, NULL);
+(7, 2, 21, 4, 'medicine', 3, 3, 'test', 'approved', '2025-09-12 15:21:23', 5, '2025-09-12 18:26:27', NULL, NULL, NULL, NULL, NULL),
+(8, 2, 26, 4, 'medicine', 1, 3, 'samaran', 'completed', '2025-09-13 01:29:45', 5, '2025-09-13 01:30:07', 5, '2025-09-13 09:30:19', NULL, NULL, NULL),
+(9, 27, 27, 4, 'medicine', 3, 3, 'test ', 'pending', '2025-09-13 01:44:36', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(10, 2, 24, 4, 'medicine', 10, 5, 'test', 'pending', '2025-09-13 01:46:46', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(11, 2, 28, 4, 'medicine', 4, 2, 'test', 'completed', '2025-09-13 01:55:47', 5, '2025-09-13 01:56:23', 5, '2025-09-13 09:56:54', NULL, NULL, NULL),
+(12, 2, 30, 4, 'medicine', 3, 2, 'test', 'completed', '2025-09-13 02:46:31', 5, '2025-09-13 02:51:36', 5, '2025-09-13 10:52:26', NULL, NULL, NULL),
+(13, 2, 26, 4, 'medicine', 10, 1, 'test', 'approved', '2025-09-15 13:21:50', 5, '2025-09-15 13:22:08', NULL, NULL, NULL, NULL, NULL),
+(14, 2, 26, 4, 'medicine', 11, 2, 'test 2', 'cancelled', '2025-09-15 13:21:50', NULL, NULL, NULL, NULL, NULL, '2025-09-15 13:23:43', NULL),
+(15, 2, 26, 3, 'medicine', 2, 1, 'test', 'cancelled', '2025-09-15 13:37:29', NULL, NULL, NULL, NULL, NULL, '2025-09-15 13:37:42', NULL);
 
 -- --------------------------------------------------------
 
@@ -201,6 +250,37 @@ INSERT INTO `insurance_provider` (`provider_id`, `provider_name`, `prov_email`, 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `medicine_dispensed`
+--
+
+CREATE TABLE `medicine_dispensed` (
+  `dispensed_id` int(11) NOT NULL,
+  `batch_id` int(11) NOT NULL,
+  `med_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `dispensed_by` int(11) NOT NULL,
+  `dispensed_date` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `medicine_returned`
+--
+
+CREATE TABLE `medicine_returned` (
+  `return_id` int(11) NOT NULL,
+  `dispensed_id` int(11) NOT NULL,
+  `med_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `returned_by` int(11) NOT NULL,
+  `return_date` datetime DEFAULT current_timestamp(),
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `patients`
 --
 
@@ -239,7 +319,13 @@ INSERT INTO `patients` (`patient_id`, `first_name`, `last_name`, `middle_name`, 
 (21, 'Chris', 'Grimmie', '', '1993-12-05', 'us', '09123456789', '', '', 'Male', 'Widowed'),
 (22, 'Test', 'Success', '', '2001-01-01', 'us', '09161829384', '', '', 'Other', 'Married'),
 (23, 'test', 'success', '', '2001-01-01', 'phil', '09128475647', '', '', 'Male', 'Single'),
-(24, 'Juan', 'Cruz', '', '2010-01-01', 'Cagayan de oro city', '09161234567', 'childtest@email.com', '', 'Male', 'Single');
+(24, 'Juan', 'Cruz', '', '2010-01-01', 'Cagayan de oro city', '09161234567', 'childtest@email.com', '', 'Male', 'Single'),
+(25, 'lim', 'mae', 'trisha', '2005-10-11', '', '09988765432', '', '', 'Female', 'Single'),
+(26, 'cc', 'cc', 'cc', '2005-10-11', 'zone 1', '09977665432', '', '', 'Male', 'Single'),
+(27, 'Raya', 'Ramos', 'l', '2003-09-23', 'balahsuih', '09474072712', 'ray.@gmail.com', '', 'Female', 'Single'),
+(28, 'bebe', 'bayaga', '', '2000-09-12', 'st.libog santa maria', '09827651321', 'bebe.@gmail.com', '', 'Female', 'Single'),
+(29, 'shasha', 'kim', 'l', '2000-02-01', 'zone9', '09979361067', 'sha@gmail.com', '', 'Female', ''),
+(30, 'Trish', 'Limm', '', '2004-01-01', 'cdo', '09123456789', '', '', 'Female', 'Single');
 
 -- --------------------------------------------------------
 
@@ -279,7 +365,13 @@ INSERT INTO `patient_admission` (`admission_id`, `patient_id`, `doctor_id`, `adm
 (19, 21, 2, 1, '2025-09-10 00:00:00', NULL, 'test guardian', 'active'),
 (20, 22, 2, 1, '2025-09-10 00:00:00', NULL, 'test success', 'active'),
 (21, 23, 42, 1, '2025-09-10 00:00:00', NULL, 'test success', 'active'),
-(22, 24, 2, 1, '2025-09-11 00:00:00', NULL, 'test', 'active');
+(22, 24, 2, 1, '2025-09-11 00:00:00', NULL, 'test', 'active'),
+(23, 25, 42, 11, '2025-09-13 00:00:00', NULL, 'mental', 'active'),
+(24, 26, 2, 1, '2025-09-13 00:00:00', NULL, 'test', 'active'),
+(25, 27, 27, 11, '2025-09-15 00:00:00', NULL, 'headache', 'active'),
+(26, 28, 2, 11, '2025-09-09 00:00:00', NULL, 'sakit sa tiyan', 'active'),
+(27, 29, 2, 11, '2025-09-13 00:00:00', NULL, 'allergy', 'active'),
+(28, 30, 2, 11, '2025-09-13 00:00:00', NULL, 'manganak', 'active');
 
 -- --------------------------------------------------------
 
@@ -317,7 +409,13 @@ INSERT INTO `patient_emergency_contact` (`contact_id`, `patient_id`, `first_name
 (10, 21, 'Mary', '', 'Grimmie', '', 'Mother', '09123456799', '', 'us'),
 (11, 22, 'test', '', 'test', '', 'Father', '09161829355', '', 'us'),
 (12, 23, 'test', '', 'test', '', 'Mother', '09128475622', '', 'phil'),
-(13, 24, 'Julius', '', 'Cruz', '', 'Father', '09161234555', 'father@email.com', 'Cagayan de oro city');
+(13, 24, 'Julius', '', 'Cruz', '', 'Father', '09161234555', 'father@email.com', 'Cagayan de oro city'),
+(14, 25, 'mama', 'mama', 'mama', '', 'mama', '09987654321', 'mama@gmail.com', 'patag'),
+(15, 26, 'papa', 'papa', 'papa', '', 'papa', '09987654321', 'papa@gmail.com', 'zone 1'),
+(16, 27, 'yaya', 'l', 'akal', '', 'mother', '09187264536', 'ya.@gmail.com', 'jhyuugasvajjh'),
+(17, 28, 'Lara', 'l', 'bagaya', '', 'sister', '09876584374', '', 'st.libog santa maria'),
+(18, 29, '', '', '', '', '', '', '', ''),
+(19, 30, 'Khen', '', 'Adora', '', 'Boyfriend', '09123456788', '', 'cdo');
 
 -- --------------------------------------------------------
 
@@ -371,6 +469,33 @@ CREATE TABLE `patient_medication` (
   `unit_price` decimal(10,2) NOT NULL,
   `record_date` datetime NOT NULL DEFAULT current_timestamp(),
   `dispensed_by` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_medication`
+--
+
+INSERT INTO `patient_medication` (`medication_id`, `admission_id`, `request_id`, `med_id`, `quantity`, `unit_price`, `record_date`, `dispensed_by`) VALUES
+(1, 24, 8, 1, 3.00, 8.50, '2025-09-13 09:30:19', 5),
+(2, 26, 11, 4, 2.00, 4.00, '2025-09-13 09:56:54', 5),
+(3, 28, 12, 3, 2.00, 2.50, '2025-09-13 10:52:25', 5);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_medicine_administered`
+--
+
+CREATE TABLE `patient_medicine_administered` (
+  `medication_id` int(11) NOT NULL,
+  `dispensed_id` int(11) NOT NULL,
+  `admission_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `med_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `administered_by` int(11) NOT NULL,
+  `record_date` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -454,6 +579,37 @@ CREATE TABLE `request_medicine` (
   `dosage` varchar(50) DEFAULT NULL,
   `pharmacist_id` int(11) NOT NULL,
   `dispensed_date` date DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `request_medicine_batch`
+--
+
+CREATE TABLE `request_medicine_batch` (
+  `batch_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `admission_id` int(11) NOT NULL,
+  `request_date` datetime DEFAULT current_timestamp(),
+  `status` enum('pending','approved','dispensed','completed','cancelled') DEFAULT 'pending',
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `request_medicine_items`
+--
+
+CREATE TABLE `request_medicine_items` (
+  `item_id` int(11) NOT NULL,
+  `batch_id` int(11) NOT NULL,
+  `med_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `notes` text DEFAULT NULL,
+  `status` enum('pending','dispensed','returned','administered') DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -720,7 +876,6 @@ CREATE TABLE `tbl_medicine` (
   `med_name` varchar(100) NOT NULL,
   `med_type_id` int(11) NOT NULL,
   `is_active` tinyint(1) NOT NULL,
-  `stock_quantity` int(11) DEFAULT 0,
   `unit_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -728,33 +883,33 @@ CREATE TABLE `tbl_medicine` (
 -- Dumping data for table `tbl_medicine`
 --
 
-INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `is_active`, `stock_quantity`, `unit_id`) VALUES
-(1, 8.50, 'Amoxicillin', 1, 1, 25, 1),
-(2, 18.00, 'Cefuroxime', 1, 1, 25, 1),
-(3, 2.50, 'Paracetamol', 2, 1, 25, 1),
-(4, 4.00, 'Ibuprofen', 2, 1, 25, 1),
-(5, 5.00, 'Mefenamic Acid', 2, 1, 25, 1),
-(6, 10.00, 'Aluminum Hydroxide', 4, 1, 10, 1),
-(7, 6.50, 'Cetirizine', 5, 1, 25, 1),
-(8, 25.00, 'Povidone Iodine', 6, 1, 25, 1),
-(9, 15.00, 'Salbutamol', 7, 1, 25, 1),
-(10, 12.00, 'Acyclovir', 8, 1, 35, 6),
-(11, 5.00, 'Metformin', 3, 1, 50, 1),
-(12, 5.00, 'Omeprazole', 4, 1, 25, 1),
-(13, 25.00, 'test22', 1, 0, 25, 1),
-(14, 10.00, 'test', 2, 0, 10, 1),
-(15, 10.00, 'sample', 7, 0, 10, 1),
-(16, 10.00, 'sample2', 4, 0, 10, 1),
-(17, 11.00, 'sample3', 1, 0, 11, 1),
-(18, 11.00, 'z', 37, 0, 25, 5),
-(19, 1.00, 'testtesttest', 2, 0, 12, 4),
-(20, 12.00, 'zz', 4, 0, 33, 3),
-(21, 111.00, 'zzz', 37, 0, 2, 7),
-(22, 12.00, 'zzzz', 25, 0, 44, 3),
-(23, 11.00, 'zzzzz', 12, 0, 22, 2),
-(24, 11.00, 'x', 1, 0, 22, 6),
-(25, 11.00, 'xx', 37, 0, 22, 4),
-(26, 7.00, 'xxx', 1, 0, 11, 4);
+INSERT INTO `tbl_medicine` (`med_id`, `unit_price`, `med_name`, `med_type_id`, `is_active`, `unit_id`) VALUES
+(1, 8.50, 'Amoxicillin', 1, 1, 1),
+(2, 18.00, 'Cefuroxime', 1, 1, 1),
+(3, 2.50, 'Paracetamol', 2, 1, 1),
+(4, 4.00, 'Ibuprofen', 2, 1, 1),
+(5, 5.00, 'Mefenamic Acid', 2, 1, 1),
+(6, 10.00, 'Aluminum Hydroxide', 4, 1, 1),
+(7, 6.50, 'Cetirizine', 5, 1, 1),
+(8, 25.00, 'Povidone Iodine', 6, 1, 1),
+(9, 15.00, 'Salbutamol', 7, 1, 1),
+(10, 12.00, 'Acyclovir', 8, 1, 6),
+(11, 5.00, 'Metformin', 3, 1, 1),
+(12, 5.00, 'Omeprazole', 4, 1, 1),
+(13, 25.00, 'test22', 1, 0, 1),
+(14, 10.00, 'test', 2, 0, 1),
+(15, 10.00, 'sample', 7, 0, 1),
+(16, 10.00, 'sample2', 4, 0, 1),
+(17, 11.00, 'sample3', 1, 0, 1),
+(18, 11.00, 'z', 37, 0, 5),
+(19, 1.00, 'testtesttest', 2, 0, 4),
+(20, 12.00, 'zz', 4, 0, 3),
+(21, 111.00, 'zzz', 37, 0, 7),
+(22, 12.00, 'zzzz', 25, 0, 3),
+(23, 11.00, 'zzzzz', 12, 0, 2),
+(24, 11.00, 'x', 1, 0, 6),
+(25, 11.00, 'xx', 37, 0, 4),
+(26, 7.00, 'xxx', 1, 0, 4);
 
 -- --------------------------------------------------------
 
@@ -905,7 +1060,11 @@ INSERT INTO `tbl_room_stay` (`room_stay_id`, `admission_id`, `room_id`, `start_d
 (9, 19, 2, '2025-09-10', NULL, 0.00, 1),
 (10, 20, 3, '2025-09-10', NULL, 0.00, 1),
 (11, 21, 5, '2025-09-10', NULL, 0.00, 1),
-(12, 22, 10, '2025-09-12', NULL, 0.00, 1);
+(12, 22, 10, '2025-09-12', NULL, 0.00, 1),
+(13, 24, 10, '2025-09-13', NULL, 0.00, 1),
+(14, 25, 4, '2025-09-13', NULL, 0.00, 11),
+(15, 26, 4, '2025-09-13', NULL, 0.00, 11),
+(16, 28, 6, '2025-09-13', NULL, 0.00, 11);
 
 -- --------------------------------------------------------
 
@@ -1529,8 +1688,6 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 9, 1),
 (1, 10, 1),
 (1, 11, 1),
-(1, 12, 1),
-(1, 13, 1),
 (1, 14, 1),
 (1, 15, 1),
 (1, 18, 1),
@@ -1538,9 +1695,7 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (1, 20, 1),
 (1, 21, 1),
 (2, 4, 1),
-(2, 12, 1),
 (2, 27, 1),
-(2, 28, 1),
 (4, 5, 1),
 (4, 12, 1),
 (4, 21, 1),
@@ -1689,6 +1844,24 @@ ALTER TABLE `insurance_provider`
   ADD PRIMARY KEY (`provider_id`);
 
 --
+-- Indexes for table `medicine_dispensed`
+--
+ALTER TABLE `medicine_dispensed`
+  ADD PRIMARY KEY (`dispensed_id`),
+  ADD KEY `fk_dispensed_batch` (`batch_id`),
+  ADD KEY `fk_dispensed_med` (`med_id`),
+  ADD KEY `fk_dispensed_user` (`dispensed_by`);
+
+--
+-- Indexes for table `medicine_returned`
+--
+ALTER TABLE `medicine_returned`
+  ADD PRIMARY KEY (`return_id`),
+  ADD KEY `fk_return_dispensed` (`dispensed_id`),
+  ADD KEY `fk_return_medicine` (`med_id`),
+  ADD KEY `fk_return_user` (`returned_by`);
+
+--
 -- Indexes for table `patients`
 --
 ALTER TABLE `patients`
@@ -1735,6 +1908,17 @@ ALTER TABLE `patient_medication`
   ADD KEY `dispensed_by` (`dispensed_by`);
 
 --
+-- Indexes for table `patient_medicine_administered`
+--
+ALTER TABLE `patient_medicine_administered`
+  ADD PRIMARY KEY (`medication_id`),
+  ADD KEY `fk_med_dispensed` (`dispensed_id`),
+  ADD KEY `fk_med_admission` (`admission_id`),
+  ADD KEY `fk_med_patient` (`patient_id`),
+  ADD KEY `fk_med_medicine` (`med_id`),
+  ADD KEY `fk_med_user` (`administered_by`);
+
+--
 -- Indexes for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -1774,6 +1958,23 @@ ALTER TABLE `request_medicine`
   ADD KEY `request_id` (`request_id`),
   ADD KEY `med_id` (`med_id`),
   ADD KEY `pharmacist_id` (`pharmacist_id`);
+
+--
+-- Indexes for table `request_medicine_batch`
+--
+ALTER TABLE `request_medicine_batch`
+  ADD PRIMARY KEY (`batch_id`),
+  ADD KEY `fk_batch_doctor` (`doctor_id`),
+  ADD KEY `fk_batch_patient` (`patient_id`),
+  ADD KEY `fk_batch_admission` (`admission_id`);
+
+--
+-- Indexes for table `request_medicine_items`
+--
+ALTER TABLE `request_medicine_items`
+  ADD PRIMARY KEY (`item_id`),
+  ADD KEY `fk_item_batch` (`batch_id`),
+  ADD KEY `fk_item_medicine` (`med_id`);
 
 --
 -- Indexes for table `request_notifications`
@@ -2077,31 +2278,31 @@ ALTER TABLE `user_therapist_specialty`
 -- AUTO_INCREMENT for table `bill_invoice`
 --
 ALTER TABLE `bill_invoice`
-  MODIFY `invoice_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `invoice_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `bill_invoice_items`
 --
 ALTER TABLE `bill_invoice_items`
-  MODIFY `invo_item_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `invo_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `bill_payment`
 --
 ALTER TABLE `bill_payment`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `bill_payment_method`
 --
 ALTER TABLE `bill_payment_method`
-  MODIFY `payment_method_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `payment_method_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `doctor_requests`
 --
 ALTER TABLE `doctor_requests`
-  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `insurance_claim`
@@ -2128,22 +2329,34 @@ ALTER TABLE `insurance_provider`
   MODIFY `provider_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `medicine_dispensed`
+--
+ALTER TABLE `medicine_dispensed`
+  MODIFY `dispensed_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `medicine_returned`
+--
+ALTER TABLE `medicine_returned`
+  MODIFY `return_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `patient_admission`
 --
 ALTER TABLE `patient_admission`
-  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `admission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `patient_emergency_contact`
 --
 ALTER TABLE `patient_emergency_contact`
-  MODIFY `contact_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `contact_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `patient_guardian`
@@ -2161,6 +2374,12 @@ ALTER TABLE `patient_labtest`
 -- AUTO_INCREMENT for table `patient_medication`
 --
 ALTER TABLE `patient_medication`
+  MODIFY `medication_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `patient_medicine_administered`
+--
+ALTER TABLE `patient_medicine_administered`
   MODIFY `medication_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -2186,6 +2405,18 @@ ALTER TABLE `request_labtest`
 --
 ALTER TABLE `request_medicine`
   MODIFY `medicine_request_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `request_medicine_batch`
+--
+ALTER TABLE `request_medicine_batch`
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `request_medicine_items`
+--
+ALTER TABLE `request_medicine_items`
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
@@ -2275,7 +2506,7 @@ ALTER TABLE `tbl_room`
 -- AUTO_INCREMENT for table `tbl_room_stay`
 --
 ALTER TABLE `tbl_room_stay`
-  MODIFY `room_stay_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `room_stay_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `tbl_room_type`
@@ -2475,6 +2706,22 @@ ALTER TABLE `insurance_policy_coverage`
   ADD CONSTRAINT `fk_policy_coverage_2` FOREIGN KEY (`coverage_type_id`) REFERENCES `tbl_coverage_type` (`coverage_type_id`);
 
 --
+-- Constraints for table `medicine_dispensed`
+--
+ALTER TABLE `medicine_dispensed`
+  ADD CONSTRAINT `fk_dispensed_batch` FOREIGN KEY (`batch_id`) REFERENCES `request_medicine_batch` (`batch_id`),
+  ADD CONSTRAINT `fk_dispensed_med` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
+  ADD CONSTRAINT `fk_dispensed_user` FOREIGN KEY (`dispensed_by`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `medicine_returned`
+--
+ALTER TABLE `medicine_returned`
+  ADD CONSTRAINT `fk_return_dispensed` FOREIGN KEY (`dispensed_id`) REFERENCES `medicine_dispensed` (`dispensed_id`),
+  ADD CONSTRAINT `fk_return_medicine` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
+  ADD CONSTRAINT `fk_return_user` FOREIGN KEY (`returned_by`) REFERENCES `users` (`user_id`);
+
+--
 -- Constraints for table `patient_admission`
 --
 ALTER TABLE `patient_admission`
@@ -2511,6 +2758,16 @@ ALTER TABLE `patient_medication`
   ADD CONSTRAINT `patient_medication_ibfk_4` FOREIGN KEY (`dispensed_by`) REFERENCES `users` (`user_id`);
 
 --
+-- Constraints for table `patient_medicine_administered`
+--
+ALTER TABLE `patient_medicine_administered`
+  ADD CONSTRAINT `fk_med_admission` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
+  ADD CONSTRAINT `fk_med_dispensed` FOREIGN KEY (`dispensed_id`) REFERENCES `medicine_dispensed` (`dispensed_id`),
+  ADD CONSTRAINT `fk_med_medicine` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
+  ADD CONSTRAINT `fk_med_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`),
+  ADD CONSTRAINT `fk_med_user` FOREIGN KEY (`administered_by`) REFERENCES `users` (`user_id`);
+
+--
 -- Constraints for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -2544,6 +2801,21 @@ ALTER TABLE `request_medicine`
   ADD CONSTRAINT `request_medicine_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `request_service` (`request_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `request_medicine_ibfk_2` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
   ADD CONSTRAINT `request_medicine_ibfk_3` FOREIGN KEY (`pharmacist_id`) REFERENCES `user_pharmacist` (`pharmacist_id`);
+
+--
+-- Constraints for table `request_medicine_batch`
+--
+ALTER TABLE `request_medicine_batch`
+  ADD CONSTRAINT `fk_batch_admission` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
+  ADD CONSTRAINT `fk_batch_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `user_doctor` (`doctor_id`),
+  ADD CONSTRAINT `fk_batch_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`);
+
+--
+-- Constraints for table `request_medicine_items`
+--
+ALTER TABLE `request_medicine_items`
+  ADD CONSTRAINT `fk_item_batch` FOREIGN KEY (`batch_id`) REFERENCES `request_medicine_batch` (`batch_id`),
+  ADD CONSTRAINT `fk_item_medicine` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`);
 
 --
 -- Constraints for table `request_notifications`
