@@ -78,11 +78,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../placeholder-html/role-settings.html',
             icon: 'fas fa-user-shield'
         },
-        view_admissions: {
-            label: 'Admission Records',
-            link: '../placeholder-html/admission-records.html',
-            icon: 'fas fa-clipboard-list'
-        },
         edit_admissions: {
             label: 'Admission Editor',
             link: '../admission-html/patient-admission.html',

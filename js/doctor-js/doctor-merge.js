@@ -148,34 +148,122 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             const statusBadge = getStatusBadge(request.status);
 
+            // For medicine batches, show a view details button
+            let actionButton = '';
+            if (request.request_type === 'medicine_batch') {
+                actionButton = `
+                    <button class="btn btn-sm btn-outline-info view-batch-btn" data-request-id="${request.request_id}">
+                        View Details
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" data-request-id="${request.request_id}">
+                        Cancel Batch
+                    </button>
+                `;
+            } else {
+                actionButton = `
+                    <button class="btn btn-sm btn-outline-danger cancel-request-btn" data-request-id="${request.request_id}">
+                        Cancel
+                    </button>
+                `;
+            }
+
             row.innerHTML = `
                 <td>${formatDate(request.request_date)}</td>
                 <td>${safe(request.svc_name)}</td>
                 <td>${safe(request.item_name || '-')}</td>
-                <td>${safe(request.quantity)}</td>
+                <td>-</td>
                 <td>${statusBadge}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn" data-request-id="${request.request_id}">
-                        Cancel
-                    </button>
+                    ${actionButton}
                 </td>
             `;
             existingRequestsList.appendChild(row);
         });
 
-        // Add event listeners to cancel buttons
+        // Add event listeners to buttons
         document.querySelectorAll('.cancel-request-btn').forEach(btn => {
             btn.addEventListener('click', cancelRequest);
         });
+
+        document.querySelectorAll('.view-batch-btn').forEach(btn => {
+            btn.addEventListener('click', viewBatchDetails);
+        });
+    }
+
+    // View batch details
+    async function viewBatchDetails(e) {
+        const batchId = e.currentTarget.dataset.requestId;
+
+        try {
+            const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/get-medicine-batch.php`, {
+                params: {
+                    operation: "getBatchDetails",
+                    batch_id: batchId
+                },
+                withCredentials: true
+            });
+
+            if (response.data.success) {
+                const batch = response.data.batch;
+                const items = response.data.items;
+
+                let itemsHtml = '';
+                items.forEach(item => {
+                    itemsHtml += `
+                        <tr>
+                            <td>${safe(item.med_name)}</td>
+                            <td>${safe(item.quantity)}</td>
+                            <td>${safe(item.notes || '-')}</td>
+                            <td>${getStatusBadge(item.status)}</td>
+                        </tr>
+                    `;
+                });
+
+                Swal.fire({
+                    title: 'Medicine Batch Details',
+                    html: `
+                        <div class="text-start">
+                            <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
+                            <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
+                            <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
+                            <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
+                            <hr>
+                            <h6>Items:</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine</th>
+                                        <th>Quantity</th>
+                                        <th>Notes</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+                    width: '600px',
+                    confirmButtonText: 'Close'
+                });
+            } else {
+                Swal.fire('Error', 'Failed to load batch details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading batch details:', error);
+            Swal.fire('Error', 'Network error while loading batch details', 'error');
+        }
     }
 
     // Cancel request
     async function cancelRequest(e) {
         const requestId = e.currentTarget.dataset.requestId;
+        const isBatch = e.currentTarget.textContent.includes('Batch');
 
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            text: isBatch ? "You are about to cancel the entire batch!" : "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -328,19 +416,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             let response;
             if (svcTypeId === "4") { // Medication
+                console.log("Fetching medicines...");
                 response = await axios.get(`${window.location.origin}/hospital_billing/api/masterfiles-php/get-medicines.php`, {
                     params: { operation: "getMedicines" },
                     withCredentials: true
                 });
+
+                console.log("Medicines API response:", response);
+                console.log("Response data:", response.data);
+
                 if (response.data.success) {
                     itemSelect.innerHTML = '<option value="">Select Medicine</option>';
-                    const activeMeds = response.data.medicines.filter(med => med.is_active === "1" || med.is_active === 1);
+
+                    // Access the medicines array correctly
+                    const medicines = response.data.medicines || [];
+                    console.log("Medicines array:", medicines);
+
+                    // Filter for active medicines
+                    const activeMeds = medicines.filter(med =>
+                        med.is_active === "1" || med.is_active === 1 || med.is_active === true
+                    );
+
+                    console.log("Active medicines:", activeMeds);
+
+                    if (activeMeds.length === 0) {
+                        itemSelect.innerHTML = '<option value="">No active medicines available</option>';
+                        return;
+                    }
+
                     activeMeds.forEach(med => {
                         const opt = document.createElement('option');
                         opt.value = med.med_id;
-                        opt.textContent = `${med.med_name} (${med.unit_name})`;
+                        // Use unit_name from the response
+                        opt.textContent = `${med.med_name} (${med.unit_name || 'units'})`;
                         itemSelect.appendChild(opt);
                     });
+                } else {
+                    console.error("API returned error:", response.data.message);
+                    itemSelect.innerHTML = `<option value="">Error: ${response.data.message}</option>`;
                 }
             } else if (svcTypeId === "3") { // Lab Test
                 response = await axios.get(`${window.location.origin}/hospital_billing/api/masterfiles-php/get-labtests.php`, {
@@ -413,6 +526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 json: JSON.stringify({
                     doctor_id: user.user_id,
                     patient_id: currentPatient.patient_id,
+                    batch_notes: document.getElementById('batchNotes')?.value || null,
                     requests: requests
                 })
             }, { withCredentials: true });
