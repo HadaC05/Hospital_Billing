@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             data-room-number="${safe(r.room_number)}"
                             data-admission-date="${admissionDate}"
                             data-admission-reason="${safe(r.admission_reason || '')}">
-                        <i class="fas fa-clipboard-list me-1"></i>Manage Requests
+                        <i class="fas fa-clipboard-list me-1"></i>
                     </button>
                 </td>
             `;
@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         patientRequestsModal.show();
     }
 
-    // Load patient requests
     async function loadPatientRequests() {
         try {
             const response = await axios.get(requestsApiUrl, {
@@ -123,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 withCredentials: true
             });
+            console.log("API Response:", response.data); // Add this line
             const data = response.data;
             if (!data.success) {
                 console.error("Error fetching patient requests:", data.message);
@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Render existing requests
     function renderExistingRequests(requests) {
+        console.log("Rendering requests:", requests); // Debugging line
         existingRequestsList.innerHTML = '';
         if (!requests || requests.length === 0) {
             existingRequestsList.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No requests found</td></tr>';
@@ -145,6 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         requests.forEach(request => {
+            console.log("Processing request:", request); // Debugging line
             const row = document.createElement('tr');
             const statusBadge = getStatusBadge(request.status);
 
@@ -152,31 +154,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             let actionButton = '';
             if (request.request_type === 'medicine_batch') {
                 actionButton = `
-                    <button class="btn btn-sm btn-outline-info view-batch-btn" data-request-id="${request.request_id}">
-                        View Details
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" data-request-id="${request.request_id}">
-                        Cancel Batch
-                    </button>
-                `;
+                <button class="btn btn-sm btn-outline-info view-batch-btn" data-request-id="${request.request_id}" title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" data-request-id="${request.request_id}" title="Cancel Request">
+                    <i class="fas fa-trash"></i>
+                </button>
+
+            `;
             } else {
                 actionButton = `
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn" data-request-id="${request.request_id}">
-                        Cancel
-                    </button>
-                `;
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn" data-request-id="${request.request_id}">
+                    Cancel
+                </button>
+            `;
             }
 
             row.innerHTML = `
-                <td>${formatDate(request.request_date)}</td>
-                <td>${safe(request.svc_name)}</td>
-                <td>${safe(request.item_name || '-')}</td>
-                <td>-</td>
-                <td>${statusBadge}</td>
-                <td>
-                    ${actionButton}
-                </td>
-            `;
+            <td>${formatDate(request.request_date)}</td>
+            <td>${safe(request.svc_name)}</td>
+            <td>${safe(request.item_name || '-')}</td>
+            <td>${statusBadge}</td>
+            <td>
+                ${actionButton} 
+            </td>
+        `;
             existingRequestsList.appendChild(row);
         });
 
@@ -193,9 +195,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // View batch details
     async function viewBatchDetails(e) {
         const batchId = e.currentTarget.dataset.requestId;
+        console.log("Opening batch details for ID:", batchId);
 
         try {
-            const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/get-medicine-batch.php`, {
+            const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/doctor-requests.php`, {
                 params: {
                     operation: "getBatchDetails",
                     batch_id: batchId

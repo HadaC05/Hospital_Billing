@@ -31,7 +31,7 @@ class DoctorPatients
                 LEFT JOIN tbl_room_stay rs 
                     ON pa.admission_id = rs.admission_id AND rs.end_date IS NULL
                 LEFT JOIN tbl_room r ON rs.room_id = r.room_id
-                WHERE pa.doctor_id = :doctor_id
+                WHERE pa.doctor_id = :doctor_id AND status = 'active'
                 ORDER BY pa.admission_date DESC
             ";
 

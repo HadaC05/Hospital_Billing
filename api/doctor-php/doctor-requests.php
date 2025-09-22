@@ -12,59 +12,34 @@ class Doctor_Request
         include __DIR__ . '/../connection-pdo.php';
         $this->pdo = $pdo;
     }
-
     public function getRequests($patientId = null)
     {
         try {
             $doctorId = (int)$_SESSION['user_id'];
 
             // Get medicine requests from new batch system
-            $medicineSql = "
-                SELECT 
-                    rmb.batch_id as request_id,
-                    'Medication' as svc_name,
-                    GROUP_CONCAT(m.med_name, ' (', rmi.quantity, ')') as item_name,
-                    rmb.request_date,
-                    rmb.status,
-                    'medicine_batch' as request_type
-                FROM request_medicine_batch rmb
-                JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
-                JOIN tbl_medicine m ON rmi.med_id = m.med_id
-                WHERE rmb.doctor_id = :doctor_id
-            ";
+            $sql = "
+            SELECT 
+                rmb.batch_id as request_id,
+                'Medication' as svc_name,
+                GROUP_CONCAT(CONCAT(m.med_name, ' (', rmi.quantity, ')') SEPARATOR ', ') as item_name,
+                rmb.request_date,
+                rmb.status,
+                'medicine_batch' as request_type
+            FROM request_medicine_batch rmb
+            JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
+            JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            WHERE rmb.doctor_id = :doctor_id
+        ";
 
             if ($patientId) {
-                $medicineSql .= " AND rmb.patient_id = :patient_id";
+                $sql .= " AND rmb.patient_id = :patient_id";
             }
 
-            $medicineSql .= " GROUP BY rmb.batch_id ORDER BY rmb.request_date DESC";
+            $sql .= " GROUP BY rmb.batch_id ORDER BY rmb.request_date DESC";
 
-            // Get other requests from old system
-            $otherSql = "
-                SELECT 
-                    dr.request_id,
-                    st.svc_name,
-                    CASE 
-                        WHEN st.svc_name = 'Lab Test' THEN lt.test_name
-                        ELSE dr.item_name
-                    END as item_name,
-                    dr.request_date,
-                    dr.status,
-                    dr.request_type
-                FROM doctor_requests dr
-                JOIN tbl_service_type st ON dr.svc_type_id = st.svc_type_id
-                LEFT JOIN tbl_labtest lt ON st.svc_name = 'Lab Test' AND dr.item_id = lt.labtest_id
-                WHERE dr.doctor_id = :doctor_id AND dr.request_type != 'medicine'
-            ";
-
-            if ($patientId) {
-                $otherSql .= " AND dr.patient_id = :patient_id";
-            }
-
-            $otherSql .= " ORDER BY dr.request_date DESC";
-
-            // Execute both queries
-            $stmt = $this->pdo->prepare($medicineSql);
+            // Execute query
+            $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':doctor_id', $doctorId, PDO::PARAM_INT);
 
             if ($patientId) {
@@ -72,20 +47,7 @@ class Doctor_Request
             }
 
             $stmt->execute();
-            $medicineRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $stmt = $this->pdo->prepare($otherSql);
-            $stmt->bindValue(':doctor_id', $doctorId, PDO::PARAM_INT);
-
-            if ($patientId) {
-                $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);
-            }
-
-            $stmt->execute();
-            $otherRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Combine results
-            $requests = array_merge($medicineRequests, $otherRequests);
+            $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
                 'success' => true,
@@ -314,10 +276,11 @@ class Doctor_Request
             $batchSql = "
                 SELECT rmb.*, 
                     CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
-                    CONCAT(u.first_name, ' ', COALESCE(u.middle_name, ''), ' ', u.last_name) AS doctor_name
+                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
                 FROM request_medicine_batch rmb
                 JOIN patients p ON rmb.patient_id = p.patient_id
                 JOIN users u ON rmb.doctor_id = u.user_id
+                JOIN user_doctor ud ON u.user_id = ud.user_id
                 WHERE rmb.batch_id = :batch_id AND rmb.doctor_id = :doctor_id
             ";
 
@@ -390,8 +353,9 @@ switch ($operation) {
         $request->getServiceTypes();
         break;
     case 'getBatchDetails':
+        $batchId = $_GET['batch_id'] ?? null;
         if ($batchId) {
-            $batch->getBatchDetails($batchId);
+            $request->getBatchDetails($batchId);
         } else {
             echo json_encode(['success' => false, 'message' => 'Missing batch ID']);
         }
