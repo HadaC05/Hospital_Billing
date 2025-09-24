@@ -79,15 +79,15 @@ async function buildSidebarLinks(baseApiUrl, user) {
             icon: 'fas fa-user-shield'
         },
         edit_admissions: {
-            label: 'Admission Editor',
+            label: 'Patient Admissions',
             link: '../admission-html/patient-admission.html',
             icon: 'fas fa-edit'
         },
-        view_patient_records: {
-            label: 'Patient Records Viewer',
-            link: '../placeholder-html/patient-records.html',
-            icon: 'fas fa-folder-open'
-        },
+        // view_patient_records: {
+        //     label: 'Patient Records Viewer',
+        //     link: '../placeholder-html/patient-records.html',
+        //     icon: 'fas fa-folder-open'
+        // },
         access_billing: {
             label: 'Billing Overview',
             link: '../placeholder-html/billing-overview.html',
@@ -147,6 +147,11 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Approved Requests',
             link: '../pharmacist-html/approved-request-med.html',
             icon: 'fas fa-pills'
+        },
+        medicine_management: {
+            label: 'Medicine Management',
+            link: '../nurse-html/medicine-management.html',
+            icon: 'fas fa-prescription-bottle-alt'
         }
     };
 
