@@ -78,14 +78,9 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../placeholder-html/role-settings.html',
             icon: 'fas fa-user-shield'
         },
-        view_admissions: {
-            label: 'Admission Records',
-            link: '../placeholder-html/admission-records.html',
-            icon: 'fas fa-clipboard-list'
-        },
         edit_admissions: {
             label: 'Admission Editor',
-            link: '../placeholder-html/admission-editor.html',
+            link: '../admission-html/patient-admission.html',
             icon: 'fas fa-edit'
         },
         view_patient_records: {
@@ -112,11 +107,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Doctor Prescription',
             link: '../placeholder-html/doctor-prescription.html',
             icon: 'fas fa-prescription-bottle'
-        },
-        doctor_my_patients: {
-            label: 'My Patients',
-            link: '../placeholder-html/my-patients.html',
-            icon: 'fas fa-user-injured'
         },
         biller_dashboard: {
             label: 'Biller Dashboard',
@@ -145,19 +135,24 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         doctor_requests: {
             label: 'Doctor Requests',
-            link: '../placeholder-html/doctor-requests.html',
+            link: '../doctor-html/doctor-merge.html',
             icon: 'fas fa-prescription-bottle-alt'
         },
-        request_management: {
-            label: 'Request Management',
-            link: '../placeholder-html/request-management.html',
-            icon: 'fas fa-tasks'
-        },
-        medicine_dispensing: {
-            label: 'Medicine Dispensing',
-            link: '../placeholder-html/pharmacist-medicine-dispensing.html',
+        pending_request_med: {
+            label: 'Pending Requests',
+            link: '../pharmacist-html/pending-request-med.html',
             icon: 'fas fa-pills'
         },
+        approved_request_med: {
+            label: 'Approved Requests',
+            link: '../pharmacist-html/approved-request-med.html',
+            icon: 'fas fa-pills'
+        },
+        medicine_requests: {
+            label: 'Medicine Requests',
+            link: '../pharmacist-html/medicine-requests.html',
+            icon: 'fas fa-pills'
+        }
     };
 
     const inventoryMap = {
@@ -260,7 +255,6 @@ async function buildSidebarLinks(baseApiUrl, user) {
         const isNurse = roleStr.includes('nurse');
         const isPharmacist = roleStr.includes('pharmacist') || roleStr.includes('pharmacy');
         const isER = roleStr.includes('er') || roleStr.includes('emergency');
-        const isCashier = roleStr.includes('cashier');
         if (isAdmin) {
             const alwaysShow = [
                 inventoryMap.manage_treatment_types,
@@ -283,7 +277,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add doctor-only links
         if (isDoctor) {
-            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_my_patients, moduleMap.doctor_requests];
+            const doctorLinks = [moduleMap.doctor_dashboard, moduleMap.doctor_requests];
             doctorLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
@@ -327,7 +321,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add lab-only links
         if (isLab) {
-            const lLinks = [moduleMap.lab_dashboard, moduleMap.request_management];
+            const lLinks = [moduleMap.lab_dashboard];
             lLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
@@ -347,20 +341,9 @@ async function buildSidebarLinks(baseApiUrl, user) {
             });
         }
 
-        // Add cashier-only links
-        if (isCashier) {
-            const cLinks = [moduleMap.cashier_dashboard];
-            cLinks.forEach((cfg) => {
-                if (cfg) {
-                    const exists = standaloneLinks.some(link => link.link === cfg.link);
-                    if (!exists) standaloneLinks.push(cfg);
-                }
-            });
-        }
-
         // Add pharmacist-only links
         if (isPharmacist) {
-            const pLinks = [moduleMap.pharmacist_dashboard, moduleMap.request_management];
+            const pLinks = [moduleMap.pharmacist_dashboard, moduleMap.medicine_requests];
             pLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);

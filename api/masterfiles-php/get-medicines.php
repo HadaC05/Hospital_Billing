@@ -1,14 +1,30 @@
 <?php
 
+require_once __DIR__ . '/../require_auth.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 class Medicines
 {
-    function getMedicines($params = [])
+    private $conn;
+
+    public function __construct()
     {
         include '../connection-pdo.php';
+        $this->conn = $conn;
+    }
 
+    function getMedicines($params = [])
+    {
         // Get pagination parameters
         $page = isset($params['page']) ? (int)$params['page'] : 1;
         $itemsPerPage = isset($params['itemsPerPage']) ? (int)$params['itemsPerPage'] : 10;
@@ -34,7 +50,7 @@ class Medicines
                             LEFT JOIN tbl_medicine_type mt ON m.med_type_id = mt.med_type_id 
                             LEFT JOIN tbl_medicine_unit mu ON m.unit_id = mu.unit_id
                             $whereClause";
-            $countStmt = $conn->prepare($countSql);
+            $countStmt = $this->conn->prepare($countSql);
             if (!empty($searchParams)) {
                 $countStmt->execute($searchParams);
             } else {
@@ -50,7 +66,6 @@ class Medicines
                     m.med_type_id,
                     mt.med_type_name,
                     m.unit_price,
-                    m.stock_quantity,
                     m.unit_id,
                     mu.unit_name,
                     m.is_active
@@ -62,7 +77,7 @@ class Medicines
                 LIMIT :limit OFFSET :offset
             ";
 
-            $stmt = $conn->prepare($sql);
+            $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':limit', $itemsPerPage, PDO::PARAM_INT);
             $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 
@@ -102,11 +117,9 @@ class Medicines
 
     function addMedicine($data)
     {
-        include '../connection-pdo.php';
-
         // Check duplicate name
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name";
-        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt = $this->conn->prepare($checkSql);
         $checkStmt->bindParam(':med_name', $data['med_name']);
         $checkStmt->execute();
 
@@ -119,15 +132,14 @@ class Medicines
         }
 
         $sql = "
-            INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, stock_quantity, unit_id, is_active)
-            VALUES (:med_name, :med_type_id, :unit_price, :stock_quantity, :unit_id, 1)
+            INSERT INTO tbl_medicine (med_name, med_type_id, unit_price, unit_id, is_active)
+            VALUES (:med_name, :med_type_id, :unit_price, :unit_id, 1)
         ";
 
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':med_name', $data['med_name']);
         $stmt->bindParam(':med_type_id', $data['med_type_id']);
         $stmt->bindParam(':unit_price', $data['unit_price']);
-        $stmt->bindParam(':stock_quantity', $data['stock_quantity']);
         $stmt->bindParam(':unit_id', $data['unit_id']);
 
         if ($stmt->execute()) {
@@ -139,15 +151,13 @@ class Medicines
 
     function getTypes()
     {
-        include '../connection-pdo.php';
-
         $sql = "
             SELECT *
             FROM tbl_medicine_type
             ORDER BY med_type_name ASC
         ";
 
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->conn->prepare($sql);
         $stmt->execute();
 
         echo json_encode([
@@ -158,15 +168,13 @@ class Medicines
 
     function getUnits()
     {
-        include '../connection-pdo.php';
-
         $sql = '
             SELECT *
             FROM tbl_medicine_unit
             ORDER BY unit_name ASC
         ';
 
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->conn->prepare($sql);
         $stmt->execute();
 
         echo json_encode([
@@ -175,13 +183,11 @@ class Medicines
         ]);
     }
 
-    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $stock_quantity, $unit_id, $is_active)
+    function updateMedicine($med_id, $med_name, $med_type_id, $unit_price, $unit_id, $is_active)
     {
-        include '../connection-pdo.php';
-
         // Check duplicate name (exclude current record)
         $checkSql = "SELECT COUNT(*) FROM tbl_medicine WHERE med_name = :med_name AND med_id != :med_id";
-        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt = $this->conn->prepare($checkSql);
         $checkStmt->bindParam(':med_name', $med_name);
         $checkStmt->bindParam(':med_id', $med_id);
         $checkStmt->execute();
@@ -199,17 +205,15 @@ class Medicines
             SET med_name = :med_name,
                 med_type_id = :med_type_id,
                 unit_price = :unit_price,
-                stock_quantity = :stock_quantity,
                 unit_id = :unit_id,
                 is_active = :is_active
             WHERE med_id = :med_id
         ";
 
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':med_name', $med_name);
         $stmt->bindParam(':med_type_id', $med_type_id);
         $stmt->bindParam(':unit_price', $unit_price);
-        $stmt->bindParam(':stock_quantity', $stock_quantity);
         $stmt->bindParam(':unit_id', $unit_id);
         $stmt->bindParam(':is_active', $is_active);
         $stmt->bindParam(':med_id', $med_id);
@@ -223,11 +227,16 @@ class Medicines
     }
 }
 
+// Handle the request
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Initialize the manager
+$med = new Medicines();
+
+// Parse the request data
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
-    $json = $_GET['json'] ?? '';
+    $json = $_GET['json'] ?? '{}';
 
     // Get pagination parameters from GET request
     $page = $_GET['page'] ?? 1;
@@ -238,7 +247,7 @@ if ($method === 'GET') {
     $payload = json_decode($body, true);
 
     $operation = $payload['operation'] ?? '';
-    $json = $payload['json'] ?? '';
+    $json = $payload['json'] ?? '{}';
 
     // Get pagination parameters from POST request
     $page = $payload['page'] ?? 1;
@@ -246,10 +255,9 @@ if ($method === 'GET') {
     $search = $payload['search'] ?? '';
 }
 
-$data = json_decode($json, true);
+$data = json_decode($json, true) ?? [];
 
-$med = new Medicines();
-
+// Route the request to the appropriate method
 switch ($operation) {
     case 'getMedicines':
         $params = [
@@ -274,9 +282,14 @@ switch ($operation) {
             $data['med_name'],
             $data['med_type_id'],
             $data['unit_price'],
-            $data['stock_quantity'],
             $data['unit_id'],
             $data['is_active']
         );
+        break;
+    default:
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid operation or operation not specified'
+        ]);
         break;
 }

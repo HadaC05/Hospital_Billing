@@ -1,5 +1,4 @@
 console.log('invoice.js is working');
-
 document.addEventListener('DOMContentLoaded', async () => {
     const apiBase = '../../api';
     const user = JSON.parse(localStorage.getItem('user'));
@@ -9,8 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '../index.html';
         return;
     }
-
-    // Sidebar is handled globally by js/sidebar.js
 
     // Elements
     const findAdmissionForm = document.getElementById('findAdmissionForm');
@@ -24,191 +21,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('resetBtn');
     const printPreviewBtn = document.getElementById('printPreviewBtn');
     const admissionMeta = document.getElementById('admissionMeta');
+    const debugInfo = document.getElementById('debugInfo'); // Add this element to your HTML for debugging
 
     let currentAdmissionId = null;
     let currentItems = [];
     let lastCreatedInvoiceId = null;
-    let patientsData = [];
-    let existingInvoices = [];
+    let admissionsData = [];
 
-    // Load patients for dropdown
-    async function loadPatients() {
+    // Load admissions for dropdown
+    async function loadAdmissions() {
         try {
-            const response = await axios.get(`${apiBase}/get-patients.php`, {
-                params: {
-                    operation: 'getPatients',
-                    json: JSON.stringify({})
-                }
+            console.log('Loading admissions...');
+            const response = await axios.post(`${apiBase}/invoice.php`, {
+                operation: 'getAdmissions',
+                json: JSON.stringify({})
             });
+            console.log('Admissions response:', response.data);
             const data = response.data;
-            if (data.success && Array.isArray(data.patients)) {
-                // Now we need to get admissions for each patient
-                const patientsWithAdmissions = await getPatientsWithAdmissions(data.patients);
-                patientsData = patientsWithAdmissions;
-                populatePatientDropdown(patientsWithAdmissions);
+            if (data.success && Array.isArray(data.admissions)) {
+                admissionsData = data.admissions;
+                populateAdmissionDropdown(data.admissions);
             } else {
-                patientSelect.innerHTML = '<option value="">No patients found</option>';
+                console.error('Failed to load admissions:', data.message);
+                patientSelect.innerHTML = '<option value="">No admissions found</option>';
+                if (debugInfo) debugInfo.textContent = 'Error: ' + (data.message || 'Unknown error');
             }
         } catch (error) {
-            console.error('Error loading patients:', error);
-            patientSelect.innerHTML = '<option value="">Error loading patients</option>';
+            console.error('Error loading admissions:', error);
+            patientSelect.innerHTML = '<option value="">Error loading admissions</option>';
+            if (debugInfo) debugInfo.textContent = 'Network error: ' + error.message;
         }
     }
 
-    // Get patients with their admissions
-    async function getPatientsWithAdmissions(patients) {
-        const patientsWithAdmissions = [];
-
-        for (const patient of patients) {
-            try {
-                const response = await axios.get(`${apiBase}/get-patients.php`, {
-                    params: {
-                        operation: 'getPatientDetails',
-                        json: JSON.stringify({ patient_id: patient.patient_id })
-                    }
-                });
-
-                if (response.data.success && response.data.admissions && response.data.admissions.length > 0) {
-                    // Add each admission as a separate option
-                    response.data.admissions.forEach(admission => {
-                        patientsWithAdmissions.push({
-                            admission_id: admission.admission_id,
-                            first_name: patient.patient_fname,
-                            last_name: patient.patient_lname,
-                            middle_name: patient.patient_mname,
-                            admission_date: admission.admission_date,
-                            patient_id: patient.patient_id,
-                            status: admission.status
-                        });
-                    });
-                }
-            } catch (error) {
-                console.error(`Error loading admissions for patient ${patient.patient_id}:`, error);
-            }
-        }
-
-        return patientsWithAdmissions;
-    }
-
-    // Populate patient dropdown
-    function populatePatientDropdown(patients) {
-        patientSelect.innerHTML = '<option value="">Select a patient...</option>';
-        patients.forEach(patient => {
+    // Populate admission dropdown
+    function populateAdmissionDropdown(admissions) {
+        patientSelect.innerHTML = '<option value="">Select an admission...</option>';
+        admissions.forEach(admission => {
             const option = document.createElement('option');
-            option.value = patient.admission_id;
-            option.textContent = `${patient.first_name} ${patient.last_name} - Admission #${patient.admission_id}`;
-            option.dataset.patientInfo = JSON.stringify(patient);
+            option.value = admission.admission_id;
+            option.textContent = `${admission.first_name} ${admission.last_name} - Admission #${admission.admission_id}`;
+            option.dataset.admissionInfo = JSON.stringify(admission);
             patientSelect.appendChild(option);
         });
+        console.log(`Loaded ${admissions.length} admissions`);
     }
 
-    // Initialize patient loading
-    loadPatients();
+    // Initialize admission loading
+    loadAdmissions();
 
     function peso(amount) {
         return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function setupCheckboxListeners() {
-        // Select All checkbox functionality
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                calculateTotals();
-            });
-        }
-
-        // Individual checkbox functionality
-        itemCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                // Update select all checkbox state
-                const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
-                const someChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
-                
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = allChecked;
-                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
-                }
-                
-                calculateTotals();
-            });
-        });
-    }
-
-    function calculateTotals() {
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-        let subtotal = 0;
-        let covered = 0;
-
-        itemCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                const row = checkbox.closest('tr');
-                const itemData = JSON.parse(row.dataset.itemData || '{}');
-                subtotal += itemData.lineTotal || 0;
-                covered += itemData.coverage || 0;
-            }
-        });
-
-        subtotalText.textContent = peso(subtotal);
-        coveredText.textContent = peso(covered);
-        totalDueText.textContent = peso(subtotal - covered);
-    }
-
-    function showInvoiceStatus() {
-        if (existingInvoices.length === 0) {
-            return;
-        }
-
-        // Create status alert
-        const statusContainer = document.querySelector('.card-body');
-        let statusHtml = '<div class="alert alert-info mb-3">';
-        statusHtml += '<h6><i class="fas fa-info-circle"></i> Existing Invoices</h6>';
-        
-        existingInvoices.forEach(invoice => {
-            const statusClass = invoice.status === 'Paid' ? 'success' : 
-                               invoice.status === 'Partially Paid' ? 'warning' : 'danger';
-            const statusIcon = invoice.status === 'Paid' ? 'check-circle' : 
-                              invoice.status === 'Partially Paid' ? 'exclamation-triangle' : 'times-circle';
-            
-            statusHtml += `<div class="d-flex justify-content-between align-items-center mb-2">
-                <span><i class="fas fa-${statusIcon} text-${statusClass}"></i> Invoice #${invoice.invoice_id} - ${invoice.status}</span>
-                <span>Total: ${peso(invoice.total_amount)} | Paid: ${peso(invoice.total_paid)} | Due: ${peso(invoice.amount_due)}</span>
-            </div>`;
-        });
-        
-        statusHtml += '</div>';
-        
-        // Insert status before the table
-        const tableContainer = statusContainer.querySelector('.table-responsive');
-        if (tableContainer) {
-            tableContainer.insertAdjacentHTML('beforebegin', statusHtml);
-        }
-    }
-
-    function renderItems(items) {
+    function renderItems(items, debug = {}) {
         itemsBody.innerHTML = '';
         if (!items || items.length === 0) {
-            itemsBody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No items found for this admission.</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No items found for this admission.</td></tr>';
+
+            // Show debug info
+            if (debugInfo) {
+                debugInfo.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>Debug Info:</strong><br>
+                        Rooms: ${debug.rooms || 0}<br>
+                        Surgeries: ${debug.surgeries || 0}<br>
+                        Lab Tests: ${debug.labs || 0}<br>
+                        Medications: ${debug.meds || 0}<br>
+                        Treatments: ${debug.treatments || 0}<br>
+                        Total Items: ${debug.total || 0}
+                    </div>
+                `;
+            }
             return;
         }
+
+        let subtotal = 0;
+        let covered = 0;
 
         items.forEach((item, idx) => {
             const row = itemRowTemplate.content.firstElementChild.cloneNode(true);
             const lineTotal = Number(item.quantity) * Number(item.unit_price);
             const coverage = Number(item.coverage_amount || 0);
+            subtotal += lineTotal;
+            covered += coverage;
 
-            // Store item data in the row for calculations
-            row.dataset.itemData = JSON.stringify({
-                lineTotal: lineTotal,
-                coverage: coverage,
-                payable: lineTotal - coverage
-            });
-
+            row.querySelector('.rowIndex').textContent = String(idx + 1);
             row.querySelector('.type').textContent = item.service_type_name || item.type || '';
             row.querySelector('.reference').textContent = item.svc_reference_id || item.reference || '';
             row.querySelector('.description').textContent = item.description || item.item_description || '';
@@ -221,77 +118,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             itemsBody.appendChild(row);
         });
 
-        // Add event listeners for checkboxes
-        setupCheckboxListeners();
-        
-        // Calculate totals based on selected items
-        calculateTotals();
+        subtotalText.textContent = peso(subtotal);
+        coveredText.textContent = peso(covered);
+        totalDueText.textContent = peso(subtotal - covered);
 
         // Enable actions
         createInvoiceBtn.disabled = false;
         printPreviewBtn.disabled = false;
+
+        // Clear debug info on success
+        if (debugInfo) debugInfo.textContent = '';
     }
 
     async function loadBillableItems(admissionId) {
         try {
+            console.log(`Loading billable items for admission ${admissionId}...`);
             const response = await axios.post(`${apiBase}/invoice.php`, {
                 operation: 'getBillableItems',
                 json: JSON.stringify({ admission_id: admissionId })
             });
 
+            console.log('Billable items response:', response.data);
+
             if (response.data && response.data.success) {
                 currentItems = response.data.items || [];
-                existingInvoices = response.data.existing_invoices || [];
                 const a = response.data.admission || {};
-                admissionMeta.textContent = a && a.admission_id ? `Admission #${a.admission_id} • ${a.patient_lname}, ${a.patient_fname} • ${new Date(a.admission_date).toLocaleDateString()}` : '';
-                renderItems(currentItems);
-                showInvoiceStatus();
+                admissionMeta.textContent = a && a.admission_id ?
+                    `Admission #${a.admission_id} • ${a.last_name}, ${a.first_name} ${a.middle_name || ''} • ${new Date(a.admission_date).toLocaleDateString()}` :
+                    '';
+                renderItems(currentItems, response.data.debug || {});
             } else {
-                itemsBody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Failed to load items.</td></tr>';
+                console.error('Failed to load items:', response.data.message);
+                itemsBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Failed to load items: ${response.data.message || 'Unknown error'}</td></tr>`;
+                if (debugInfo) debugInfo.textContent = 'Error: ' + (response.data.message || 'Unknown error');
             }
         } catch (e) {
-            console.error(e);
-            itemsBody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Network error.</td></tr>';
+            console.error('Error loading billable items:', e);
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Network error.</td></tr>';
+            if (debugInfo) debugInfo.textContent = 'Network error: ' + e.message;
         }
     }
 
     async function createInvoice() {
         try {
-            // Check if there are already paid invoices
-            const paidInvoices = existingInvoices.filter(inv => inv.status === 'Paid');
-            if (paidInvoices.length > 0) {
-                const confirmCreate = confirm(
-                    `Warning: There are already ${paidInvoices.length} paid invoice(s) for this admission. ` +
-                    `Creating another invoice may result in duplicate billing. Do you want to continue?`
-                );
-                if (!confirmCreate) {
-                    return;
-                }
-            }
-
-            // Get only selected items
-            const selectedItems = getSelectedItems();
-            
-            if (selectedItems.length === 0) {
-                alert('Please select at least one item to include in the invoice.');
-                return;
-            }
-
+            console.log('Creating invoice...');
             const response = await axios.post(`${apiBase}/invoice.php`, {
                 operation: 'createInvoice',
                 json: JSON.stringify({
                     admission_id: currentAdmissionId,
-                    items: selectedItems
+                    items: currentItems
                 })
             });
+
+            console.log('Create invoice response:', response.data);
 
             if (response.data && response.data.success) {
                 lastCreatedInvoiceId = response.data.invoice_id;
                 document.getElementById('createdInvoiceId').textContent = lastCreatedInvoiceId;
                 new bootstrap.Modal(document.getElementById('invoiceSuccessModal')).show();
-                
-                // Reload items to show updated status
-                await loadBillableItems(currentAdmissionId);
             } else {
                 Swal.fire({
                     title: 'Error',
@@ -300,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         } catch (e) {
-            console.error(e);
+            console.error('Error creating invoice:', e);
             Swal.fire({
                 title: 'Error',
                 text: 'Network error while creating invoice',
@@ -309,26 +193,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function getSelectedItems() {
-        const selectedItems = [];
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-        
-        itemCheckboxes.forEach((checkbox, index) => {
-            if (checkbox.checked && currentItems[index]) {
-                selectedItems.push(currentItems[index]);
-            }
-        });
-        
-        return selectedItems;
-    }
-
     // Print preview
     function buildPrint() {
         const container = document.getElementById('printArea');
         const now = new Date().toLocaleString();
-        const selectedItems = getSelectedItems();
-        
-        const rows = selectedItems.map((item, i) => {
+        const rows = currentItems.map((item, i) => {
             const line = Number(item.quantity) * Number(item.unit_price);
             const cov = Number(item.coverage_amount || 0);
             const pay = line - cov;
@@ -387,17 +256,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const selectedAdmissionId = patientSelect.value;
             if (!selectedAdmissionId) return;
 
-            // Get patient info from selected option
+            // Get admission info from selected option
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
-            const patientInfo = JSON.parse(selectedOption.dataset.patientInfo || '{}');
+            const admissionInfo = JSON.parse(selectedOption.dataset.admissionInfo || '{}');
 
             // Update admission meta display
-            admissionMeta.textContent = `Patient: ${patientInfo.first_name} ${patientInfo.last_name} | Admission Date: ${patientInfo.admission_date || 'N/A'}`;
+            admissionMeta.textContent = `Patient: ${admissionInfo.first_name} ${admissionInfo.last_name} | Admission Date: ${admissionInfo.admission_date || 'N/A'}`;
 
             currentAdmissionId = Number(selectedAdmissionId);
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
-            itemsBody.innerHTML = '<tr><td colspan="10" class="text-center">Loading...</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center">Loading...</td></tr>';
+
             await loadBillableItems(currentAdmissionId);
         });
     }
@@ -413,26 +283,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetBtn.addEventListener('click', () => {
             currentAdmissionId = null;
             currentItems = [];
-            existingInvoices = [];
             patientSelect.value = '';
             admissionMeta.textContent = '';
-            itemsBody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No items loaded.</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No items loaded.</td></tr>';
             subtotalText.textContent = '0.00';
             coveredText.textContent = '0.00';
             totalDueText.textContent = '0.00';
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
-            
-            // Reset select all checkbox
-            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-            if (selectAllCheckbox) {
-                selectAllCheckbox.checked = false;
-                selectAllCheckbox.indeterminate = false;
-            }
-            
-            // Remove any existing status alerts
-            const existingAlerts = document.querySelectorAll('.alert.alert-info');
-            existingAlerts.forEach(alert => alert.remove());
+            if (debugInfo) debugInfo.textContent = '';
         });
     }
 
@@ -449,5 +308,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
-
-

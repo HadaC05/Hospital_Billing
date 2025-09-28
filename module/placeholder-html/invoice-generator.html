@@ -77,9 +77,7 @@
                                     <table class="table table-bordered table-hover align-middle" id="itemsTable">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>
-                                                    <input type="checkbox" id="selectAllCheckbox" class="form-check-input">
-                                                </th>
+                                                <th>#</th>
                                                 <th>Type</th>
                                                 <th>Reference</th>
                                                 <th>Description</th>
@@ -88,12 +86,11 @@
                                                 <th class="text-end">Line Total</th>
                                                 <th class="text-end">Coverage</th>
                                                 <th class="text-end">Payable</th>
-                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody id="billableItemsBody">
                                             <tr>
-                                                <td colspan="10" class="text-center text-muted">No items loaded.</td>
+                                                <td colspan="9" class="text-center text-muted">No items loaded.</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -155,9 +152,7 @@
     <!-- Hidden template row for items (for cloning) -->
     <template id="itemRowTemplate">
         <tr>
-            <td>
-                <input type="checkbox" class="form-check-input item-checkbox" checked>
-            </td>
+            <td class="rowIndex"></td>
             <td class="type"></td>
             <td class="reference"></td>
             <td class="description"></td>
@@ -166,9 +161,6 @@
             <td class="line text-end"></td>
             <td class="coverage text-end"></td>
             <td class="payable text-end"></td>
-            <td class="status">
-                <span class="badge bg-secondary">New</span>
-            </td>
         </tr>
     </template>
 

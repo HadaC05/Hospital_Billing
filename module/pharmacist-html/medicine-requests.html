@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicine Requests</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="../../css/hospital-theme.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../../js/components-js/sidebar.js" defer></script>
+    <script src="../../js/components-js/header-loader.js" defer></script>
+    <script src="../../js/utility-js/pagination-utility.js" defer></script>
+    <script src="../../js/requests-js/medicine-requests.js" defer></script>
+    <script src="../../js/utility-js/theme-loader.js" defer></script>
+</head>
+
+<body class="d-flex flex-column vh-100">
+    <!-- Header -->
+    <div id="header-placeholder"></div>
+
+    <div id="page-container" class="d-flex flex-grow-1">
+        <div id="sidebar-placeholder"></div>
+
+        <!-- Main Content -->
+        <main class="content p-3 flex-grow-1">
+            <div class="container-fluid">
+                <div class="row g-3">
+                    <!-- Page Header -->
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2><i class="fas fa-pills me-2"></i>Medicine Requests</h2>
+                        </div>
+                    </div>
+
+                    <!-- Requests Table -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div
+                                class="card-header text-white bg-primary d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Requests List</h5>
+                                <div class="d-flex align-items-center">
+                                    <input type="text" id="searchInput" class="form-control form-control-sm me-2" placeholder="Search by patient or doctor...">
+                                    <button class="btn btn-sm btn-light" id="dispenseSelectedBtn" disabled>
+                                        <i class="fas fa-check-double me-1"></i>Dispense Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" id="printBtn" disabled>
+                                        <i class="fas fa-print me-1"></i>Print
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped align-middle" id="requests-table">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th class="text-center"><input type="checkbox" id="selectAllCheckbox"></th>
+                                                <th>Request Date</th>
+                                                <th>Doctor Name</th>
+                                                <th>Patient Name</th>
+                                                <th>Items</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="request-list">
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted">No requests found.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="requestsPagination" class="mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print-only area -->
+            <div id="printArea" class="d-none"></div>
+        </main>
+    </div>
+
+    <!-- Dispense Modal -->
+    <div class="modal fade" id="dispenseModal" tabindex="-1" aria-labelledby="dispenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="dispenseModalLabel"><i class="fas fa-pills me-2"></i> Dispense Medicine
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dispenseForm">
+                        <input type="hidden" id="dispenseRequestId">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Doctor</label>
+                            <p id="dispenseDoctor" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Patient</label>
+                            <p id="dispensePatient" class="form-control-plaintext"></p>
+                        </div>
+
+                        <div id="dispense-items-container">
+                            <!-- Items will be dynamically inserted here -->
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmDispenseBtn" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i> Confirm Dispense
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

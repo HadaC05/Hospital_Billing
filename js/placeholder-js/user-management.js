@@ -1,6 +1,10 @@
-console.log('user-management.js is working');
+console.log('connected to manage-users.js');
+
+const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const baseApiUrl = `${window.location.origin}/hospital_billing/api`;
+
+    // Check for user authentication
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
         console.error('No user data found. Redirecting to login.');
@@ -8,316 +12,853 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Initialize pagination utility
+    // management functionality 
+    const tableBody = document.getElementById('users-list');
+    let allUsers = [];
+
+    // dynamic adding of forms based on roles
+    const roleSelect = document.getElementById('role_id');
+    const roleSpecificFieldsContainer = document.querySelector('.roleSpecificFields');
+
+    roleSelect.addEventListener('change', renderRoleSpecificFields);
+
+    // modals
+    const addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+
+    // forms
+    const addForm = document.getElementById('addUserForm');
+    const editForm = document.getElementById('editUserForm');
+
+    // button event listeners
+    document.getElementById('saveUserBtn').addEventListener('click', (e) => {
+        if (!addForm.checkValidity()) {
+            addForm.reportValidity();
+            return;
+        }
+        saveUser();
+    });
+    document.getElementById('updateUserBtn').addEventListener('click', updateUser);
+
+
+    // Initialize PaginationUtility
     const pagination = new PaginationUtility({
         itemsPerPage: 10,
-        onPageChange: (page) => {
-            loadUsers(page);
-        },
-        onItemsPerPageChange: (itemsPerPage) => {
-            loadUsers(1, itemsPerPage);
-        }
+        onPageChange: (page) => loadAllUsers(page, pagination.itemsPerPage),
+        onItemsPerPageChange: (limit) => loadAllUsers(1, limit)
     });
 
-    // Load users and roles
-    loadUsers();
-    loadRoles();
-
-    // Event listeners for modals
-    document.getElementById('saveUserBtn').addEventListener('click', addUser);
-    document.getElementById('updateUserBtn').addEventListener('click', updateUser);
-    document.getElementById('confirmDeleteUserBtn').addEventListener('click', deleteUser);
-
-    // Password visibility toggle for modals
-    function setupPasswordToggles() {
-        document.querySelectorAll('.password-toggle').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const targetId = btn.getAttribute('data-target');
-                const input = document.getElementById(targetId);
-                if (!input) return;
-                const isPassword = input.type === 'password';
-                input.type = isPassword ? 'text' : 'password';
-
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('fa-eye', !isPassword);
-                    icon.classList.toggle('fa-eye-slash', isPassword);
-                }
-                btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-            });
-        });
-    }
-    // Run once on load; also when modals show (in case DOM is recreated)
-    setupPasswordToggles();
-    document.getElementById('addUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
-    document.getElementById('editUserModal').addEventListener('shown.bs.modal', setupPasswordToggles);
-
-    // Function to load all users
-    async function loadUsers(page = 1, itemsPerPage = 10, search = '') {
-        try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php`, {
-                params: {
-                    operation: 'getAllUsers',
-                    page: page,
-                    itemsPerPage: itemsPerPage,
-                    search: search
-                }
-            });
-            const data = response.data;
-            if (data.success) {
-                displayUsers(data.users);
-
-                // Update pagination controls
-                if (data.pagination) {
-                    pagination.calculatePagination(data.pagination.totalItems, data.pagination.currentPage, data.pagination.itemsPerPage);
-                    pagination.generatePaginationControls('pagination-container');
-                }
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to load users: ' + data.message,
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading users:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to load users. Please try again.',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Function to display users in the table
-    function displayUsers(users) {
-        const tableBody = document.getElementById('users-table-body');
-        tableBody.innerHTML = '';
-        users.forEach(user => {
-            const row = document.createElement('tr');
-            const fn = user.first_name || '';
-            const mn = user.middle_name || '';
-            const ln = user.last_name || '';
-            const hasName = (fn && ln) || (fn || ln);
-            const displayName = hasName
-                ? `${fn}${mn ? ' ' + mn : ''}${ln ? ' ' + ln : ''}`.trim()
-                : user.username;
-            row.innerHTML = `
-                <td>${displayName}</td>
-                <td>${user.username}</td>
-                <td>${user.email || '-'}</td>
-                <td>${user.role_name}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user-id="${user.user_id}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger delete-user-btn" data-user-id="${user.user_id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-            tableBody.appendChild(row);
-        });
-
-        // Add event listeners to buttons
-        document.querySelectorAll('.edit-user-btn').forEach(button => {
-            button.addEventListener('click', () => loadUserDetails(button.dataset.userId));
-        });
-
-        document.querySelectorAll('.delete-user-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                document.getElementById('confirmDeleteUserBtn').dataset.userId = button.dataset.userId;
-                new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
-            });
-        });
-    }
-
-    // Function to load roles for dropdowns
-    async function loadRoles() {
-        try {
-            const response = await axios.get(`${baseApiUrl}/manage-roles.php?operation=getRoles`);
-            const data = response.data;
-            if (data.success) {
-                populateRoleDropdowns(data.roles);
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to load roles: ' + data.message,
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading roles:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to load roles. Please try again.',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Function to populate role dropdowns in add and edit modals
-    function populateRoleDropdowns(roles) {
-        const addRoleSelect = document.getElementById('roleId');
-        const editRoleSelect = document.getElementById('editRoleId');
-
-        // Clear existing options
-        addRoleSelect.innerHTML = '<option value="">Select a role</option>';
-        editRoleSelect.innerHTML = '<option value="">Select a role</option>';
-
-        // Add role options
-        roles.forEach(role => {
-            const addOption = document.createElement('option');
-            addOption.value = role.role_id;
-            addOption.textContent = role.role_name;
-            addRoleSelect.appendChild(addOption);
-
-            const editOption = document.createElement('option');
-            editOption.value = role.role_id;
-            editOption.textContent = role.role_name;
-            editRoleSelect.appendChild(editOption);
-        });
-    }
-
-    // Function to load user details for editing
-    async function loadUserDetails(userId) {
-        try {
-            const response = await axios.get(`${baseApiUrl}/manage-users.php?operation=getUserById&json=${JSON.stringify({ user_id: userId })}`);
-            const data = response.data;
-            if (data.success) {
-                const user = data.user;
-                document.getElementById('editUserId').value = user.user_id;
-                document.getElementById('editFirstName').value = user.first_name;
-                document.getElementById('editMiddleName').value = user.middle_name || '';
-                document.getElementById('editLastName').value = user.last_name;
-                document.getElementById('editUsername').value = user.username;
-                document.getElementById('editPassword').value = '';
-                document.getElementById('editEmail').value = user.email || '';
-                document.getElementById('editMobileNumber').value = user.mobile_number || '';
-                document.getElementById('editRoleId').value = user.role_id;
-
-                // Open edit modal
-                new bootstrap.Modal(document.getElementById('editUserModal')).show();
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to load user details: ' + data.message,
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error loading user details:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to load user details. Please try again.',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Function to add a new user
-    async function addUser() {
-        const formData = {
-            first_name: document.getElementById('firstName').value.trim(),
-            middle_name: document.getElementById('middleName').value.trim(),
-            last_name: document.getElementById('lastName').value.trim(),
-            username: document.getElementById('username').value.trim(),
-            password: document.getElementById('password').value,
-            email: document.getElementById('email').value.trim(),
-            mobile_number: document.getElementById('mobileNumber').value.trim(),
-            role_id: document.getElementById('roleId').value
-        };
-
-        // Validate form
-        if (!formData.first_name || !formData.last_name || !formData.username || !formData.password || !formData.email || !formData.role_id) {
-            Swal.fire({
-                title: 'Validation',
-                text: 'Please fill in all required fields.',
-                icon: 'warning'
-            });
+    // fetch users
+    async function loadAllUsers(page = 1, limit = 10) {
+        if (!tableBody) {
+            console.error('Table body not found');
             return;
         }
 
         try {
-            const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
-                operation: 'addUser',
-                json: JSON.stringify(formData)
-            });
+            const payload = {
+                operation: "getUsers",
+                json: JSON.stringify({ page, limit })
+            };
+
+            const response = await axios.post(`${baseApiUrl}/manage-users.php`, payload);
+
             const data = response.data;
+
+            if (!data.success) {
+                console.error("Failed to fetch users:", data.message);
+                tableBody.innerHTML = `<tr><td colspan="6">Error: ${data.message}</td></tr>`;
+                return;
+            }
+
+            if (Array.isArray(data.users) && data.users.length > 0) {
+                allUsers = data.users;
+                renderAllUsers(allUsers);
+
+                // ✅ Update pagination controls
+                pagination.calculatePagination(data.total, data.page, data.limit);
+                pagination.updatePaginationControls("pagination-container");
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error loading users: ', error);
+            tableBody.innerHTML = '<tr><td colspan="5">Failed to load users</td></tr>';
+        }
+    }
+
+    // render users
+    function renderAllUsers(users) {
+
+        if (!users.length) {
+            tableBody.innerHTML = `<tr><td colspan="5">No useres found</td></tr>`;
+            return;
+        }
+
+        tableBody.innerHTML = users.map(user => {
+            const fullname = user.role_name === 'Admin' ? 'System Administrator' : [user.first_name, user.middle_name, user.last_name, user.suffix]
+                .filter(Boolean)
+                .join(' ');
+
+            const statusLabel = user.status == 1 ? 'Active' : 'Inactive';
+            const statusBadge = user.status == 1 ? 'badge bg-success' : 'badge bg-secondary';
+
+            return `
+                <tr>
+                    <td>${fullname}</td>
+                    <td>${user.username}</td>
+                    <td>${user.role_name}</td>
+                    <td><span class="${statusBadge}">${statusLabel}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.user_id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // add new user
+    async function saveUser() {
+        const formData = new FormData(addForm);
+        const roleId = formData.get('role_id');
+
+        let payload = {
+            operation: 'addUser',
+            json: JSON.stringify({
+                username: formData.get('username'),
+                password: formData.get('password'),
+                email: formData.get('email'),
+                mobile_number: formData.get('mobile_number'),
+                role_id: roleId
+            })
+        };
+
+        // Role Specific Fields
+        const roleSpecific = {
+            first_name: formData.get('first_name'),
+            middle_name: formData.get('middle_name'),
+            last_name: formData.get('last_name'),
+            suffix: formData.get('suffix'),
+        };
+        switch (roleId) {
+            // Doctor && Therapist
+            case '2':
+            case '7':
+                roleSpecific.license_number = formData.get('license_number');
+                roleSpecific.specialty_id = formData.get('specialty_id');
+                break;
+
+            case '4': // Nurse
+            case '5': // Lab Tech
+                roleSpecific.license_number = formData.get('license_number');
+                roleSpecific.department_id = formData.get('department_id');
+                break;
+
+            case '6': // Pharmacist
+                roleSpecific.license_number = formData.get('license_number');
+                break;
+
+            case '8': // Cashier
+            case '9': // Billing Officer
+                roleSpecific.employee_number = formData.get('employee_number');
+                break;
+        }
+
+        payload.json = JSON.stringify({
+            ...JSON.parse(payload.json),
+            ...roleSpecific
+        });
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/manage-users.php`, payload);
+
+            // 🔍 Backend response log
+            console.group("📥 Backend Response");
+            console.log(response.data);
+            console.groupEnd();
+
+            const data = response.data;
+
             if (data.success) {
                 Swal.fire({
                     title: 'Success',
-                    text: 'User added successfully!',
+                    text: 'User created successfully!',
                     icon: 'success'
                 });
-                document.getElementById('addUserForm').reset();
-                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
-                loadUsers();
+                addModal.hide();
+                addForm.reset();
+                await loadAllUsers();
             } else {
+                console.error("Backend Error:", data.message);
                 Swal.fire({
                     title: 'Error',
-                    text: 'Failed to add user: ' + data.message,
+                    text: 'Failed to create user: ' + data.message,
                     icon: 'error'
                 });
             }
-        } catch (error) {
-            console.error('Error adding user:', error);
+        } catch (err) {
+            console.error('Error saving user: ', err);
             Swal.fire({
                 title: 'Error',
-                text: 'Failed to add user. Please try again.',
+                text: err,
                 icon: 'error'
             });
         }
     }
 
-    // Function to update a user
-    async function updateUser() {
-        const userId = document.getElementById('editUserId').value;
-        const formData = {
-            user_id: userId,
-            first_name: document.getElementById('editFirstName').value.trim(),
-            middle_name: document.getElementById('editMiddleName').value.trim(),
-            last_name: document.getElementById('editLastName').value.trim(),
-            username: document.getElementById('editUsername').value.trim(),
-            password: document.getElementById('editPassword').value,
-            email: document.getElementById('editEmail').value.trim(),
-            mobile_number: document.getElementById('editMobileNumber').value.trim(),
-            role_id: document.getElementById('editRoleId').value
-        };
+    // render role specific fields
+    function renderRoleSpecificFields() {
+        const roleId = roleSelect.value;
+        const roleSpecificFieldsContainer = document.getElementById("roleSpecificFields");
+        roleSpecificFieldsContainer.innerHTML = '';
 
-        // Validate form
-        if (!formData.first_name || !formData.last_name || !formData.username || !formData.email || !formData.role_id) {
-            Swal.fire({
-                title: 'Validation',
-                text: 'Please fill in all required fields.',
-                icon: 'warning'
+        if (!roleId) return;
+
+        let fields = '';
+
+        switch (roleId) {
+            case '2': // Doctor
+            case '7':
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${roleId === '2' ? 'DOCTOR' : 'THERAPIST'} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Suffix</label>
+                            <input type="text" class="form-control" name="suffix">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">License #</label>
+                            <input type="text" class="form-control" name="license_number" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Specialty</label>
+                        <select class="form-select" name="specialty_id" required>
+                            <option value="">-- Select Specialty --</option>
+                        </select>
+                    </div>
+                </div>`;
+                break;
+
+            case '4': // Nurse
+            case '5': // Lab Tech
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${roleId === '4' ? 'NURSE' : 'LAB TECHNICIAN'} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Suffix</label>
+                            <input type="text" class="form-control" name="suffix">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">License #</label>
+                            <input type="text" class="form-control" name="license_number" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Department</label>
+                            <select class="form-select" name="department_id" required>
+                                <option value="">-- Select Department --</option>
+                            </select>
+                    </div>
+                </div>`;
+                break;
+
+            case '6': // Pharmacist
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">PHARMACIST DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Suffix</label>
+                            <input type="text" class="form-control" name="suffix">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" required>
+                    </div>
+                </div>`;
+                break;
+
+            case '8': // Cashier
+            case '9': // Billing Officer
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${roleId === '8' ? 'CASHIER' : 'BILLING OFFICER'} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Suffix</label>
+                            <input type="text" class="form-control" name="suffix">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Employee #</label>
+                        <input type="text" class="form-control" name="employee_number" required>
+                    </div>
+                </div>`;
+                break;
+        }
+        // Inject fields 
+        roleSpecificFieldsContainer.innerHTML = fields;
+
+        const specialtySelect = roleSpecificFieldsContainer.querySelector('select[name="specialty_id"]');
+        const departmentSelect = roleSpecificFieldsContainer.querySelector('select[name="department_id"]');
+
+        // Call loaders with the right select element
+        if (roleId === '2' && specialtySelect) {
+            loadDoctorSpecialties(specialtySelect);
+        }
+        if (roleId === '7' && specialtySelect) {
+            loadTherapistSpecialties(specialtySelect);
+        }
+        if (roleId === '4' && departmentSelect) {
+            loadNurseDepartments(departmentSelect);
+        }
+        if (roleId === '5' && departmentSelect) {
+            loadLabtechDepartments(departmentSelect);
+        }
+    }
+
+    // Load Doctor Specialty
+    async function loadDoctorSpecialties(selectEl) {
+        try {
+            const response = await axios.get(`${baseApiUrl}/mf-types-php/get-doctor-specialties.php`, {
+                params: { operation: 'getTypes' }
             });
-            return;
+
+            const data = response.data;
+            if (data.success) {
+                selectEl.innerHTML = ['<option value="">-- Select Specialty --</option>',
+                    ...data.types.map(sp => `<option value="${sp.specialty_id}">${sp.specialty_name}</option>`)
+                ].join('');
+            }
+        } catch (err) {
+            console.error('Error loading doctor specialties', err);
+        }
+    }
+
+    // Load Therapist Specialties
+    async function loadTherapistSpecialties(selectEl) {
+        try {
+            const response = await axios.get(`${baseApiUrl}/mf-types-php/get-therapist-specialties.php`, {
+                params: { operation: 'getTypes' }
+            });
+
+            const data = response.data;
+            if (data.success) {
+                selectEl.innerHTML = ['<option value="">-- Select Specialty --</option>',
+                    ...data.types.map(sp => `<option value="${sp.specialty_id}">${sp.specialty_name}</option>`)
+                ].join('');
+            }
+        } catch (err) {
+            console.error('Error loading therapist specialties', err);
+        }
+    }
+
+    // Load Nurse Departments
+    async function loadNurseDepartments(selectEl) {
+        try {
+            const response = await axios.get(`${baseApiUrl}/mf-types-php/get-nurse-departments.php`, {
+                params: { operation: 'getTypes' }
+            });
+
+            const data = response.data;
+
+            if (data.success) {
+                selectEl.innerHTML = ['<option value="">-- Select Department --</option>',
+                    ...data.types.map(dep => `<option value="${dep.department_id}">${dep.department_name}</option>`)
+                ].join('');
+            }
+        } catch (err) {
+            console.error('Error loading nurse departments', err);
+        }
+    }
+
+    // Load Lab technician departments
+    async function loadLabtechDepartments(selectEl) {
+        try {
+            const response = await axios.get(`${baseApiUrl}/mf-types-php/get-labtech-departments.php`, {
+                params: { operation: 'getTypes' }
+            });
+
+            const data = response.data;
+
+            if (data.success) {
+                selectEl.innerHTML = ['<option value="">-- Select Department --</option>',
+                    ...data.types.map(dep => `<option value="${dep.department_id}">${dep.department_name}</option>`)
+                ].join('');
+            }
+        } catch (err) {
+            console.error('Error loading labtech departments', err);
+        }
+    }
+
+    // Render edit role specific fields
+    function renderEditRoleSpecificFields(roleId, user) {
+        const container = document.getElementById("editRoleSpecificFields");
+        container.innerHTML = ""; // reset
+
+        let fields = "";
+
+        switch (roleId) {
+            case "2": // Doctor
+            case "7": // Therapist
+                fields = `
+            <div class="form-section">
+                <div class="form-section-title">${roleId === "2" ? "DOCTOR" : "THERAPIST"} DETAILS</div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Specialty</label>
+                    <select class="form-select" name="specialty_id" required>
+                        <option value="">-- Select Specialty --</option>
+                    </select>
+                </div>
+            </div>`;
+                break;
+
+            case "4": // Nurse
+            case "5": // Lab Tech
+                fields = `
+            <div class="form-section">
+                <div class="form-section-title">${roleId === "4" ? "NURSE" : "LAB TECHNICIAN"} DETAILS</div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" name="department_id" required>
+                            <option value="">-- Select Department --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>`;
+                break;
+
+            case "6": // Pharmacist
+                fields = `
+            <div class="form-section">
+                <div class="form-section-title">PHARMACIST DETAILS</div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                    </div>
+                </div>
+            </div>`;
+                break;
+
+            case "8": // Cashier
+            case "9": // Billing Officer
+                fields = `
+            <div class="form-section">
+                <div class="form-section-title">${roleId === "8" ? "CASHIER" : "BILLING OFFICER"} DETAILS</div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Middle Name</label>
+                        <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Employee #</label>
+                        <input type="text" class="form-control" name="employee_number" value="${user.employee_number || ""}" required>
+                    </div>
+                </div>
+                
+            </div>`;
+                break;
         }
 
-        try {
-            const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
-                operation: 'updateUser',
-                json: JSON.stringify(formData)
+        container.innerHTML = fields;
+
+        // Load dropdowns after injecting fields
+        if (roleId === "2") {
+            const selectEl = container.querySelector('select[name="specialty_id"]');
+            loadDoctorSpecialties(selectEl).then(() => {
+                if (user.specialty_id) selectEl.value = user.specialty_id;
             });
+        }
+        if (roleId === "7") {
+            const selectEl = container.querySelector('select[name="specialty_id"]');
+            loadTherapistSpecialties(selectEl).then(() => {
+                if (user.specialty_id) selectEl.value = user.specialty_id;
+            });
+        }
+        if (roleId === "4") {
+            const selectEl = container.querySelector('select[name="department_id"]');
+            loadNurseDepartments(selectEl).then(() => {
+                if (user.department_id) selectEl.value = user.department_id;
+            });
+        }
+        if (roleId === "5") {
+            const selectEl = container.querySelector('select[name="department_id"]');
+            loadLabtechDepartments(selectEl).then(() => {
+                if (user.department_id) selectEl.value = user.department_id;
+            });
+        }
+    }
+
+
+    // Edit User
+    window.editUser = async function (userId) {
+        const user = allUsers.find(u => u.user_id == userId);
+        if (!user) return;
+
+        // Fill hidden field
+        document.getElementById("edit_user_id").value = user.user_id;
+
+        // Authentication details
+        document.getElementById("edit_username").value = user.username || "";
+        document.getElementById("edit_password").value = "";
+        document.getElementById("edit_email").value = user.email || "";
+        document.getElementById("edit_mobile_number").value = user.mobile_number || "";
+
+        const statusSelect = document.getElementById("edit_status");
+        if (statusSelect) {
+            statusSelect.value = user.status;
+        }
+
+        // Render role-specific fields
+        const roleSpecificFieldsContainer = document.getElementById("editRoleSpecificFields");
+        roleSpecificFieldsContainer.innerHTML = "";
+
+        let fields = "";
+
+        switch (user.role_id) {
+            case "2": // Doctor
+            case "7": // Therapist
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${user.role_id === "2" ? "DOCTOR" : "THERAPIST"} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" name="middle_name" value="${user.middle_name || ""}">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Suffix</label>
+                            <input type="text" class="form-control" name="suffix" value="${user.suffix || ""}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">License #</label>
+                            <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Specialty</label>
+                        <select class="form-select" name="specialty_id" required>
+                            <option value="">-- Select Specialty --</option>
+                        </select>
+                    </div>
+                </div>`;
+                break;
+
+            case "4": // Nurse
+            case "5": // Lab Tech
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${user.role_id === "4" ? "NURSE" : "LAB TECHNICIAN"} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">License #</label>
+                            <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <select class="form-select" name="department_id" required>
+                                <option value="">-- Select Department --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+                break;
+
+            case "6": // Pharmacist
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">PHARMACIST DETAILS</div>
+                    <div class="mb-2">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">License #</label>
+                        <input type="text" class="form-control" name="license_number" value="${user.license_number || ""}" required>
+                    </div>
+                </div>`;
+                break;
+
+            case "8": // Cashier
+            case "9": // Billing Officer
+                fields = `
+                <div class="form-section">
+                    <div class="form-section-title">${user.role_id === "8" ? "CASHIER" : "BILLING OFFICER"} DETAILS</div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" value="${user.first_name || ""}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" value="${user.last_name || ""}" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Employee #</label>
+                        <input type="text" class="form-control" name="employee_number" value="${user.employee_number || ""}" required>
+                    </div>
+                </div>`;
+                break;
+        }
+
+        // Render role-specific fields with prefilled values
+        renderEditRoleSpecificFields(String(user.role_id), user);
+
+        // Finally show the modal
+        editModal.show();
+    }
+
+    // Update User
+    async function updateUser() {
+        const formData = new FormData(editForm);
+        const userId = document.getElementById("edit_user_id").value;
+
+
+        // Base payload (auth + common fields)
+        let payload = {
+            operation: "updateUser",
+            json: JSON.stringify({
+                user_id: userId,
+                username: formData.get("edit_username"),
+                password: formData.get("edit_password") || null,
+                email: formData.get("edit_email") || null,
+                mobile_number: formData.get("edit_mobile_number") || null,
+                status: formData.get("edit_status")
+            })
+        };
+
+        const roleId = allUsers.find(u => u.user_id == userId)?.role_id;
+        // Role-specific fields
+        const roleSpecific = {
+            first_name: formData.get("first_name"),
+            middle_name: formData.get("middle_name"),
+            last_name: formData.get("last_name"),
+            suffix: formData.get("suffix")
+        };
+
+        switch (roleId) {
+            case "2": // Doctor
+            case "7": // Therapist
+                roleSpecific.license_number = formData.get("license_number");
+                const specialtyId = formData.get("specialty_id");
+                if (specialtyId) roleSpecific.specialty_id = specialtyId;
+                break;
+
+            case "4": // Nurse
+            case "5": // Lab Tech
+                roleSpecific.license_number = formData.get("license_number");
+                const deptId = formData.get("department_id");
+                if (deptId) roleSpecific.department_id = deptId;
+                break;
+
+            case "6": // Pharmacist
+                roleSpecific.license_number = formData.get("license_number");
+                break;
+
+            case "8": // Cashier
+            case "9": // Billing Officer
+                roleSpecific.employee_number = formData.get("employee_number");
+                break;
+        }
+
+        // Merge into payload
+        payload.json = JSON.stringify({
+            ...JSON.parse(payload.json),
+            role_id: roleId,
+            ...roleSpecific
+        });
+
+        try {
+            const response = await axios.post(`${baseApiUrl}/manage-users.php`, payload);
             const data = response.data;
+
             if (data.success) {
                 Swal.fire({
                     title: 'Success',
                     text: 'User updated successfully!',
                     icon: 'success'
                 });
-                bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
-                loadUsers();
+                editModal.hide();
+                await loadAllUsers();
             } else {
+                console.error("Update failed:", data);
                 Swal.fire({
                     title: 'Error',
                     text: 'Failed to update user: ' + data.message,
                     icon: 'error'
                 });
             }
-        } catch (error) {
-            console.error('Error updating user:', error);
+        } catch (err) {
+            console.error("Error updating user:", err);
             Swal.fire({
                 title: 'Error',
                 text: 'Failed to update user. Please try again.',
@@ -326,37 +867,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to delete a user
-    async function deleteUser() {
-        const userId = document.getElementById('confirmDeleteUserBtn').dataset.userId;
-        try {
-            const response = await axios.post(`${baseApiUrl}/manage-users.php`, {
-                operation: 'deleteUser',
-                json: JSON.stringify({ user_id: userId })
-            });
-            const data = response.data;
-            if (data.success) {
-                Swal.fire({
-                    title: 'Deleted',
-                    text: 'User deleted successfully!',
-                    icon: 'success'
-                });
-                bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
-                loadUsers();
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to delete user: ' + data.message,
-                    icon: 'error'
-                });
-            }
-        } catch (error) {
-            console.error('Error deleting user:', error);
-            Swal.fire({
-                title: 'Error',
-                text: 'Failed to delete user. Please try again.',
-                icon: 'error'
-            });
-        }
-    }
+
+    // update existing user -- how it's stored in the database
+
+    await loadAllUsers(1, pagination.itemsPerPage);;
 });

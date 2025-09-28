@@ -5,7 +5,8 @@ require_once __DIR__ . '/require_auth.php';
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-class Insurance {
+class Insurance
+{
     function getClaims($status)
     {
         include 'connection-pdo.php';
@@ -80,7 +81,9 @@ class Insurance {
             $stmt->bindParam(':claim_id', $claim_id);
             $stmt->execute();
             $claim = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$claim) { throw new Exception('Claim not found'); }
+            if (!$claim) {
+                throw new Exception('Claim not found');
+            }
             $invoice_id = (int)$claim['invoice_id'];
 
             // Get invoice numbers
@@ -88,11 +91,15 @@ class Insurance {
             $stmt->bindParam(':invoice_id', $invoice_id);
             $stmt->execute();
             $inv = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$inv) { throw new Exception('Invoice not found'); }
+            if (!$inv) {
+                throw new Exception('Invoice not found');
+            }
 
             $covered = (float)$inv['insurance_covered_amount'] + (float)$approve_amount;
             $due = (float)$inv['total_amount'] - $covered;
-            if ($due < 0) { $due = 0; }
+            if ($due < 0) {
+                $due = 0;
+            }
 
             // Update invoice
             $stmt = $conn->prepare("UPDATE bill_invoice SET insurance_covered_amount = :covered, amount_due = :due WHERE invoice_id = :invoice_id");
@@ -105,7 +112,9 @@ class Insurance {
             $conn->commit();
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
-            if ($conn->inTransaction()) { $conn->rollBack(); }
+            if ($conn->inTransaction()) {
+                $conn->rollBack();
+            }
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -155,5 +164,3 @@ switch ($operation) {
         echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
-
-

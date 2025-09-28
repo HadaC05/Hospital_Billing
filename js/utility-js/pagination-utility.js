@@ -222,13 +222,6 @@ class PaginationUtility {
             totalPages: this.totalPages
         };
     }
-
-    /**
-     * Get items per page
-     */
-    getItemsPerPage() {
-        return this.itemsPerPage;
-    }
 }
 
 // Export for use in other modules
