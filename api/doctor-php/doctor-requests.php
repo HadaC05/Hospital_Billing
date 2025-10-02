@@ -17,29 +17,28 @@ class Doctor_Request
         try {
             $doctorId = (int)$_SESSION['user_id'];
 
+            // Get medicine requests from new batch system
             $sql = "
-                SELECT 
-                    dr.request_id,
-                    tst.svc_name,
-                    CASE 
-                        WHEN dr.svc_type_id = 4 THEN m.med_name
-                        /* Add other cases for different service types here */
-                        ELSE 'N/A'
-                    END as item_name,
-                    dr.request_date,
-                    dr.status
-                FROM doctor_requests dr
-                JOIN tbl_service_type tst ON dr.svc_type_id = tst.svc_type_id
-                LEFT JOIN tbl_medicine m ON dr.item_id = m.med_id AND dr.svc_type_id = 4
-                WHERE dr.doctor_id = :doctor_id
-            ";
+            SELECT 
+                rmb.batch_id as request_id,
+                'Medication' as svc_name,
+                GROUP_CONCAT(CONCAT(m.med_name, ' (', rmi.quantity, ')') SEPARATOR ', ') as item_name,
+                rmb.request_date,
+                rmb.status,
+                'medicine_batch' as request_type
+            FROM request_medicine_batch rmb
+            JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
+            JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            WHERE rmb.doctor_id = :doctor_id
+        ";
 
             if ($patientId) {
-                $sql .= " AND dr.patient_id = :patient_id";
+                $sql .= " AND rmb.patient_id = :patient_id";
             }
 
-            $sql .= " ORDER BY dr.request_date DESC";
+            $sql .= " GROUP BY rmb.batch_id ORDER BY rmb.request_date DESC";
 
+            // Execute query
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':doctor_id', $doctorId, PDO::PARAM_INT);
 
@@ -71,10 +70,12 @@ class Doctor_Request
             $patientId = $data['patient_id'] ?? null;
             $requests = $data['requests'] ?? [];
 
+            // Validation
             if (!$doctorId || !$patientId || empty($requests)) {
                 throw new Exception('Missing required fields');
             }
 
+            // Get active admission for the patient
             $admissionSql = "
                 SELECT admission_id FROM patient_admission 
                 WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
@@ -92,30 +93,55 @@ class Doctor_Request
             }
 
             $admissionId = $admission['admission_id'];
+
+            // Create batch record
+            $batchSql = "
+                INSERT INTO request_medicine_batch 
+                (doctor_id, patient_id, admission_id, request_date, status, notes)
+                VALUES (:doctor_id, :patient_id, :admission_id, NOW(), 'pending', :notes)
+            ";
+            $stmt = $this->pdo->prepare($batchSql);
+            $stmt->execute([
+                ':doctor_id' => $doctorId,
+                ':patient_id' => $patientId,
+                ':admission_id' => $admissionId,
+                ':notes' => $data['batch_notes'] ?? null
+            ]);
+
+            $batchId = $this->pdo->lastInsertId();
             $requestIds = [];
 
-            $requestSql = "
-                INSERT INTO doctor_requests 
-                (doctor_id, patient_id, svc_type_id, item_id, quantity, notes, request_date, status)
-                VALUES (:doctor_id, :patient_id, :svc_type_id, :item_id, :quantity, :notes, NOW(), 'pending')
-            ";
-            $stmt = $this->pdo->prepare($requestSql);
-
+            // Process each request in the batch
             foreach ($requests as $request) {
                 $svcTypeId = $request['svc_type_id'] ?? null;
                 $itemId = $request['item_id'] ?? null;
                 $quantity = $request['quantity'] ?? 1;
                 $notes = $request['notes'] ?? null;
 
-                if (!$svcTypeId || !$itemId) {
-                    continue; // Skip invalid requests
+                // Only process medication requests in batch
+                if ($svcTypeId != 4) { // 4 is Medication
+                    continue;
                 }
 
+                // Validate medicine
+                $checkSql = "SELECT 1 FROM tbl_medicine WHERE med_id = :item_id AND is_active = 1";
+                $checkStmt = $this->pdo->prepare($checkSql);
+                $checkStmt->execute([':item_id' => $itemId]);
+
+                if (!$checkStmt->fetch()) {
+                    throw new Exception('Invalid medicine selected');
+                }
+
+                // Insert item into batch
+                $itemSql = "
+                    INSERT INTO request_medicine_items 
+                    (batch_id, med_id, quantity, notes, status)
+                    VALUES (:batch_id, :med_id, :quantity, :notes, 'pending')
+                ";
+                $stmt = $this->pdo->prepare($itemSql);
                 $stmt->execute([
-                    ':doctor_id' => $doctorId,
-                    ':patient_id' => $patientId,
-                    ':svc_type_id' => $svcTypeId,
-                    ':item_id' => $itemId,
+                    ':batch_id' => $batchId,
+                    ':med_id' => $itemId,
                     ':quantity' => $quantity,
                     ':notes' => $notes
                 ]);
@@ -127,7 +153,8 @@ class Doctor_Request
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Requests submitted successfully',
+                'message' => 'Medicine batch created successfully',
+                'batch_id' => $batchId,
                 'request_ids' => $requestIds
             ]);
         } catch (Exception $e) {
@@ -149,9 +176,11 @@ class Doctor_Request
                 throw new Exception('Missing request ID');
             }
 
+            // Check if it's a medicine batch request
             $checkSql = "
-                SELECT 1 FROM doctor_requests 
-                WHERE request_id = :request_id AND doctor_id = :doctor_id AND status = 'pending'
+                SELECT rmb.batch_id 
+                FROM request_medicine_batch rmb
+                WHERE rmb.batch_id = :request_id AND rmb.doctor_id = :doctor_id
             ";
             $stmt = $this->pdo->prepare($checkSql);
             $stmt->execute([
@@ -159,17 +188,49 @@ class Doctor_Request
                 ':doctor_id' => $doctorId
             ]);
 
-            if (!$stmt->fetch()) {
-                throw new Exception('Request not found, not pending, or not authorized');
-            }
+            if ($stmt->fetch()) {
+                // Cancel the entire medicine batch
+                $updateSql = "
+                    UPDATE request_medicine_batch 
+                    SET status = 'cancelled' 
+                    WHERE batch_id = :request_id
+                ";
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([':request_id' => $requestId]);
 
-            $updateSql = "
-                UPDATE doctor_requests 
-                SET status = 'cancelled', cancelled_date = NOW() 
-                WHERE request_id = :request_id
-            ";
-            $stmt = $this->pdo->prepare($updateSql);
-            $stmt->execute([':request_id' => $requestId]);
+                // Also cancel all items in the batch
+                $updateItemsSql = "
+                    UPDATE request_medicine_items 
+                    SET status = 'cancelled' 
+                    WHERE batch_id = :request_id
+                ";
+                $stmt = $this->pdo->prepare($updateItemsSql);
+                $stmt->execute([':request_id' => $requestId]);
+            } else {
+                // Handle old request system
+                $checkSql = "
+                    SELECT 1 FROM doctor_requests 
+                    WHERE request_id = :request_id AND doctor_id = :doctor_id
+                ";
+                $stmt = $this->pdo->prepare($checkSql);
+                $stmt->execute([
+                    ':request_id' => $requestId,
+                    ':doctor_id' => $doctorId
+                ]);
+
+                if (!$stmt->fetch()) {
+                    throw new Exception('Request not found or not authorized');
+                }
+
+                // Update request status to cancelled
+                $updateSql = "
+                    UPDATE doctor_requests 
+                    SET status = 'cancelled', cancelled_date = NOW() 
+                    WHERE request_id = :request_id
+                ";
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([':request_id' => $requestId]);
+            }
 
             echo json_encode([
                 'success' => true,

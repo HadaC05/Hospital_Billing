@@ -401,3 +401,13 @@ a:focus {
     margin-left: 0 !important;
   }
 }
+
+/* SweetAlert2 z-index fix for Bootstrap Modals */
+body.swal2-shown > [aria-hidden='true'] {
+    transition: 0.1s filter;
+    filter: blur(10px);
+}
+
+.swal2-container {
+    z-index: 2000 !important; 
+}

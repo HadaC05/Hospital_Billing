@@ -48,7 +48,7 @@ async function loadAdminDashboardStats() {
 async function fetchAdmittedPatientsCount() {
     const base = getBaseApiUrl();
     try {
-                const resp = await axios.get(`${base}/admission-php/get-admissions.php`, {
+        const resp = await axios.get(`${base}/get-admissions.php`, {
             params: { operation: 'getAdmissions' }
         });
         const payload = resp?.data;
