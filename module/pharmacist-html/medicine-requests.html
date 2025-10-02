@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Doctor Requests</title>
+    <title>Medicine Requests</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -12,7 +12,6 @@
         crossorigin="anonymous">
     <link rel="stylesheet" href="../../css/hospital-theme.css">
     <link rel="stylesheet" href="../../css/dashboard.css">
-    <link rel="stylesheet" href="../../css/doctor-request.css">
 
     <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
 
@@ -23,7 +22,7 @@
     <script src="../../js/components-js/sidebar.js" defer></script>
     <script src="../../js/components-js/header-loader.js" defer></script>
     <script src="../../js/utility-js/pagination-utility.js" defer></script>
-    <script src="../../js/requests-js/approved-request-med.js" defer></script>
+    <script src="../../js/requests-js/medicine-requests.js" defer></script>
     <script src="../../js/utility-js/theme-loader.js" defer></script>
 </head>
 
@@ -41,7 +40,7 @@
                     <!-- Page Header -->
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h2><i class="fas fa-prescription-bottle-alt me-2"></i>Approved Requests</h2>
+                            <h2><i class="fas fa-pills me-2"></i>Medicine Requests</h2>
                         </div>
                     </div>
 
@@ -51,21 +50,28 @@
                             <div
                                 class="card-header text-white bg-primary d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Requests List</h5>
-                                <button class="btn btn-sm btn-outline-light" id="printBtn" disabled>
-                                    <i class="fas fa-print me-1"></i>Print
-                                </button>
+                                <div class="d-flex align-items-center">
+                                    <input type="text" id="searchInput" class="form-control form-control-sm me-2"
+                                        placeholder="Search by patient or doctor...">
+                                    <button class="btn btn-sm btn-light" id="dispenseSelectedBtn" disabled>
+                                        <i class="fas fa-check-double me-1"></i>Dispense Selected
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" id="printBtn" disabled>
+                                        <i class="fas fa-print me-1"></i>Print
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-hover table-striped align-middle" id="requests-table">
                                         <thead class="table-dark">
                                             <tr>
+                                                <th class="text-center"><input type="checkbox" id="selectAllCheckbox">
+                                                </th>
                                                 <th>Request Date</th>
                                                 <th>Doctor Name</th>
                                                 <th>Patient Name</th>
-                                                <th>Item</th>
-                                                <th>Quantity</th>
-                                                <th>Notes</th>
+                                                <th>Items</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -112,25 +118,8 @@
                             <p id="dispensePatient" class="form-control-plaintext"></p>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Medicine</label>
-                            <p id="dispenseMedicine" class="form-control-plaintext"></p>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Quantity Requested</label>
-                                <p id="dispenseQuantity" class="form-control-plaintext"></p>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Available Stock</label>
-                                <p id="dispenseStock" class="form-control-plaintext text-success"></p>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Notes</label>
-                            <p id="dispenseNotes" class="form-control-plaintext"></p>
+                        <div id="dispense-items-container">
+                            <!-- Items will be dynamically inserted here -->
                         </div>
                     </form>
                 </div>

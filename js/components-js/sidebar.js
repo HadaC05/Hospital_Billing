@@ -138,20 +138,15 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../doctor-html/doctor-merge.html',
             icon: 'fas fa-prescription-bottle-alt'
         },
-        pending_request_med: {
-            label: 'Pending Requests',
-            link: '../pharmacist-html/pending-request-med.html',
-            icon: 'fas fa-pills'
-        },
-        approved_request_med: {
-            label: 'Approved Requests',
-            link: '../pharmacist-html/approved-request-med.html',
-            icon: 'fas fa-pills'
-        },
         medicine_management: {
             label: 'Medicine Management',
             link: '../nurse-html/medicine-management.html',
             icon: 'fas fa-prescription-bottle-alt'
+        },
+        medicine_requests: {
+            label: 'Medicine Requests Module',
+            link: '../pharmacist-html/medicine-requests.html',
+            icon: 'fas fa-pills'
         }
     };
 
@@ -206,6 +201,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../mf-types-html/type-labtest.html',
             icon: 'fas fa-vial'
         },
+
     };
 
     try {
@@ -343,7 +339,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add pharmacist-only links
         if (isPharmacist) {
-            const pLinks = [moduleMap.pharmacist_dashboard, moduleMap.pending_request_med, moduleMap.approved_request_med];
+            const pLinks = [moduleMap.pharmacist_dashboard, moduleMap.medicine_requests];
             pLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
