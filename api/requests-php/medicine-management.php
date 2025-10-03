@@ -17,6 +17,7 @@ class Medicine_Management
     // ===== Helper: Update batch status based on items =====
     private function updateBatchStatus($batchId)
     {
+        // Get all item statuses for this batch
         $sql = "SELECT status FROM request_medicine_items WHERE batch_id = :batch_id";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':batch_id' => $batchId]);
@@ -25,26 +26,35 @@ class Medicine_Management
         if (!$statuses) return;
 
         $allStatuses = array_unique($statuses);
+        $newStatus = 'pending'; // Default status
 
-        // Determine new batch status
-        if (count($allStatuses) === 1 && $allStatuses[0] === 'pending') {
-            $newStatus = 'pending';
-        } elseif (in_array('pending', $allStatuses) && (in_array('dispensed', $allStatuses) || in_array('picked', $allStatuses))) {
-            // Some items still pending, others already dispensed/picked
-            $newStatus = 'partially_dispensed';
-        } elseif (in_array('dispensed', $allStatuses) || in_array('picked', $allStatuses)) {
-            // All dispensed/picked, none pending
+        // Determine new batch status based on item statuses
+        if (count($allStatuses) === 1) {
+            // All items have the same status
+            $newStatus = $allStatuses[0];
+        } elseif (in_array('pending', $allStatuses)) {
+            // Some items are still pending
+            if (in_array('picked', $allStatuses) || in_array('administered', $allStatuses) || in_array('returned', $allStatuses)) {
+                $newStatus = 'partially_dispensed';
+            } else {
+                $newStatus = 'pending';
+            }
+        } elseif (in_array('dispensed', $allStatuses)) {
+            // All items are dispensed but none picked yet
             $newStatus = 'dispensed';
-        } elseif (count($allStatuses) === 1 && $allStatuses[0] === 'administered') {
-            $newStatus = 'completed';
-        } elseif (count($allStatuses) === 1 && ($allStatuses[0] === 'returned' || $allStatuses[0] === 'returned_confirmed')) {
-            $newStatus = 'completed';
+        } elseif (in_array('picked', $allStatuses)) {
+            // All items are picked but none administered yet
+            if (in_array('administered', $allStatuses) || in_array('returned', $allStatuses)) {
+                $newStatus = 'partially_dispensed';
+            } else {
+                $newStatus = 'picked';
+            }
         } elseif (in_array('administered', $allStatuses) || in_array('returned', $allStatuses) || in_array('returned_confirmed', $allStatuses)) {
+            // All items are either administered or returned
             $newStatus = 'completed';
-        } else {
-            $newStatus = 'dispensed';
         }
 
+        // Update the batch status
         $update = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
         $stmt = $this->pdo->prepare($update);
         $stmt->execute([
@@ -74,7 +84,6 @@ class Medicine_Management
             JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
             JOIN patients p ON rmb.patient_id = p.patient_id
             JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
-            WHERE rmb.status IN ('partially_dispensed', 'dispensed', 'completed')
         ";
 
             if ($patientId) {
@@ -104,24 +113,41 @@ class Medicine_Management
     {
         try {
             $itemIds = $data['item_ids'] ?? [];
-            $nurseId = $_SESSION['user_id'];
+            $nurseId = $_SESSION['user_id'] ?? null;
+
             if (empty($itemIds)) throw new Exception('No medicine items selected');
+            if (!$nurseId) throw new Exception('User not authenticated');
+
+            $this->pdo->beginTransaction();
 
             $sql = "UPDATE request_medicine_items 
-                    SET status = 'picked', picked_by = :nurse_id, picked_date = NOW() 
-                    WHERE item_id = :item_id";
+                SET status = 'picked', picked_by = :nurse_id, picked_date = NOW() 
+                WHERE item_id = :item_id";
             $stmt = $this->pdo->prepare($sql);
+
+            $batchIds = []; // Collect unique batch IDs to update
 
             foreach ($itemIds as $id) {
                 $stmt->execute([':item_id' => $id, ':nurse_id' => $nurseId]);
 
-                // update batch after each item
+                // Get the batch ID for this item
                 $batchId = $this->getBatchIdFromItem($id);
+                if ($batchId && !in_array($batchId, $batchIds)) {
+                    $batchIds[] = $batchId;
+                }
+            }
+
+            // Update each batch status only once
+            foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
             }
 
+            $this->pdo->commit();
+
             echo json_encode(['success' => true, 'message' => 'Medicines confirmed as picked up']);
         } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Error in confirmPickup: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -207,15 +233,27 @@ class Medicine_Management
                 throw new Exception('Batch not found');
             }
 
-            // Get batch items
+            // Get batch items with user information
             $itemsSql = "
             SELECT 
                 rmi.item_id,
                 rmi.quantity,
                 rmi.status as item_status,
-                m.med_name
+                rmi.dispensed_by,
+                rmi.picked_by,
+                rmi.administered_by,
+                rmi.dispensed_date,
+                rmi.picked_date,
+                rmi.administered_date,
+                m.med_name,
+                CONCAT(COALESCE(dispensed_p.first_name, ''), ' ', COALESCE(dispensed_p.last_name, '')) AS dispensed_by_name,
+                CONCAT(COALESCE(picked_n.first_name, ''), ' ', COALESCE(picked_n.last_name, '')) AS picked_by_name,
+                CONCAT(COALESCE(administered_n.first_name, ''), ' ', COALESCE(administered_n.last_name, '')) AS administered_by_name
             FROM request_medicine_items rmi
             JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            LEFT JOIN user_pharmacist dispensed_p ON rmi.dispensed_by = dispensed_p.user_id
+            LEFT JOIN user_nurse picked_n ON rmi.picked_by = picked_n.user_id
+            LEFT JOIN user_nurse administered_n ON rmi.administered_by = administered_n.user_id
             WHERE rmi.batch_id = :batch_id
             ORDER BY rmi.item_id
         ";

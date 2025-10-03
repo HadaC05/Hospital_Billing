@@ -94,7 +94,9 @@
                         <table class="table table-sm table-bordered">
                             <thead>
                                 <tr>
-                                    <th>Select</th>
+                                    <th class="text-center">
+                                        <input type="checkbox" id="selectAllModalCheckbox">
+                                    </th>
                                     <th>Medicine</th>
                                     <th>Quantity</th>
                                     <th>Status</th>
@@ -108,8 +110,14 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="confirmPickupBtn" class="btn btn-success" disabled>
+                    <button type="button" id="modalConfirmPickupBtn" class="btn btn-success" disabled>
                         <i class="fas fa-check me-1"></i> Confirm Pickup
+                    </button>
+                    <button type="button" id="modalAdministerBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-syringe me-1"></i> Administer
+                    </button>
+                    <button type="button" id="modalReturnBtn" class="btn btn-danger" disabled>
+                        <i class="fas fa-undo me-1"></i> Return
                     </button>
                 </div>
             </div>

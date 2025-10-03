@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalBatchStatus = document.getElementById('modalBatchStatus');
     const modalBatchNotes = document.getElementById('modalBatchNotes');
     const batchItemsTableBody = document.getElementById('batchItemsTableBody');
-    const modalConfirmPickupBtn = document.getElementById('confirmPickupBtn');
+    const modalConfirmPickupBtn = document.getElementById('modalConfirmPickupBtn');
+    const modalAdministerBtn = document.getElementById('modalAdministerBtn');
+    const modalReturnBtn = document.getElementById('modalReturnBtn');
 
     // Current batch items for confirmation
     let currentBatchItems = [];
@@ -89,16 +91,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Populate items table
                 batchItemsTableBody.innerHTML = '';
                 let hasDispensedItems = false;
+                let hasPickedItems = false;
 
                 items.forEach(item => {
                     const row = document.createElement('tr');
                     const isDispensed = item.item_status === 'dispensed';
+                    const isPicked = item.item_status === 'picked';
 
                     if (isDispensed) hasDispensedItems = true;
+                    if (isPicked) hasPickedItems = true;
 
                     row.innerHTML = `
                         <td>
-                            ${isDispensed ?
+                            ${isDispensed || isPicked ?
                             `<input type="checkbox" class="batch-item-checkbox" data-item-id="${item.item_id}">` :
                             ''
                         }
@@ -110,16 +115,30 @@ document.addEventListener("DOMContentLoaded", () => {
                     batchItemsTableBody.appendChild(row);
                 });
 
-                // Enable/disable confirm pickup button
+                // Enable/disable buttons based on available items
                 modalConfirmPickupBtn.disabled = !hasDispensedItems;
+                modalAdministerBtn.disabled = !hasPickedItems;
+                modalReturnBtn.disabled = !hasPickedItems;
 
                 // Show the modal
                 batchDetailsModal.show();
 
                 // Add event listener to checkboxes
                 document.querySelectorAll('.batch-item-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('change', updateConfirmButtonState);
+                    checkbox.addEventListener('change', updateActionButtonStates);
                 });
+
+                // Add event listener to "Select All" checkbox
+                const selectAllModalCheckbox = document.getElementById('selectAllModalCheckbox');
+                if (selectAllModalCheckbox) {
+                    selectAllModalCheckbox.addEventListener('change', function () {
+                        const checkboxes = document.querySelectorAll('.batch-item-checkbox:not(:disabled)');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.checked = this.checked;
+                        });
+                        updateActionButtonStates();
+                    });
+                }
 
             } else {
                 Swal.fire("Error", res.data.message || "Failed to load batch details", "error");
@@ -130,40 +149,70 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Update confirm button state based on selected items
-    function updateConfirmButtonState() {
+    // Update action buttons state based on selected items
+    function updateActionButtonStates() {
         const selectedItems = document.querySelectorAll('.batch-item-checkbox:checked');
-        modalConfirmPickupBtn.disabled = selectedItems.length === 0;
+        const hasSelection = selectedItems.length > 0;
+
+        // Update action buttons
+        modalConfirmPickupBtn.disabled = !hasSelection;
+        modalAdministerBtn.disabled = !hasSelection;
+        modalReturnBtn.disabled = !hasSelection;
+
+        // Update "Select All" checkbox state
+        const selectAllModalCheckbox = document.getElementById('selectAllModalCheckbox');
+        const checkboxes = document.querySelectorAll('.batch-item-checkbox:not(:disabled)');
+        if (selectAllModalCheckbox && checkboxes.length > 0) {
+            selectAllModalCheckbox.checked = checkboxes.length > 0 && selectedItems.length === checkboxes.length;
+        }
     }
 
     // ===== Confirm Pickup in Modal =====
     modalConfirmPickupBtn.addEventListener('click', async () => {
+        await performAction('confirmPickup', 'Medicines confirmed as picked up');
+    });
+
+    // ===== Administer in Modal =====
+    modalAdministerBtn.addEventListener('click', async () => {
+        await performAction('administerMedicines', 'Medicines marked as administered');
+    });
+
+    // ===== Return in Modal =====
+    modalReturnBtn.addEventListener('click', async () => {
+        await performAction('returnMedicines', 'Medicines returned successfully');
+    });
+
+    // ===== Perform Action (Pickup, Administer, Return) =====
+    async function performAction(operation, successMessage) {
         const selectedItems = Array.from(document.querySelectorAll('.batch-item-checkbox:checked'))
             .map(cb => cb.dataset.itemId);
 
         if (selectedItems.length === 0) {
-            Swal.fire("Warning", "Please select at least one medicine to confirm pickup", "warning");
+            Swal.fire("Warning", "Please select at least one medicine", "warning");
             return;
         }
 
         try {
+            console.log(`Sending ${operation} request with item IDs:`, selectedItems);
             const res = await axios.post(apiUrl, {
-                operation: "confirmPickup",
+                operation: operation,
                 json: JSON.stringify({ item_ids: selectedItems })
             }, { withCredentials: true });
 
+            console.log(`Response from ${operation}:`, res.data);
+
             if (res.data.success) {
-                Swal.fire("Success", "Medicines confirmed as picked up", "success");
+                Swal.fire("Success", successMessage, "success");
                 batchDetailsModal.hide();
                 await loadDispensedMedicines();
             } else {
-                Swal.fire("Error", res.data.message || "Failed to confirm pickup", "error");
+                Swal.fire("Error", res.data.message || "Operation failed", "error");
             }
         } catch (err) {
-            console.error("Error:", err);
-            Swal.fire("Error", "Network error while confirming pickup", "error");
+            console.error(`Error in ${operation}:`, err);
+            Swal.fire("Error", `Network error while performing ${operation}`, "error");
         }
-    });
+    }
 
     // ===== API Calls =====
     async function loadDispensedMedicines() {
@@ -196,11 +245,23 @@ document.addEventListener("DOMContentLoaded", () => {
         Swal.fire("Info", "Please use the 'View Details' button to select specific medicines for return.", "info");
     });
 
+    // ===== Select All Checkbox in Main Table =====
+    document.getElementById("selectAll").addEventListener("change", function () {
+        const checkboxes = document.querySelectorAll(".batch-checkbox");
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
     function statusBadge(status) {
         const s = (status || '').toLowerCase().trim();
         let cls = 'secondary';
         if (s === 'pending') cls = 'warning';
-        else if (s === 'completed' || s === 'dispensed') cls = 'success';
+        else if (s === 'dispensed') cls = 'info';
+        else if (s === 'picked') cls = 'primary';
+        else if (s === 'administered') cls = 'success';
+        else if (s === 'returned') cls = 'danger';
+        else if (s === 'completed') cls = 'success';
         else if (s === 'cancelled') cls = 'danger';
         else if (s === 'partially dispensed' || s === 'partially_dispensed') cls = 'info';
         return `<span class="badge bg-${cls}">${status}</span>`;

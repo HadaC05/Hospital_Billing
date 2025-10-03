@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 02, 2025 at 03:59 PM
+-- Generation Time: Oct 03, 2025 at 08:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -452,7 +452,7 @@ CREATE TABLE `request_medicine_batch` (
   `patient_id` int(11) NOT NULL,
   `admission_id` int(11) NOT NULL,
   `request_date` datetime DEFAULT current_timestamp(),
-  `status` enum('pending','approved','partially_dispensed','dispensed','completed','cancelled') DEFAULT 'pending',
+  `status` enum('pending','approved','partially_dispensed','dispensed','picked','partially_picked','completed','cancelled','rejected') DEFAULT 'pending',
   `notes` text DEFAULT NULL,
   `cancelled_reason` text DEFAULT NULL,
   `cancelled_by` int(11) DEFAULT NULL,
@@ -464,9 +464,11 @@ CREATE TABLE `request_medicine_batch` (
 --
 
 INSERT INTO `request_medicine_batch` (`batch_id`, `doctor_id`, `patient_id`, `admission_id`, `request_date`, `status`, `notes`, `cancelled_reason`, `cancelled_by`, `cancelled_date`) VALUES
-(1, 2, 26, 24, '2025-09-21 07:30:08', 'pending', NULL, NULL, NULL, NULL),
-(2, 2, 26, 24, '2025-09-22 21:58:09', 'pending', NULL, NULL, NULL, NULL),
-(3, 2, 26, 24, '2025-09-22 22:26:10', 'pending', NULL, NULL, NULL, NULL);
+(1, 2, 26, 24, '2025-09-21 07:30:08', '', NULL, NULL, NULL, NULL),
+(2, 2, 26, 24, '2025-09-22 21:58:09', '', NULL, NULL, NULL, NULL),
+(3, 2, 26, 24, '2025-09-22 22:26:10', '', NULL, NULL, NULL, NULL),
+(4, 2, 30, 28, '2025-10-03 13:52:00', 'partially_dispensed', NULL, NULL, NULL, NULL),
+(5, 2, 29, 27, '2025-10-03 14:06:02', '', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -496,14 +498,17 @@ CREATE TABLE `request_medicine_items` (
 --
 
 INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity`, `notes`, `status`, `dispensed_by`, `dispensed_date`, `picked_by`, `picked_date`, `administered_by`, `administered_date`, `returned_by`, `returned_date`) VALUES
-(1, 1, 4, 1, 'test', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(2, 1, 1, 2, 'test', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(3, 2, 5, 3, 'test', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(4, 2, 11, 3, 'test', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(5, 3, 3, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(6, 3, 6, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(7, 3, 11, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(8, 3, 5, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(1, 1, 4, 1, 'test', 'picked', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, NULL, NULL),
+(2, 1, 1, 2, 'test', 'picked', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, NULL, NULL),
+(3, 2, 5, 3, 'test', 'picked', NULL, NULL, 11, '2025-10-03 14:44:55', NULL, NULL, NULL, NULL),
+(4, 2, 11, 3, 'test', 'picked', NULL, NULL, 11, '2025-10-03 13:43:00', NULL, NULL, NULL, NULL),
+(5, 3, 3, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
+(6, 3, 6, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
+(7, 3, 11, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
+(8, 3, 5, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
+(9, 4, 3, 2, 'testing', 'returned', NULL, NULL, 11, '2025-10-03 14:46:26', NULL, NULL, 11, '2025-10-03 14:57:39'),
+(10, 4, 3, 2, 'testing again', 'picked', NULL, NULL, 11, '2025-10-03 14:56:52', NULL, NULL, NULL, NULL),
+(11, 5, 12, 5, '', 'administered', NULL, NULL, 11, '2025-10-03 14:56:45', 11, '2025-10-03 14:57:08', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2211,13 +2216,13 @@ ALTER TABLE `request_labtest`
 -- AUTO_INCREMENT for table `request_medicine_batch`
 --
 ALTER TABLE `request_medicine_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_items`
 --
 ALTER TABLE `request_medicine_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
