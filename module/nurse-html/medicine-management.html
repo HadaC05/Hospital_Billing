@@ -42,11 +42,11 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th><input type="checkbox" id="selectAll"></th>
-                                    <th>Batch</th>
                                     <th>Patient</th>
-                                    <th>Medicine</th>
-                                    <th>Qty</th>
+                                    <th>Doctor</th>
+                                    <th>Request Date</th>
                                     <th>Status</th>
+                                    <th>Items</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -63,6 +63,57 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Batch Details Modal -->
+    <div class="modal fade" id="batchDetailsModal" tabindex="-1" aria-labelledby="batchDetailsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="batchDetailsModalLabel">Medicine Batch Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Batch ID:</strong> <span id="modalBatchId"></span></p>
+                            <p><strong>Patient:</strong> <span id="modalPatientName"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Doctor:</strong> <span id="modalDoctorName"></span></p>
+                            <p><strong>Status:</strong> <span id="modalBatchStatus"></span></p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <p><strong>Notes:</strong> <span id="modalBatchNotes"></span></p>
+                    </div>
+
+                    <h6>Medicines in this Batch</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Medicine</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchItemsTableBody">
+                                <!-- Items will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="confirmPickupBtn" class="btn btn-success" disabled>
+                        <i class="fas fa-check me-1"></i> Confirm Pickup
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 

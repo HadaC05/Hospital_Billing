@@ -59,28 +59,29 @@ class Medicine_Management
     {
         try {
             $sql = "
-                SELECT 
-                    rmb.batch_id,
-                    rmb.request_date,
-                    rmb.status as batch_status,
-                    p.patient_id,
-                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
-                    rmi.item_id,
-                    m.med_name,
-                    rmi.quantity,
-                    rmi.status as item_status
-                FROM request_medicine_batch rmb
-                JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
-                JOIN tbl_medicine m ON rmi.med_id = m.med_id
-                JOIN patients p ON rmb.patient_id = p.patient_id
-                WHERE rmb.status IN ('partially_dispensed', 'dispensed','completed')
-            ";
+            SELECT 
+                rmb.batch_id,
+                rmb.request_date,
+                rmb.status as batch_status,
+                p.patient_id,
+                CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
+                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name,
+                COUNT(rmi.item_id) as item_count,
+                SUM(CASE WHEN rmi.status = 'dispensed' THEN 1 ELSE 0 END) as dispensed_count,
+                SUM(CASE WHEN rmi.status = 'picked' THEN 1 ELSE 0 END) as picked_count,
+                SUM(CASE WHEN rmi.status = 'administered' THEN 1 ELSE 0 END) as administered_count
+            FROM request_medicine_batch rmb
+            JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
+            JOIN patients p ON rmb.patient_id = p.patient_id
+            JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
+            WHERE rmb.status IN ('partially_dispensed', 'dispensed', 'completed')
+        ";
 
             if ($patientId) {
                 $sql .= " AND p.patient_id = :patient_id";
             }
 
-            $sql .= " ORDER BY rmb.request_date DESC";
+            $sql .= " GROUP BY rmb.batch_id ORDER BY rmb.request_date DESC";
 
             $stmt = $this->pdo->prepare($sql);
             if ($patientId) {
@@ -91,7 +92,7 @@ class Medicine_Management
 
             echo json_encode([
                 'success' => true,
-                'medicines' => $rows
+                'batches' => $rows
             ]);
         } catch (PDOException $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -183,31 +184,50 @@ class Medicine_Management
     public function getBatchDetails($batchId)
     {
         try {
-            $sql = "
-                SELECT rmb.*, 
-                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name
-                FROM request_medicine_batch rmb
-                JOIN patients p ON rmb.patient_id = p.patient_id
-                WHERE rmb.batch_id = :batch_id
-            ";
-            $stmt = $this->pdo->prepare($sql);
+            // Get batch details with patient and doctor information
+            $batchSql = "
+            SELECT 
+                rmb.batch_id,
+                rmb.request_date,
+                rmb.status as batch_status,
+                rmb.notes,
+                p.patient_id,
+                CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
+                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
+            FROM request_medicine_batch rmb
+            JOIN patients p ON rmb.patient_id = p.patient_id
+            JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
+            WHERE rmb.batch_id = :batch_id
+        ";
+            $stmt = $this->pdo->prepare($batchSql);
             $stmt->execute([':batch_id' => $batchId]);
             $batch = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$batch) throw new Exception('Batch not found');
+            if (!$batch) {
+                throw new Exception('Batch not found');
+            }
 
+            // Get batch items
             $itemsSql = "
-                SELECT rmi.*, m.med_name
-                FROM request_medicine_items rmi
-                JOIN tbl_medicine m ON rmi.med_id = m.med_id
-                WHERE rmi.batch_id = :batch_id
-                ORDER BY rmi.item_id
-            ";
+            SELECT 
+                rmi.item_id,
+                rmi.quantity,
+                rmi.status as item_status,
+                m.med_name
+            FROM request_medicine_items rmi
+            JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            WHERE rmi.batch_id = :batch_id
+            ORDER BY rmi.item_id
+        ";
             $stmt = $this->pdo->prepare($itemsSql);
             $stmt->execute([':batch_id' => $batchId]);
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            echo json_encode(['success' => true, 'batch' => $batch, 'items' => $items]);
+            echo json_encode([
+                'success' => true,
+                'batch' => $batch,
+                'items' => $items
+            ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }

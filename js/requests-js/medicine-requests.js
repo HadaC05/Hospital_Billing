@@ -3,57 +3,61 @@ console.log('medicine-requests.js is working');
 document.addEventListener("DOMContentLoaded", async () => {
     const apiBase = `${window.location.origin}/hospital_billing/api`;
     const tbody = document.getElementById("request-list");
-    const selectAllCheckbox = document.getElementById("selectAllCheckbox");
-    const dispenseSelectedBtn = document.getElementById("dispenseSelectedBtn");
-    const dispenseModal = new bootstrap.Modal(document.getElementById('dispenseModal'));
     const searchInput = document.getElementById('searchInput');
-    let allRequests = [];
+    const dispenseModal = new bootstrap.Modal(document.getElementById('dispenseModal'));
+    let allBatches = [];
 
-    async function loadRequests() {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center">Loading...</td></tr>`;
+    async function loadBatches() {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center">Loading...</td></tr>`;
         try {
             const response = await axios.get(`${apiBase}/requests-php/medicine-requests.php`, {
-                params: { operation: "getRequests" },
+                params: {
+                    operation: "getBatchRequests",
+                    _t: new Date().getTime() // Cache buster
+                },
                 withCredentials: true
             });
 
             const data = response.data;
-            if (!data.success || !data.requests || data.requests.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No pending requests found.</td></tr>`;
-                return;
+            console.log('Batch data received:', data); // Debug logging
+            // Corrected logic to handle the response
+            if (data && data.success && data.data && data.data.length > 0) {
+                allBatches = data.data;
+                console.log('Rendering batches:', allBatches); // Debug logging
+                renderBatches(allBatches);
+            } else {
+                console.log('No batches to display'); // Debug logging
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No pending requests found.</td></tr>`;
+                allBatches = []; // Clear the local cache
             }
-            allRequests = data.requests;
-            renderRequests(allRequests);
         } catch (err) {
             console.error("Error fetching requests:", err);
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load requests</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load requests</td></tr>`;
         }
     }
 
     searchInput.addEventListener('input', () => {
         const searchTerm = searchInput.value.toLowerCase();
-        const filteredRequests = allRequests.filter(group =>
-            group.patient_name.toLowerCase().includes(searchTerm) ||
-            group.doctor_name.toLowerCase().includes(searchTerm)
+        const filteredBatches = allBatches.filter(batch =>
+            batch.patient_name.toLowerCase().includes(searchTerm) ||
+            batch.doctor_name.toLowerCase().includes(searchTerm)
         );
-        renderRequests(filteredRequests);
+        renderBatches(filteredBatches);
     });
 
-    function renderRequests(requests) {
+    function renderBatches(batches) {
         tbody.innerHTML = "";
-        requests.forEach(group => {
+        batches.forEach(batch => {
             const tr = document.createElement("tr");
-            const requestIds = group.items.map(item => item.request_id);
-            tr.dataset.patientId = group.patient_id;
+            // This corrected code creates the table cells correctly.
             tr.innerHTML = `
-                <td class="text-center"><input type="checkbox" class="request-checkbox" data-request-ids='${JSON.stringify(requestIds)}'></td>
-                <td>${new Date(group.request_date).toLocaleDateString()}</td>
-                <td>${group.doctor_name}</td>
-                <td>${group.patient_name}</td>
-                <td><span class="badge bg-secondary">${group.items.length}</span></td>
+                <td>${new Date(batch.request_date).toLocaleDateString()}</td>
+                <td>${batch.doctor_name}</td>
+                <td>${batch.patient_name}</td>
+                <td>${statusBadge(batch.status)}</td> 
                 <td>
-                    <button class="btn btn-sm btn-primary dispense-btn" data-patient-id="${group.patient_id}">
-                        <i class="fas fa-pills"></i> Dispense
+                    <button class="btn btn-sm btn-primary dispense-btn" data-batch-id="${batch.batch_id}">
+                        <i class="fas fa-pills"></i> View Details
                     </button>
                 </td>
             `;
@@ -61,160 +65,136 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    function updateDispenseSelectedButtonState() {
-        const selectedCheckboxes = document.querySelectorAll('.request-checkbox:checked');
-        dispenseSelectedBtn.disabled = selectedCheckboxes.length === 0;
-    }
-
-    tbody.addEventListener('change', (e) => {
-        if (e.target.classList.contains('request-checkbox')) {
-            updateDispenseSelectedButtonState();
-        }
-    });
-
-    selectAllCheckbox.addEventListener('change', (e) => {
-        const checkboxes = document.querySelectorAll('.request-checkbox');
-        checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
-        updateDispenseSelectedButtonState();
-    });
-
-    tbody.addEventListener('click', (e) => {
+    tbody.addEventListener('click', async (e) => {
         const dispenseBtn = e.target.closest('.dispense-btn');
         if (dispenseBtn) {
-            const patientId = dispenseBtn.dataset.patientId;
-            const patientGroup = allRequests.find(r => r.patient_id == patientId);
-            if (!patientGroup) return;
+            const batchId = dispenseBtn.dataset.batchId;
+            const batch = allBatches.find(b => b.batch_id == batchId);
+            if (!batch) return;
 
-            document.getElementById('dispenseDoctor').textContent = patientGroup.doctor_name;
-            document.getElementById('dispensePatient').textContent = patientGroup.patient_name;
+            document.getElementById('dispenseDoctor').textContent = batch.doctor_name;
+            document.getElementById('dispensePatient').textContent = batch.patient_name;
 
             const itemsContainer = document.getElementById('dispense-items-container');
-            itemsContainer.innerHTML = `
-                <table class="table table-sm table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-center"><input type="checkbox" id="selectAllModalCheckbox"></th>
-                            <th>Medicine</th>
-                            <th>Quantity</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dispense-items-tbody">
-                        ${patientGroup.items.map(req => `
-                            <tr>
-                                <td class="text-center"><input type="checkbox" class="dispense-item-checkbox" value="${req.request_id}"></td>
-                                <td>${req.med_name} (${req.unit_name})</td>
-                                <td>${req.quantity}</td>
-                                <td>${req.notes || '-'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            const confirmBtn = document.getElementById('confirmDispenseBtn');
-            confirmBtn.disabled = true;
-
-            const modalCheckboxes = itemsContainer.querySelectorAll('.dispense-item-checkbox');
-            const selectAllModalCheckbox = itemsContainer.querySelector('#selectAllModalCheckbox');
-
-            const updateTotalState = () => {
-                const checkedCount = itemsContainer.querySelectorAll('.dispense-item-checkbox:checked').length;
-                confirmBtn.disabled = checkedCount === 0;
-                selectAllModalCheckbox.checked = modalCheckboxes.length > 0 && checkedCount === modalCheckboxes.length;
-            };
-
-            modalCheckboxes.forEach(cb => cb.addEventListener('change', updateTotalState));
-            selectAllModalCheckbox.addEventListener('change', (event) => {
-                modalCheckboxes.forEach(cb => cb.checked = event.target.checked);
-                updateTotalState();
-            });
-
+            itemsContainer.innerHTML = '<p class="text-center">Loading items...</p>';
             dispenseModal.show();
-        }
-    });
 
-    document.getElementById('confirmDispenseBtn').addEventListener('click', async () => {
-        const selectedCheckboxes = document.querySelectorAll('#dispense-items-tbody .dispense-item-checkbox:checked');
-        const requestIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            try {
+                const response = await axios.get(`${apiBase}/requests-php/medicine-requests.php`, {
+                    params: { operation: 'getBatchDetails', batch_id: batchId },
+                    withCredentials: true
+                });
 
-        if (requestIds.length === 0) {
-            Swal.fire('No selection', 'Please select at least one item to dispense.', 'warning');
-            return;
-        }
-
-        try {
-            const res = await axios.post(`${apiBase}/requests-php/medicine-requests.php`, {
-                operation: "dispenseMultipleRequests",
-                request_ids: requestIds
-            }, { withCredentials: true });
-
-            if (res.data.success) {
-                Swal.fire('Dispensed!', `${requestIds.length} item(s) have been dispensed.`, 'success');
-                dispenseModal.hide();
-                requestIds.forEach(id => removeRequestFromUI(id));
-                updateDispenseSelectedButtonState();
-            } else {
-                Swal.fire('Failed', res.data.message || 'Failed to dispense items.', 'error');
+                if (response.data.success) {
+                    renderDispenseModalItems(response.data.data);
+                } else {
+                    itemsContainer.innerHTML = `<p class="text-center text-danger">${response.data.message}</p>`;
+                }
+            } catch (error) {
+                itemsContainer.innerHTML = `<p class="text-center text-danger">Failed to load items.</p>`;
             }
-        } catch (err) {
-            console.error("Error dispensing multiple requests:", err);
-            Swal.fire('Error', 'An unexpected error occurred while dispensing.', 'error');
         }
     });
 
-    dispenseSelectedBtn.addEventListener('click', async () => {
-        const selectedCheckboxes = document.querySelectorAll('.request-checkbox:checked');
-        let requestIds = [];
-        selectedCheckboxes.forEach(cb => {
-            const ids = JSON.parse(cb.dataset.requestIds || '[]');
-            requestIds.push(...ids);
+    function renderDispenseModalItems(items) {
+        const itemsContainer = document.getElementById('dispense-items-container');
+        const confirmBtn = document.getElementById('confirmDispenseBtn');
+
+        itemsContainer.innerHTML = `
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center"><input type="checkbox" id="selectAllModalCheckbox"></th>
+                        <th>Medicine</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="dispense-items-tbody">
+                    ${items.map(item => `
+                        <tr class="${item.status === 'dispensed' ? 'table-success' : ''}">
+                            <td class="text-center">
+                                <input type="checkbox" class="dispense-item-checkbox" value="${item.item_id}" ${item.status === 'dispensed' ? 'disabled' : ''}>
+                            </td>
+                            <td>${item.med_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${statusBadge(item.status)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const modalCheckboxes = itemsContainer.querySelectorAll('.dispense-item-checkbox:not(:disabled)');
+        const selectAllModalCheckbox = itemsContainer.querySelector('#selectAllModalCheckbox');
+
+        const updateTotalState = () => {
+            const checkedCount = itemsContainer.querySelectorAll('.dispense-item-checkbox:checked').length;
+            confirmBtn.disabled = checkedCount === 0;
+            selectAllModalCheckbox.checked = modalCheckboxes.length > 0 && checkedCount === modalCheckboxes.length;
+            selectAllModalCheckbox.disabled = modalCheckboxes.length === 0;
+        };
+
+        modalCheckboxes.forEach(cb => cb.addEventListener('change', updateTotalState));
+        selectAllModalCheckbox.addEventListener('change', (event) => {
+            modalCheckboxes.forEach(cb => cb.checked = event.target.checked);
+            updateTotalState();
         });
 
-        if (requestIds.length === 0) return;
+        confirmBtn.onclick = () => {
+            const selectedIds = Array.from(itemsContainer.querySelectorAll('.dispense-item-checkbox:checked')).map(cb => cb.value);
+            confirmDispense(selectedIds);
+        };
 
+        updateTotalState();
+    }
+
+    async function confirmDispense(itemIds) {
         Swal.fire({
-            title: `Dispense ${requestIds.length} selected items?`,
-            text: "This will mark them as dispensed and update stock.",
+            title: `Dispense ${itemIds.length} selected item(s)?`,
+            text: "This will mark them as dispensed.",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, dispense them!',
-            cancelButtonText: 'No, cancel'
+            confirmButtonText: 'Yes, dispense!',
+            cancelButtonText: 'No, cancel',
+            customClass: {
+                container: 'swal2-behind-modal'
+            }
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     const res = await axios.post(`${apiBase}/requests-php/medicine-requests.php`, {
-                        operation: "dispenseMultipleRequests",
-                        request_ids: requestIds
+                        operation: "dispenseItems",
+                        item_ids: itemIds
                     }, { withCredentials: true });
 
+                    console.log('Dispense response:', res.data); // Log the full response
+
                     if (res.data.success) {
-                        Swal.fire('Dispensed!', 'The selected items have been dispensed.', 'success');
-                        requestIds.forEach(id => removeRequestFromUI(id));
-                        updateDispenseSelectedButtonState();
+                        dispenseModal.hide();
+                        await Swal.fire('Dispensed!', res.data.message, 'success');
+                        // Refresh the list after the user closes the success message
+                        await loadBatches();
                     } else {
                         Swal.fire('Failed', res.data.message || 'Failed to dispense items.', 'error');
                     }
                 } catch (err) {
                     console.error(err);
-                    Swal.fire('Error', 'An error occurred while dispensing items.', 'error');
+                    Swal.fire('Error', 'An error occurred while dispensing.', 'error');
                 }
             }
         });
-    });
-
-    function removeRequestFromUI(requestId) {
-        allRequests = allRequests.map(group => {
-            group.items = group.items.filter(item => item.request_id != requestId);
-            return group;
-        }).filter(group => group.items.length > 0);
-
-        renderRequests(allRequests);
-
-        if (tbody.children.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No pending requests found.</td></tr>`;
-        }
     }
 
-    loadRequests();
+    function statusBadge(status) {
+        const s = (status || '').toLowerCase().trim();
+        let cls = 'secondary';
+        if (s === 'pending') cls = 'warning';
+        else if (s === 'completed' || s === 'dispensed') cls = 'success';
+        else if (s === 'cancelled') cls = 'danger';
+        else if (s === 'partially dispensed' || s === 'partially_dispensed') cls = 'info'; // Handle both formats
+        return `<span class="badge bg-${cls}">${status}</span>`;
+    }
+
+    loadBatches();
 });

@@ -16,6 +16,132 @@ class Medicine_Requests
         $this->pdo = $pdo;
     }
 
+    // New Batch System Functions
+    public function getBatchRequests()
+    {
+        try {
+            $sql = "
+                SELECT 
+                    rmb.batch_id,
+                    rmb.request_date,
+                    rmb.status,
+                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
+                FROM request_medicine_batch rmb
+                JOIN patients p ON rmb.patient_id = p.patient_id
+                JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
+                WHERE rmb.status IN ('pending', 'partially_dispensed')
+                ORDER BY rmb.request_date DESC
+            ";
+            $stmt = $this->pdo->query($sql);
+            $batches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(['success' => true, 'data' => $batches]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Failed to get batch requests: ' . $e->getMessage()]);
+        }
+    }
+
+    public function getBatchDetails($batchId)
+    {
+        try {
+            $itemsSql = "
+                SELECT rmi.*, m.med_name
+                FROM request_medicine_items rmi
+                JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                WHERE rmi.batch_id = :batch_id
+                ORDER BY rmi.item_id
+            ";
+
+            $stmt = $this->pdo->prepare($itemsSql);
+            $stmt->execute([':batch_id' => $batchId]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(['success' => true, 'data' => $items]);
+        } catch (PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Failed to get batch details: ' . $e->getMessage()]);
+        }
+    }
+
+    public function updateBatchStatus($batchId, $newStatus)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $updateBatchSql = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
+            $stmt = $this->pdo->prepare($updateBatchSql);
+            $stmt->execute([':status' => $newStatus, ':batch_id' => $batchId]);
+
+            $updateItemsSql = "UPDATE request_medicine_items SET status = :status WHERE batch_id = :batch_id";
+            $stmt = $this->pdo->prepare($updateItemsSql);
+            $stmt->execute([':status' => $newStatus, ':batch_id' => $batchId]);
+
+            $this->pdo->commit();
+
+            echo json_encode(['success' => true, 'message' => 'Batch status updated successfully.']);
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Failed to update batch status: ' . $e->getMessage()]);
+        }
+    }
+
+    public function dispenseItems($itemIds, $userId)
+    {
+        if (empty($itemIds)) {
+            echo json_encode(['success' => false, 'message' => 'No items selected for dispensing.']);
+            return;
+        }
+
+        $this->pdo->beginTransaction();
+        $debug = [];
+        try {
+            $debug['received_item_ids'] = $itemIds;
+            $batchId = null;
+            $updatedItems = 0;
+
+            foreach ($itemIds as $itemId) {
+                $updateItemSql = "UPDATE request_medicine_items SET status = 'dispensed' WHERE item_id = :item_id AND status = 'pending'";
+                $stmt = $this->pdo->prepare($updateItemSql);
+                $stmt->execute([':item_id' => $itemId]);
+                $updatedItems += $stmt->rowCount();
+
+                if ($batchId === null) {
+                    $getBatchIdSql = "SELECT batch_id FROM request_medicine_items WHERE item_id = :item_id";
+                    $stmt = $this->pdo->prepare($getBatchIdSql);
+                    $stmt->execute([':item_id' => $itemId]);
+                    $batchId = $stmt->fetchColumn();
+                }
+            }
+            $debug['updated_item_count'] = $updatedItems;
+            $debug['found_batch_id'] = $batchId;
+
+            if ($batchId) {
+                $countRemainingSql = "SELECT COUNT(*) FROM request_medicine_items WHERE batch_id = :batch_id AND status = 'pending'";
+                $stmt = $this->pdo->prepare($countRemainingSql);
+                $stmt->execute([':batch_id' => $batchId]);
+                $remainingItems = $stmt->fetchColumn();
+                $debug['remaining_pending_items'] = $remainingItems;
+
+                $newBatchStatus = $remainingItems == 0 ? 'completed' : 'partially_dispensed';
+                $debug['calculated_new_batch_status'] = $newBatchStatus;
+
+                $updateBatchSql = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
+                $stmt = $this->pdo->prepare($updateBatchSql);
+                $stmt->execute([':status' => $newBatchStatus, ':batch_id' => $batchId]);
+                $debug['batch_update_rows_affected'] = $stmt->rowCount();
+            }
+
+            $this->pdo->commit();
+            echo json_encode(['success' => true, 'message' => count($itemIds) . ' item(s) dispensed successfully.', 'debug' => $debug]);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            $debug['error'] = $e->getMessage();
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage(), 'debug' => $debug]);
+        }
+    }
+
+
+    // Old Request System Functions (for compatibility)
     public function getRequests()
     {
         try {
@@ -200,6 +326,38 @@ if ($method === 'GET') {
 $request = new Medicine_Requests();
 
 switch ($operation) {
+    // New Batch Operations
+    case 'getBatchRequests':
+        $request->getBatchRequests();
+        break;
+    case 'getBatchDetails':
+        $batchId = $_GET['batch_id'] ?? null;
+        if ($batchId) {
+            $request->getBatchDetails($batchId);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Missing batch ID']);
+        }
+        break;
+    case 'updateBatchStatus':
+        $batchId = $payload['batch_id'] ?? null;
+        $newStatus = $payload['status'] ?? null;
+        if ($batchId && $newStatus) {
+            $request->updateBatchStatus($batchId, $newStatus);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Missing batch ID or new status']);
+        }
+        break;
+    case 'dispenseItems':
+        $itemIds = $payload['item_ids'] ?? [];
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!empty($itemIds) && $userId) {
+            $request->dispenseItems($itemIds, $userId);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Missing item IDs or user not authenticated.']);
+        }
+        break;
+
+    // Old System Operations
     case 'getRequests':
         $request->getRequests();
         break;
