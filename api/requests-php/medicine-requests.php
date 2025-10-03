@@ -100,9 +100,19 @@ class Medicine_Requests
             $updatedItems = 0;
 
             foreach ($itemIds as $itemId) {
-                $updateItemSql = "UPDATE request_medicine_items SET status = 'dispensed' WHERE item_id = :item_id AND status = 'pending'";
+                // Update item status and record who dispensed it and when
+                $updateItemSql = "
+                UPDATE request_medicine_items 
+                SET status = 'dispensed', 
+                    dispensed_by = :user_id, 
+                    dispensed_date = NOW() 
+                WHERE item_id = :item_id AND status = 'pending'
+            ";
                 $stmt = $this->pdo->prepare($updateItemSql);
-                $stmt->execute([':item_id' => $itemId]);
+                $stmt->execute([
+                    ':item_id' => $itemId,
+                    ':user_id' => $userId
+                ]);
                 $updatedItems += $stmt->rowCount();
 
                 if ($batchId === null) {
@@ -112,6 +122,7 @@ class Medicine_Requests
                     $batchId = $stmt->fetchColumn();
                 }
             }
+
             $debug['updated_item_count'] = $updatedItems;
             $debug['found_batch_id'] = $batchId;
 
@@ -122,7 +133,8 @@ class Medicine_Requests
                 $remainingItems = $stmt->fetchColumn();
                 $debug['remaining_pending_items'] = $remainingItems;
 
-                $newBatchStatus = $remainingItems == 0 ? 'completed' : 'partially_dispensed';
+                // Fix: Set batch status to 'dispensed' instead of 'completed' when all items are dispensed
+                $newBatchStatus = $remainingItems == 0 ? 'dispensed' : 'partially_dispensed';
                 $debug['calculated_new_batch_status'] = $newBatchStatus;
 
                 $updateBatchSql = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
@@ -139,7 +151,6 @@ class Medicine_Requests
             echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage(), 'debug' => $debug]);
         }
     }
-
 
     // Old Request System Functions (for compatibility)
     public function getRequests()
