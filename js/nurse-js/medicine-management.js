@@ -110,6 +110,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         </td>
                         <td>${item.med_name}</td>
                         <td>${item.quantity}</td>
+                        <td>
+                            ${isDispensed || isPicked ?
+                            `<input type="number" class="form-control form-control-sm item-quantity" 
+                                data-item-id="${item.item_id}" 
+                                min="1" max="${item.quantity}" 
+                                value="${item.quantity}">` :
+                            `<span class="text-muted">-</span>`
+                        }
+                        </td>
                         <td>${statusBadge(item.item_status)}</td>
                     `;
                     batchItemsTableBody.appendChild(row);
@@ -126,6 +135,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Add event listener to checkboxes
                 document.querySelectorAll('.batch-item-checkbox').forEach(checkbox => {
                     checkbox.addEventListener('change', updateActionButtonStates);
+                });
+
+                // Add event listener to quantity inputs
+                document.querySelectorAll('.item-quantity').forEach(input => {
+                    input.addEventListener('input', updateActionButtonStates);
                 });
 
                 // Add event listener to "Select All" checkbox
@@ -151,19 +165,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update action buttons state based on selected items
     function updateActionButtonStates() {
-        const selectedItems = document.querySelectorAll('.batch-item-checkbox:checked');
-        const hasSelection = selectedItems.length > 0;
+        const selectedCheckboxes = document.querySelectorAll('.batch-item-checkbox:checked');
+        const hasSelection = selectedCheckboxes.length > 0;
+        let hasValidQuantities = true;
+
+        // Check if all selected items have valid quantities
+        selectedCheckboxes.forEach(checkbox => {
+            const itemId = checkbox.dataset.itemId;
+            const quantityInput = document.querySelector(`.item-quantity[data-item-id="${itemId}"]`);
+            if (quantityInput) {
+                const quantity = parseInt(quantityInput.value) || 0;
+                if (quantity <= 0) {
+                    hasValidQuantities = false;
+                }
+            }
+        });
 
         // Update action buttons
-        modalConfirmPickupBtn.disabled = !hasSelection;
-        modalAdministerBtn.disabled = !hasSelection;
-        modalReturnBtn.disabled = !hasSelection;
+        modalConfirmPickupBtn.disabled = !(hasSelection && hasValidQuantities);
+        modalAdministerBtn.disabled = !(hasSelection && hasValidQuantities);
+        modalReturnBtn.disabled = !(hasSelection && hasValidQuantities);
 
         // Update "Select All" checkbox state
         const selectAllModalCheckbox = document.getElementById('selectAllModalCheckbox');
         const checkboxes = document.querySelectorAll('.batch-item-checkbox:not(:disabled)');
         if (selectAllModalCheckbox && checkboxes.length > 0) {
-            selectAllModalCheckbox.checked = checkboxes.length > 0 && selectedItems.length === checkboxes.length;
+            selectAllModalCheckbox.checked = checkboxes.length > 0 && selectedCheckboxes.length === checkboxes.length;
         }
     }
 
@@ -184,19 +211,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ===== Perform Action (Pickup, Administer, Return) =====
     async function performAction(operation, successMessage) {
-        const selectedItems = Array.from(document.querySelectorAll('.batch-item-checkbox:checked'))
-            .map(cb => cb.dataset.itemId);
+        const selectedItems = [];
+
+        document.querySelectorAll('.batch-item-checkbox:checked').forEach(checkbox => {
+            const itemId = checkbox.dataset.itemId;
+            const quantityInput = document.querySelector(`.item-quantity[data-item-id="${itemId}"]`);
+            const quantity = parseInt(quantityInput.value) || 0;
+
+            if (quantity > 0) {
+                selectedItems.push({
+                    item_id: itemId,
+                    quantity: quantity
+                });
+            }
+        });
 
         if (selectedItems.length === 0) {
-            Swal.fire("Warning", "Please select at least one medicine", "warning");
+            Swal.fire("Warning", "Please select at least one medicine with a valid quantity", "warning");
             return;
         }
 
         try {
-            console.log(`Sending ${operation} request with item IDs:`, selectedItems);
+            console.log(`Sending ${operation} request with items:`, selectedItems);
             const res = await axios.post(apiUrl, {
                 operation: operation,
-                json: JSON.stringify({ item_ids: selectedItems })
+                json: JSON.stringify({ items: selectedItems })
             }, { withCredentials: true });
 
             console.log(`Response from ${operation}:`, res.data);

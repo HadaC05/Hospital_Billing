@@ -63,7 +63,6 @@ class Medicine_Management
         ]);
     }
 
-
     // ===== 1. Load dispensed medicines =====
     public function getDispensedMedicines($patientId = null)
     {
@@ -112,32 +111,79 @@ class Medicine_Management
     public function confirmPickup($data)
     {
         try {
-            $itemIds = $data['item_ids'] ?? [];
+            $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'] ?? null;
 
-            if (empty($itemIds)) throw new Exception('No medicine items selected');
+            if (empty($items)) throw new Exception('No medicine items selected');
             if (!$nurseId) throw new Exception('User not authenticated');
 
             $this->pdo->beginTransaction();
 
-            $sql = "UPDATE request_medicine_items 
-                SET status = 'picked', picked_by = :nurse_id, picked_date = NOW() 
-                WHERE item_id = :item_id";
-            $stmt = $this->pdo->prepare($sql);
+            $batchIds = [];
 
-            $batchIds = []; // Collect unique batch IDs to update
+            foreach ($items as $item) {
+                $itemId = $item['item_id'];
+                $quantity = $item['quantity'];
 
-            foreach ($itemIds as $id) {
-                $stmt->execute([':item_id' => $id, ':nurse_id' => $nurseId]);
+                // Get current item
+                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([':item_id' => $itemId]);
+                $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                // Get the batch ID for this item
-                $batchId = $this->getBatchIdFromItem($id);
-                if ($batchId && !in_array($batchId, $batchIds)) {
+                if (!$currentItem) {
+                    throw new Exception("Item not found: $itemId");
+                }
+
+                if ($currentItem['status'] !== 'dispensed') {
+                    throw new Exception("Item $itemId is not in dispensed status");
+                }
+
+                if ($quantity > $currentItem['quantity']) {
+                    throw new Exception("Quantity to pick ($quantity) exceeds available quantity ({$currentItem['quantity']}) for item $itemId");
+                }
+
+                $batchId = $currentItem['batch_id'];
+                if (!in_array($batchId, $batchIds)) {
                     $batchIds[] = $batchId;
                 }
+
+                // If partial quantity, create a new item for the remaining quantity
+                if ($quantity < $currentItem['quantity']) {
+                    $remainingQuantity = $currentItem['quantity'] - $quantity;
+
+                    // Create new item for remaining quantity
+                    $insertSql = "INSERT INTO request_medicine_items (
+                        batch_id, med_id, quantity, status, 
+                        dispensed_by, dispensed_date
+                    ) VALUES (
+                        :batch_id, :med_id, :quantity, 'dispensed',
+                        :dispensed_by, :dispensed_date
+                    )";
+
+                    $stmt = $this->pdo->prepare($insertSql);
+                    $stmt->execute([
+                        ':batch_id' => $currentItem['batch_id'],
+                        ':med_id' => $currentItem['med_id'],
+                        ':quantity' => $remainingQuantity,
+                        ':dispensed_by' => $currentItem['dispensed_by'],
+                        ':dispensed_date' => $currentItem['dispensed_date']
+                    ]);
+                }
+
+                // Update the original item with picked quantity and status
+                $updateSql = "UPDATE request_medicine_items 
+                    SET quantity = :quantity, status = 'picked', picked_by = :nurse_id, picked_date = NOW() 
+                    WHERE item_id = :item_id";
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([
+                    ':quantity' => $quantity,
+                    ':item_id' => $itemId,
+                    ':nurse_id' => $nurseId
+                ]);
             }
 
-            // Update each batch status only once
+            // Update each batch status
             foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
             }
@@ -156,25 +202,89 @@ class Medicine_Management
     public function administerMedicines($data)
     {
         try {
-            $itemIds = $data['item_ids'] ?? [];
+            $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'];
-            if (empty($itemIds)) throw new Exception('No medicine items selected');
 
-            $sql = "UPDATE request_medicine_items 
-                    SET status = 'administered', administered_by = :nurse_id, administered_date = NOW() 
+            if (empty($items)) throw new Exception('No medicine items selected');
+
+            $this->pdo->beginTransaction();
+
+            $batchIds = [];
+
+            foreach ($items as $item) {
+                $itemId = $item['item_id'];
+                $quantity = $item['quantity'];
+
+                // Get current item
+                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([':item_id' => $itemId]);
+                $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$currentItem) {
+                    throw new Exception("Item not found: $itemId");
+                }
+
+                if ($currentItem['status'] !== 'picked') {
+                    throw new Exception("Item $itemId is not in picked status");
+                }
+
+                if ($quantity > $currentItem['quantity']) {
+                    throw new Exception("Quantity to administer ($quantity) exceeds available quantity ({$currentItem['quantity']}) for item $itemId");
+                }
+
+                $batchId = $currentItem['batch_id'];
+                if (!in_array($batchId, $batchIds)) {
+                    $batchIds[] = $batchId;
+                }
+
+                // If partial quantity, create a new item for the remaining quantity
+                if ($quantity < $currentItem['quantity']) {
+                    $remainingQuantity = $currentItem['quantity'] - $quantity;
+
+                    // Create new item for remaining quantity
+                    $insertSql = "INSERT INTO request_medicine_items (
+                        batch_id, med_id, quantity, status, 
+                        dispensed_by, dispensed_date, picked_by, picked_date
+                    ) VALUES (
+                        :batch_id, :med_id, :quantity, 'picked',
+                        :dispensed_by, :dispensed_date, :picked_by, :picked_date
+                    )";
+
+                    $stmt = $this->pdo->prepare($insertSql);
+                    $stmt->execute([
+                        ':batch_id' => $currentItem['batch_id'],
+                        ':med_id' => $currentItem['med_id'],
+                        ':quantity' => $remainingQuantity,
+                        ':dispensed_by' => $currentItem['dispensed_by'],
+                        ':dispensed_date' => $currentItem['dispensed_date'],
+                        ':picked_by' => $currentItem['picked_by'],
+                        ':picked_date' => $currentItem['picked_date']
+                    ]);
+                }
+
+                // Update the original item with administered quantity and status
+                $updateSql = "UPDATE request_medicine_items 
+                    SET quantity = :quantity, status = 'administered', administered_by = :nurse_id, administered_date = NOW() 
                     WHERE item_id = :item_id";
-            $stmt = $this->pdo->prepare($sql);
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([
+                    ':quantity' => $quantity,
+                    ':item_id' => $itemId,
+                    ':nurse_id' => $nurseId
+                ]);
+            }
 
-            foreach ($itemIds as $id) {
-                $stmt->execute([':item_id' => $id, ':nurse_id' => $nurseId]);
-
-                // update batch after each item
-                $batchId = $this->getBatchIdFromItem($id);
+            // Update each batch status
+            foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
             }
 
+            $this->pdo->commit();
+
             echo json_encode(['success' => true, 'message' => 'Medicines marked as administered']);
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -183,25 +293,89 @@ class Medicine_Management
     public function returnMedicines($data)
     {
         try {
-            $itemIds = $data['item_ids'] ?? [];
+            $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'];
-            if (empty($itemIds)) throw new Exception('No medicine items selected');
 
-            $sql = "UPDATE request_medicine_items 
-                    SET status = 'returned', returned_by = :nurse_id, returned_date = NOW() 
+            if (empty($items)) throw new Exception('No medicine items selected');
+
+            $this->pdo->beginTransaction();
+
+            $batchIds = [];
+
+            foreach ($items as $item) {
+                $itemId = $item['item_id'];
+                $quantity = $item['quantity'];
+
+                // Get current item
+                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([':item_id' => $itemId]);
+                $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$currentItem) {
+                    throw new Exception("Item not found: $itemId");
+                }
+
+                if ($currentItem['status'] !== 'picked') {
+                    throw new Exception("Item $itemId is not in picked status");
+                }
+
+                if ($quantity > $currentItem['quantity']) {
+                    throw new Exception("Quantity to return ($quantity) exceeds available quantity ({$currentItem['quantity']}) for item $itemId");
+                }
+
+                $batchId = $currentItem['batch_id'];
+                if (!in_array($batchId, $batchIds)) {
+                    $batchIds[] = $batchId;
+                }
+
+                // If partial quantity, create a new item for the remaining quantity
+                if ($quantity < $currentItem['quantity']) {
+                    $remainingQuantity = $currentItem['quantity'] - $quantity;
+
+                    // Create new item for remaining quantity
+                    $insertSql = "INSERT INTO request_medicine_items (
+                        batch_id, med_id, quantity, status, 
+                        dispensed_by, dispensed_date, picked_by, picked_date
+                    ) VALUES (
+                        :batch_id, :med_id, :quantity, 'picked',
+                        :dispensed_by, :dispensed_date, :picked_by, :picked_date
+                    )";
+
+                    $stmt = $this->pdo->prepare($insertSql);
+                    $stmt->execute([
+                        ':batch_id' => $currentItem['batch_id'],
+                        ':med_id' => $currentItem['med_id'],
+                        ':quantity' => $remainingQuantity,
+                        ':dispensed_by' => $currentItem['dispensed_by'],
+                        ':dispensed_date' => $currentItem['dispensed_date'],
+                        ':picked_by' => $currentItem['picked_by'],
+                        ':picked_date' => $currentItem['picked_date']
+                    ]);
+                }
+
+                // Update the original item with returned quantity and status
+                $updateSql = "UPDATE request_medicine_items 
+                    SET quantity = :quantity, status = 'returned', returned_by = :nurse_id, returned_date = NOW() 
                     WHERE item_id = :item_id";
-            $stmt = $this->pdo->prepare($sql);
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([
+                    ':quantity' => $quantity,
+                    ':item_id' => $itemId,
+                    ':nurse_id' => $nurseId
+                ]);
+            }
 
-            foreach ($itemIds as $id) {
-                $stmt->execute([':item_id' => $id, ':nurse_id' => $nurseId]);
-
-                // update batch after each item
-                $batchId = $this->getBatchIdFromItem($id);
+            // Update each batch status
+            foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
             }
 
+            $this->pdo->commit();
+
             echo json_encode(['success' => true, 'message' => 'Medicines returned successfully']);
         } catch (Exception $e) {
+            $this->pdo->rollBack();
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
