@@ -14,6 +14,17 @@ class Medicine_Management
         $this->pdo = $pdo;
     }
 
+    // Helper method to get current admission for a patient
+    private function getCurrentAdmission($patientId)
+    {
+        $sql = "SELECT admission_id FROM patient_admission 
+            WHERE patient_id = :patient_id AND status = 'active' 
+            ORDER BY admission_date DESC LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':patient_id' => $patientId]);
+        return $stmt->fetchColumn();
+    }
+
     // ===== Helper: Update batch status based on items =====
     private function updateBatchStatus($batchId)
     {
@@ -64,7 +75,7 @@ class Medicine_Management
     }
 
     // ===== 1. Load dispensed medicines =====
-    public function getDispensedMedicines($patientId = null)
+    public function getDispensedMedicines($admissionId = null)
     {
         try {
             $sql = "
@@ -83,17 +94,18 @@ class Medicine_Management
             JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
             JOIN patients p ON rmb.patient_id = p.patient_id
             JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
-        ";
+            WHERE 1=1
+            ";
 
-            if ($patientId) {
-                $sql .= " AND p.patient_id = :patient_id";
+            if ($admissionId) {
+                $sql .= " AND rmb.admission_id = :admission_id";
             }
 
             $sql .= " GROUP BY rmb.batch_id ORDER BY rmb.request_date DESC";
 
             $stmt = $this->pdo->prepare($sql);
-            if ($patientId) {
-                $stmt->bindValue(':patient_id', $patientId, PDO::PARAM_INT);
+            if ($admissionId) {
+                $stmt->bindValue(':admission_id', $admissionId, PDO::PARAM_INT);
             }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -113,6 +125,7 @@ class Medicine_Management
         try {
             $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'] ?? null;
+            $admissionId = $data['admission_id'] ?? null;
 
             if (empty($items)) throw new Exception('No medicine items selected');
             if (!$nurseId) throw new Exception('User not authenticated');
@@ -183,6 +196,14 @@ class Medicine_Management
                 ]);
             }
 
+            // Update batch admission_ids if needed
+            if (!empty($batchIds) && $admissionId) {
+                $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
+                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateStmt = $this->pdo->prepare($updateBatch);
+                $updateStmt->execute(array_merge([$admissionId], $batchIds));
+            }
+
             // Update each batch status
             foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
@@ -204,6 +225,7 @@ class Medicine_Management
         try {
             $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'];
+            $admissionId = $data['admission_id'] ?? null;
 
             if (empty($items)) throw new Exception('No medicine items selected');
 
@@ -275,6 +297,14 @@ class Medicine_Management
                 ]);
             }
 
+            // Update batch admission_ids if needed
+            if (!empty($batchIds) && $admissionId) {
+                $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
+                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateStmt = $this->pdo->prepare($updateBatch);
+                $updateStmt->execute(array_merge([$admissionId], $batchIds));
+            }
+
             // Update each batch status
             foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
@@ -295,6 +325,7 @@ class Medicine_Management
         try {
             $items = $data['items'] ?? [];
             $nurseId = $_SESSION['user_id'];
+            $admissionId = $data['admission_id'] ?? null;
 
             if (empty($items)) throw new Exception('No medicine items selected');
 
@@ -366,6 +397,14 @@ class Medicine_Management
                 ]);
             }
 
+            // Update batch admission_ids if needed
+            if (!empty($batchIds) && $admissionId) {
+                $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
+                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateStmt = $this->pdo->prepare($updateBatch);
+                $updateStmt->execute(array_merge([$admissionId], $batchIds));
+            }
+
             // Update each batch status
             foreach ($batchIds as $batchId) {
                 $this->updateBatchStatus($batchId);
@@ -391,6 +430,7 @@ class Medicine_Management
                 rmb.request_date,
                 rmb.status as batch_status,
                 rmb.notes,
+                rmb.admission_id,
                 p.patient_id,
                 CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
                 CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
@@ -472,8 +512,8 @@ $request = new Medicine_Management();
 
 switch ($operation) {
     case 'getDispensedMedicines':
-        $patientId = $_GET['patient_id'] ?? null;
-        $request->getDispensedMedicines($patientId);
+        $admissionId = $_GET['admission_id'] ?? null;
+        $request->getDispensedMedicines($admissionId);
         break;
     case 'confirmPickup':
         $request->confirmPickup($data);

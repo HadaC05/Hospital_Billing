@@ -132,6 +132,24 @@ class Invoices
             $treatmentItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $items = array_merge($items, $treatmentItems);
 
+            // 6) Administered medicines from request_medicine_items
+            $stmt = $conn->prepare(
+                "SELECT rmi.item_id AS svc_reference_id, m.med_name AS item_description,
+            m.unit_price AS unit_price, rmi.quantity, 0 AS coverage_amount,
+            'Medication' AS service_type_name, 4 AS svc_type_id,
+            'request_medicine_items' AS reference_table
+                FROM request_medicine_items rmi
+                JOIN request_medicine_batch rmb ON rmi.batch_id = rmb.batch_id
+                JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                WHERE rmi.status = 'administered' 
+                AND rmi.billed_status = 'no'
+                AND rmb.admission_id = :admission_id"
+            );
+            $stmt->bindParam(':admission_id', $admission_id);
+            $stmt->execute();
+            $administeredMedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = array_merge($items, $administeredMedItems);
+
             // Debug: Log item counts
             error_log("Items for admission $admission_id: " . json_encode([
                 'rooms' => count($roomItems),
@@ -245,6 +263,7 @@ class Invoices
 
                 // Determine reference table based on service type
                 $reference_table = '';
+                // In your createInvoice method, update the switch case to include the new table
                 switch ($svc_type_id) {
                     case 1:
                         $reference_table = 'tbl_room_stay';
@@ -256,7 +275,12 @@ class Invoices
                         $reference_table = 'doctor_requests';
                         break;
                     case 4:
-                        $reference_table = 'patient_medication';
+                        // Check if it's from the new medicine system
+                        if (isset($it['reference_table']) && $it['reference_table'] === 'request_medicine_items') {
+                            $reference_table = 'request_medicine_items';
+                        } else {
+                            $reference_table = 'patient_medication';
+                        }
                         break;
                     case 5:
                         $reference_table = 'patient_treatment';
@@ -274,6 +298,12 @@ class Invoices
                     ':coverage_amount' => $cov,
                     ':patient_payable' => $pay,
                 ]);
+
+                // After inserting the invoice item, update the billed status if it's from request_medicine_items
+                if ($reference_table === 'request_medicine_items') {
+                    $updateStmt = $conn->prepare("UPDATE request_medicine_items SET billed_status = 'yes' WHERE item_id = :reference_id");
+                    $updateStmt->execute([':reference_id' => $svc_reference_id]);
+                }
             }
 
             $conn->commit();

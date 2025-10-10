@@ -1,13 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     const apiUrl = `${window.location.origin}/hospital_billing/api/requests-php/medicine-management.php`;
 
+    // DOM Elements
     const tableBody = document.getElementById("medicinesTableBody");
-    const confirmBtn = document.getElementById("confirmPickupBtn");
-    const administerBtn = document.getElementById("administerBtn");
-    const returnBtn = document.getElementById("returnBtn");
 
     // Modal elements
-    const batchDetailsModal = new bootstrap.Modal(document.getElementById('batchDetailsModal'));
+    const batchDetailsModalEl = document.getElementById('batchDetailsModal');
+    const batchDetailsModal = new bootstrap.Modal(batchDetailsModalEl);
     const modalBatchId = document.getElementById('modalBatchId');
     const modalPatientName = document.getElementById('modalPatientName');
     const modalDoctorName = document.getElementById('modalDoctorName');
@@ -18,17 +17,73 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalAdministerBtn = document.getElementById('modalAdministerBtn');
     const modalReturnBtn = document.getElementById('modalReturnBtn');
 
-    // Current batch items for confirmation
+    // State variables
     let currentBatchItems = [];
+    let currentAdmissionId = null;
+    let admissionsData = [];
 
-    // ===== Utility =====
+    // ===== Initialize =====
+    function init() {
+        // Get current admission ID from localStorage or URL
+        currentAdmissionId = getCurrentAdmissionId();
+
+        // Load dispensed medicines
+        loadDispensedMedicines();
+    }
+
+    // ===== Admission Management =====
+    function getCurrentAdmissionId() {
+        // Try to get from localStorage first
+        const admissionData = JSON.parse(localStorage.getItem('currentAdmission') || '{}');
+        if (admissionData.admission_id) {
+            return admissionData.admission_id;
+        }
+
+        // If not in localStorage, try to get from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('admission_id') || null;
+    }
+
+    function saveCurrentAdmissionId(admissionId) {
+        localStorage.setItem('currentAdmission', JSON.stringify({ admission_id: admissionId }));
+        currentAdmissionId = admissionId;
+    }
+
+    // ===== Utility Functions =====
     function getSelectedBatchIds() {
         return Array.from(document.querySelectorAll(".batch-checkbox:checked"))
             .map(cb => cb.dataset.batchId);
     }
 
+    function statusBadge(status) {
+        const s = (status || '').toLowerCase().trim();
+        let cls = 'secondary';
+        if (s === 'pending') cls = 'warning';
+        else if (s === 'dispensed') cls = 'info';
+        else if (s === 'picked') cls = 'primary';
+        else if (s === 'administered') cls = 'success';
+        else if (s === 'returned') cls = 'danger';
+        else if (s === 'completed') cls = 'success';
+        else if (s === 'cancelled') cls = 'danger';
+        else if (s === 'partially dispensed' || s === 'partially_dispensed') cls = 'info';
+        return `<span class="badge bg-${cls}">${status}</span>`;
+    }
+
+    // ===== Render Functions =====
     function renderBatches(batches) {
         tableBody.innerHTML = "";
+
+        if (batches.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No medicine batches found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         batches.forEach(batch => {
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -66,7 +121,32 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ===== Load Batch Details =====
+    // ===== API Calls =====
+    async function loadDispensedMedicines() {
+        try {
+            const params = { operation: "getDispensedMedicines" };
+
+            // Add admission_id filter if available
+            if (currentAdmissionId) {
+                params.admission_id = currentAdmissionId;
+            }
+
+            const res = await axios.get(apiUrl, {
+                params: params,
+                withCredentials: true
+            });
+
+            if (res.data.success) {
+                renderBatches(res.data.batches);
+            } else {
+                Swal.fire("Error", res.data.message || "Failed to load medicines", "error");
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            Swal.fire("Error", "Network error while loading medicines", "error");
+        }
+    }
+
     async function loadBatchDetails(batchId) {
         try {
             const res = await axios.get(apiUrl, {
@@ -102,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (isPicked) hasPickedItems = true;
 
                     row.innerHTML = `
-                        <td>
+                        <td class="text-center">
                             ${isDispensed || isPicked ?
                             `<input type="checkbox" class="batch-item-checkbox" data-item-id="${item.item_id}">` :
                             ''
@@ -163,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Update action buttons state based on selected items
+    // ===== Action Functions =====
     function updateActionButtonStates() {
         const selectedCheckboxes = document.querySelectorAll('.batch-item-checkbox:checked');
         const hasSelection = selectedCheckboxes.length > 0;
@@ -194,22 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ===== Confirm Pickup in Modal =====
-    modalConfirmPickupBtn.addEventListener('click', async () => {
-        await performAction('confirmPickup', 'Medicines confirmed as picked up');
-    });
-
-    // ===== Administer in Modal =====
-    modalAdministerBtn.addEventListener('click', async () => {
-        await performAction('administerMedicines', 'Medicines marked as administered');
-    });
-
-    // ===== Return in Modal =====
-    modalReturnBtn.addEventListener('click', async () => {
-        await performAction('returnMedicines', 'Medicines returned successfully');
-    });
-
-    // ===== Perform Action (Pickup, Administer, Return) =====
     async function performAction(operation, successMessage) {
         const selectedItems = [];
 
@@ -235,7 +299,10 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(`Sending ${operation} request with items:`, selectedItems);
             const res = await axios.post(apiUrl, {
                 operation: operation,
-                json: JSON.stringify({ items: selectedItems })
+                json: JSON.stringify({
+                    items: selectedItems,
+                    admission_id: currentAdmissionId  // Include admission_id
+                })
             }, { withCredentials: true });
 
             console.log(`Response from ${operation}:`, res.data);
@@ -253,59 +320,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ===== API Calls =====
-    async function loadDispensedMedicines() {
-        try {
-            const res = await axios.get(apiUrl, {
-                params: { operation: "getDispensedMedicines" },
-                withCredentials: true
+    // ===== Event Listeners =====
+    // Modal action buttons
+    modalConfirmPickupBtn.addEventListener('click', async () => {
+        await performAction('confirmPickup', 'Medicines confirmed as picked up');
+    });
+
+    modalAdministerBtn.addEventListener('click', async () => {
+        await performAction('administerMedicines', 'Medicines marked as administered');
+    });
+
+    modalReturnBtn.addEventListener('click', async () => {
+        await performAction('returnMedicines', 'Medicines returned successfully');
+    });
+
+    // Select All checkbox in main table
+    const selectAllCheckbox = document.getElementById("selectAll");
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener("change", function () {
+            const checkboxes = document.querySelectorAll(".batch-checkbox");
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
             });
-            if (res.data.success) {
-                renderBatches(res.data.batches);
-            } else {
-                Swal.fire("Error", res.data.message || "Failed to load medicines", "error");
-            }
-        } catch (err) {
-            console.error("Error:", err);
-            Swal.fire("Error", "Network error while loading medicines", "error");
-        }
-    }
-
-    // ===== Button Events =====
-    confirmBtn.addEventListener("click", () => {
-        Swal.fire("Info", "Please use the 'View Details' button to select specific medicines for pickup confirmation.", "info");
-    });
-
-    administerBtn.addEventListener("click", () => {
-        Swal.fire("Info", "Please use the 'View Details' button to select specific medicines for administration.", "info");
-    });
-
-    returnBtn.addEventListener("click", () => {
-        Swal.fire("Info", "Please use the 'View Details' button to select specific medicines for return.", "info");
-    });
-
-    // ===== Select All Checkbox in Main Table =====
-    document.getElementById("selectAll").addEventListener("change", function () {
-        const checkboxes = document.querySelectorAll(".batch-checkbox");
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
         });
-    });
-
-    function statusBadge(status) {
-        const s = (status || '').toLowerCase().trim();
-        let cls = 'secondary';
-        if (s === 'pending') cls = 'warning';
-        else if (s === 'dispensed') cls = 'info';
-        else if (s === 'picked') cls = 'primary';
-        else if (s === 'administered') cls = 'success';
-        else if (s === 'returned') cls = 'danger';
-        else if (s === 'completed') cls = 'success';
-        else if (s === 'cancelled') cls = 'danger';
-        else if (s === 'partially dispensed' || s === 'partially_dispensed') cls = 'info';
-        return `<span class="badge bg-${cls}">${status}</span>`;
     }
 
-    // ===== Init =====
-    loadDispensedMedicines();
+    // ===== Initialize the application =====
+    init();
 });
