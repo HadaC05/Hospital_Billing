@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 11, 2025 at 06:33 AM
+-- Generation Time: Oct 11, 2025 at 07:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -372,18 +372,6 @@ INSERT INTO `patient_guardian` (`guardian_id`, `patient_id`, `first_name`, `midd
 -- --------------------------------------------------------
 
 --
--- Table structure for table `patient_labtest`
---
-
-CREATE TABLE `patient_labtest` (
-  `patient_lab_id` int(11) NOT NULL,
-  `admission_id` int(11) NOT NULL,
-  `record_date` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `patient_surgery`
 --
 
@@ -408,15 +396,41 @@ CREATE TABLE `patient_treatment` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `request_labtest`
+-- Table structure for table `request_labtest_batch`
 --
 
-CREATE TABLE `request_labtest` (
-  `lab_request_id` int(11) NOT NULL,
-  `request_id` int(11) NOT NULL,
+CREATE TABLE `request_labtest_batch` (
+  `batch_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `admission_id` int(11) NOT NULL,
+  `request_date` datetime DEFAULT current_timestamp(),
+  `status` enum('pending','approved','partially_processed','processed','completed','cancelled','rejected') DEFAULT 'pending',
+  `notes` text DEFAULT NULL,
+  `cancelled_reason` text DEFAULT NULL,
+  `cancelled_by` int(11) DEFAULT NULL,
+  `cancelled_date` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `request_labtest_items`
+--
+
+CREATE TABLE `request_labtest_items` (
+  `item_id` int(11) NOT NULL,
+  `batch_id` int(11) NOT NULL,
   `labtest_id` int(11) NOT NULL,
-  `technician_id` int(11) NOT NULL,
-  `scheduled_date` date DEFAULT NULL
+  `notes` text DEFAULT NULL,
+  `status` enum('pending','approved','processed','completed','cancelled','rejected') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_date` datetime DEFAULT NULL,
+  `processed_by` int(11) DEFAULT NULL,
+  `processed_date` datetime DEFAULT NULL,
+  `completed_by` int(11) DEFAULT NULL,
+  `completed_date` datetime DEFAULT NULL,
+  `billed_status` enum('no','yes') DEFAULT 'no'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -721,22 +735,6 @@ INSERT INTO `tbl_labtest_category` (`labtest_category_id`, `labtest_category_nam
 (32, 'zz', '2', 0),
 (33, 'testtest', 'test', 0),
 (34, 'xxx', '1', 0);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_labtest_item`
---
-
-CREATE TABLE `tbl_labtest_item` (
-  `labtest_item_id` int(11) NOT NULL,
-  `patient_labtest_id` int(11) NOT NULL,
-  `labtest_id` int(11) NOT NULL,
-  `performed_by` int(11) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `charge` decimal(10,2) NOT NULL,
-  `date_performed` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1737,13 +1735,6 @@ ALTER TABLE `patient_guardian`
   ADD KEY `fk_guardian_patient` (`patient_id`);
 
 --
--- Indexes for table `patient_labtest`
---
-ALTER TABLE `patient_labtest`
-  ADD PRIMARY KEY (`patient_lab_id`),
-  ADD KEY `fk_patient_labtest_1` (`admission_id`);
-
---
 -- Indexes for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -1758,12 +1749,24 @@ ALTER TABLE `patient_treatment`
   ADD KEY `fk_patient_treatment_1` (`admission_id`);
 
 --
--- Indexes for table `request_labtest`
+-- Indexes for table `request_labtest_batch`
 --
-ALTER TABLE `request_labtest`
-  ADD PRIMARY KEY (`lab_request_id`),
-  ADD KEY `technician_id` (`technician_id`),
-  ADD KEY `labtest_id` (`labtest_id`);
+ALTER TABLE `request_labtest_batch`
+  ADD PRIMARY KEY (`batch_id`),
+  ADD KEY `doctor_id` (`doctor_id`),
+  ADD KEY `patient_id` (`patient_id`),
+  ADD KEY `admission_id` (`admission_id`);
+
+--
+-- Indexes for table `request_labtest_items`
+--
+ALTER TABLE `request_labtest_items`
+  ADD PRIMARY KEY (`item_id`),
+  ADD KEY `batch_id` (`batch_id`),
+  ADD KEY `labtest_id` (`labtest_id`),
+  ADD KEY `approved_by` (`approved_by`),
+  ADD KEY `processed_by` (`processed_by`),
+  ADD KEY `completed_by` (`completed_by`);
 
 --
 -- Indexes for table `request_medicine_batch`
@@ -1846,15 +1849,6 @@ ALTER TABLE `tbl_labtest`
 --
 ALTER TABLE `tbl_labtest_category`
   ADD PRIMARY KEY (`labtest_category_id`);
-
---
--- Indexes for table `tbl_labtest_item`
---
-ALTER TABLE `tbl_labtest_item`
-  ADD PRIMARY KEY (`labtest_item_id`),
-  ADD KEY `fk_labtest_item_1` (`patient_labtest_id`),
-  ADD KEY `fk_labtest_item_2` (`labtest_id`),
-  ADD KEY `fk_labtest_item_3` (`performed_by`);
 
 --
 -- Indexes for table `tbl_medicine`
@@ -2146,22 +2140,22 @@ ALTER TABLE `patient_guardian`
   MODIFY `guardian_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT for table `patient_labtest`
---
-ALTER TABLE `patient_labtest`
-  MODIFY `patient_lab_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `patient_treatment`
 --
 ALTER TABLE `patient_treatment`
   MODIFY `patient_treatment_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `request_labtest`
+-- AUTO_INCREMENT for table `request_labtest_batch`
 --
-ALTER TABLE `request_labtest`
-  MODIFY `lab_request_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `request_labtest_batch`
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `request_labtest_items`
+--
+ALTER TABLE `request_labtest_items`
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_batch`
@@ -2222,12 +2216,6 @@ ALTER TABLE `tbl_labtest`
 --
 ALTER TABLE `tbl_labtest_category`
   MODIFY `labtest_category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
-
---
--- AUTO_INCREMENT for table `tbl_labtest_item`
---
-ALTER TABLE `tbl_labtest_item`
-  MODIFY `labtest_item_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine`
@@ -2467,13 +2455,6 @@ ALTER TABLE `patient_guardian`
   ADD CONSTRAINT `fk_guardian_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `patient_labtest`
---
-ALTER TABLE `patient_labtest`
-  ADD CONSTRAINT `fk_labtest_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
-  ADD CONSTRAINT `fk_patient_labtest_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`);
-
---
 -- Constraints for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -2486,12 +2467,22 @@ ALTER TABLE `patient_treatment`
   ADD CONSTRAINT `fk_patient_treatment_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`);
 
 --
--- Constraints for table `request_labtest`
+-- Constraints for table `request_labtest_batch`
 --
-ALTER TABLE `request_labtest`
-  ADD CONSTRAINT `request_labtest_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `request_service` (`request_id`),
-  ADD CONSTRAINT `request_labtest_ibfk_2` FOREIGN KEY (`technician_id`) REFERENCES `user_lab_technician` (`technician_id`),
-  ADD CONSTRAINT `request_labtest_ibfk_3` FOREIGN KEY (`labtest_id`) REFERENCES `tbl_labtest` (`labtest_id`);
+ALTER TABLE `request_labtest_batch`
+  ADD CONSTRAINT `request_labtest_batch_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `user_doctor` (`user_id`),
+  ADD CONSTRAINT `request_labtest_batch_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`),
+  ADD CONSTRAINT `request_labtest_batch_ibfk_3` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`);
+
+--
+-- Constraints for table `request_labtest_items`
+--
+ALTER TABLE `request_labtest_items`
+  ADD CONSTRAINT `request_labtest_items_ibfk_1` FOREIGN KEY (`batch_id`) REFERENCES `request_labtest_batch` (`batch_id`),
+  ADD CONSTRAINT `request_labtest_items_ibfk_2` FOREIGN KEY (`labtest_id`) REFERENCES `tbl_labtest` (`labtest_id`),
+  ADD CONSTRAINT `request_labtest_items_ibfk_3` FOREIGN KEY (`approved_by`) REFERENCES `user_lab_technician` (`user_id`),
+  ADD CONSTRAINT `request_labtest_items_ibfk_4` FOREIGN KEY (`processed_by`) REFERENCES `user_lab_technician` (`user_id`),
+  ADD CONSTRAINT `request_labtest_items_ibfk_5` FOREIGN KEY (`completed_by`) REFERENCES `user_lab_technician` (`user_id`);
 
 --
 -- Constraints for table `request_medicine_batch`
@@ -2555,14 +2546,6 @@ ALTER TABLE `tbl_doctor_fee`
 --
 ALTER TABLE `tbl_labtest`
   ADD CONSTRAINT `fk_labtest_2` FOREIGN KEY (`labtest_category_id`) REFERENCES `tbl_labtest_category` (`labtest_category_id`);
-
---
--- Constraints for table `tbl_labtest_item`
---
-ALTER TABLE `tbl_labtest_item`
-  ADD CONSTRAINT `fk_labtest_item_1` FOREIGN KEY (`patient_labtest_id`) REFERENCES `patient_labtest` (`patient_lab_id`),
-  ADD CONSTRAINT `fk_labtest_item_2` FOREIGN KEY (`labtest_id`) REFERENCES `tbl_labtest` (`labtest_id`),
-  ADD CONSTRAINT `fk_labtest_item_3` FOREIGN KEY (`performed_by`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `tbl_medicine`
