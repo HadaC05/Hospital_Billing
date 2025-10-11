@@ -147,7 +147,12 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Medicine Requests Module',
             link: '../pharmacist-html/medicine-requests.html',
             icon: 'fas fa-pills'
-        }
+        },
+        labtest_management: {
+            label: 'Labtest Management',
+            link: '../labstaff-html/labtest-management.html',
+            icon: 'fas fa-pills'
+        },
     };
 
     const inventoryMap = {

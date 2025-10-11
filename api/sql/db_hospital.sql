@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 11, 2025 at 07:01 AM
+-- Generation Time: Oct 11, 2025 at 09:31 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -405,12 +405,22 @@ CREATE TABLE `request_labtest_batch` (
   `patient_id` int(11) NOT NULL,
   `admission_id` int(11) NOT NULL,
   `request_date` datetime DEFAULT current_timestamp(),
-  `status` enum('pending','approved','partially_processed','processed','completed','cancelled','rejected') DEFAULT 'pending',
+  `status` enum('pending','in_progress','completed','cancelled') DEFAULT 'pending',
   `notes` text DEFAULT NULL,
   `cancelled_reason` text DEFAULT NULL,
   `cancelled_by` int(11) DEFAULT NULL,
   `cancelled_date` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `request_labtest_batch`
+--
+
+INSERT INTO `request_labtest_batch` (`batch_id`, `doctor_id`, `patient_id`, `admission_id`, `request_date`, `status`, `notes`, `cancelled_reason`, `cancelled_by`, `cancelled_date`) VALUES
+(1, 2, 26, 24, '2025-10-11 13:28:17', 'pending', NULL, NULL, NULL, NULL),
+(2, 2, 29, 27, '2025-10-11 13:29:11', 'pending', NULL, NULL, NULL, NULL),
+(3, 2, 24, 22, '2025-10-11 13:38:06', 'pending', NULL, NULL, NULL, NULL),
+(4, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -423,7 +433,7 @@ CREATE TABLE `request_labtest_items` (
   `batch_id` int(11) NOT NULL,
   `labtest_id` int(11) NOT NULL,
   `notes` text DEFAULT NULL,
-  `status` enum('pending','approved','processed','completed','cancelled','rejected') DEFAULT 'pending',
+  `status` enum('pending','in_progress','completed','cancelled') DEFAULT 'pending',
   `approved_by` int(11) DEFAULT NULL,
   `approved_date` datetime DEFAULT NULL,
   `processed_by` int(11) DEFAULT NULL,
@@ -432,6 +442,17 @@ CREATE TABLE `request_labtest_items` (
   `completed_date` datetime DEFAULT NULL,
   `billed_status` enum('no','yes') DEFAULT 'no'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `request_labtest_items`
+--
+
+INSERT INTO `request_labtest_items` (`item_id`, `batch_id`, `labtest_id`, `notes`, `status`, `approved_by`, `approved_date`, `processed_by`, `processed_date`, `completed_by`, `completed_date`, `billed_status`) VALUES
+(1, 1, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(2, 2, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(3, 2, 5, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(4, 3, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(5, 4, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no');
 
 -- --------------------------------------------------------
 
@@ -464,7 +485,10 @@ INSERT INTO `request_medicine_batch` (`batch_id`, `doctor_id`, `patient_id`, `ad
 (5, 2, 29, 27, '2025-10-03 14:06:02', '', NULL, NULL, NULL, NULL),
 (6, 2, 30, 28, '2025-10-09 21:22:55', 'dispensed', NULL, NULL, NULL, NULL),
 (7, 2, 24, 22, '2025-10-11 12:04:55', 'completed', NULL, NULL, NULL, NULL),
-(8, 2, 21, 19, '2025-10-11 12:07:32', 'partially_dispensed', NULL, NULL, NULL, NULL);
+(8, 2, 21, 19, '2025-10-11 12:07:32', 'partially_dispensed', NULL, NULL, NULL, NULL),
+(9, 2, 29, 27, '2025-10-11 13:29:11', 'pending', NULL, NULL, NULL, NULL),
+(10, 2, 24, 22, '2025-10-11 13:38:06', 'pending', NULL, NULL, NULL, NULL),
+(11, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -514,7 +538,10 @@ INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity
 (17, 7, 12, 3, 'flow', 'administered', 5, '2025-10-11 12:05:19', 11, '2025-10-11 12:05:51', 11, '2025-10-11 12:06:02', NULL, NULL, 'yes'),
 (18, 7, 12, 1, NULL, 'returned', 5, '2025-10-11 12:05:19', 11, '2025-10-11 12:05:51', NULL, NULL, 11, '2025-10-11 12:06:07', 'no'),
 (19, 8, 3, 1, '', 'picked', 5, '2025-10-11 12:20:18', 11, '2025-10-11 12:20:48', NULL, NULL, NULL, NULL, 'no'),
-(20, 8, 3, 1, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no');
+(20, 8, 3, 1, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(21, 9, 4, 2, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(22, 10, 7, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(23, 11, 10, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no');
 
 -- --------------------------------------------------------
 
@@ -1755,7 +1782,8 @@ ALTER TABLE `request_labtest_batch`
   ADD PRIMARY KEY (`batch_id`),
   ADD KEY `doctor_id` (`doctor_id`),
   ADD KEY `patient_id` (`patient_id`),
-  ADD KEY `admission_id` (`admission_id`);
+  ADD KEY `admission_id` (`admission_id`),
+  ADD KEY `fk_cancelled_by` (`cancelled_by`);
 
 --
 -- Indexes for table `request_labtest_items`
@@ -2149,25 +2177,25 @@ ALTER TABLE `patient_treatment`
 -- AUTO_INCREMENT for table `request_labtest_batch`
 --
 ALTER TABLE `request_labtest_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `request_labtest_items`
 --
 ALTER TABLE `request_labtest_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_batch`
 --
 ALTER TABLE `request_medicine_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_items`
 --
 ALTER TABLE `request_medicine_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
@@ -2470,6 +2498,7 @@ ALTER TABLE `patient_treatment`
 -- Constraints for table `request_labtest_batch`
 --
 ALTER TABLE `request_labtest_batch`
+  ADD CONSTRAINT `fk_cancelled_by` FOREIGN KEY (`cancelled_by`) REFERENCES `users` (`user_id`),
   ADD CONSTRAINT `request_labtest_batch_ibfk_1` FOREIGN KEY (`doctor_id`) REFERENCES `user_doctor` (`user_id`),
   ADD CONSTRAINT `request_labtest_batch_ibfk_2` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`),
   ADD CONSTRAINT `request_labtest_batch_ibfk_3` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`);
