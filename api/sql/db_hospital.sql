@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 03, 2025 at 08:59 AM
+-- Generation Time: Oct 11, 2025 at 06:33 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -49,7 +49,9 @@ INSERT INTO `bill_invoice` (`invoice_id`, `admission_id`, `patient_id`, `created
 (3, 24, 26, 1, '2025-09-13 00:00:00', 0.00, 1025.50, 1025.50, 'draft'),
 (4, 25, 27, 1, '2025-09-13 00:00:00', 0.00, 2200.00, 2200.00, 'draft'),
 (5, 28, 30, 5, '2025-09-13 10:52:25', NULL, 5.00, 0.00, 'paid'),
-(6, 28, 30, 9, '2025-09-13 00:00:00', 0.00, 1005.00, 1005.00, 'draft');
+(6, 28, 30, 9, '2025-09-13 00:00:00', 0.00, 1005.00, 1005.00, 'draft'),
+(7, 28, 30, 9, '2025-10-10 00:00:00', 0.00, 10.00, 10.00, 'draft'),
+(8, 22, 24, 9, '2025-10-11 00:00:00', 0.00, 15.00, 15.00, 'draft');
 
 -- --------------------------------------------------------
 
@@ -64,7 +66,7 @@ CREATE TABLE `bill_invoice_items` (
   `quantity` decimal(10,2) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
-  `reference_table` enum('patient_medication','patient_labtest','patient_treatment','patient_surgery') NOT NULL,
+  `reference_table` enum('patient_medication','patient_labtest','patient_treatment','patient_surgery','request_medicine_items') NOT NULL,
   `reference_id` int(11) NOT NULL,
   `coverage_amount` decimal(10,2) DEFAULT NULL,
   `patient_payable` decimal(10,2) DEFAULT NULL
@@ -82,7 +84,10 @@ INSERT INTO `bill_invoice_items` (`invo_item_id`, `invoice_id`, `svc_type_id`, `
 (5, 4, 1, 1.00, 2200.00, 2200.00, '', 14, 0.00, 2200.00),
 (6, 5, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, NULL, NULL),
 (7, 6, 1, 1.00, 1000.00, 1000.00, '', 16, 0.00, 1000.00),
-(8, 6, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, 0.00, 5.00);
+(8, 6, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, 0.00, 5.00),
+(9, 7, 4, 2.00, 2.50, 5.00, 'request_medicine_items', 10, 0.00, 5.00),
+(10, 7, 4, 2.00, 2.50, 5.00, 'request_medicine_items', 15, 0.00, 5.00),
+(11, 8, 4, 3.00, 5.00, 15.00, 'request_medicine_items', 17, 0.00, 15.00);
 
 -- --------------------------------------------------------
 
@@ -379,32 +384,6 @@ CREATE TABLE `patient_labtest` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `patient_medication`
---
-
-CREATE TABLE `patient_medication` (
-  `medication_id` int(11) NOT NULL,
-  `admission_id` int(11) NOT NULL,
-  `request_id` int(11) NOT NULL,
-  `med_id` int(11) NOT NULL,
-  `quantity` decimal(10,2) NOT NULL,
-  `unit_price` decimal(10,2) NOT NULL,
-  `record_date` datetime NOT NULL DEFAULT current_timestamp(),
-  `dispensed_by` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `patient_medication`
---
-
-INSERT INTO `patient_medication` (`medication_id`, `admission_id`, `request_id`, `med_id`, `quantity`, `unit_price`, `record_date`, `dispensed_by`) VALUES
-(1, 24, 8, 1, 3.00, 8.50, '2025-09-13 09:30:19', 5),
-(2, 26, 11, 4, 2.00, 4.00, '2025-09-13 09:56:54', 5),
-(3, 28, 12, 3, 2.00, 2.50, '2025-09-13 10:52:25', 5);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `patient_surgery`
 --
 
@@ -466,9 +445,12 @@ CREATE TABLE `request_medicine_batch` (
 INSERT INTO `request_medicine_batch` (`batch_id`, `doctor_id`, `patient_id`, `admission_id`, `request_date`, `status`, `notes`, `cancelled_reason`, `cancelled_by`, `cancelled_date`) VALUES
 (1, 2, 26, 24, '2025-09-21 07:30:08', '', NULL, NULL, NULL, NULL),
 (2, 2, 26, 24, '2025-09-22 21:58:09', '', NULL, NULL, NULL, NULL),
-(3, 2, 26, 24, '2025-09-22 22:26:10', '', NULL, NULL, NULL, NULL),
-(4, 2, 30, 28, '2025-10-03 13:52:00', 'partially_dispensed', NULL, NULL, NULL, NULL),
-(5, 2, 29, 27, '2025-10-03 14:06:02', '', NULL, NULL, NULL, NULL);
+(3, 2, 26, 24, '2025-09-22 22:26:10', 'completed', NULL, NULL, NULL, NULL),
+(4, 2, 30, 28, '2025-10-03 13:52:00', 'completed', NULL, NULL, NULL, NULL),
+(5, 2, 29, 27, '2025-10-03 14:06:02', '', NULL, NULL, NULL, NULL),
+(6, 2, 30, 28, '2025-10-09 21:22:55', 'dispensed', NULL, NULL, NULL, NULL),
+(7, 2, 24, 22, '2025-10-11 12:04:55', 'completed', NULL, NULL, NULL, NULL),
+(8, 2, 21, 19, '2025-10-11 12:07:32', 'partially_dispensed', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -490,25 +472,35 @@ CREATE TABLE `request_medicine_items` (
   `administered_by` int(11) DEFAULT NULL,
   `administered_date` datetime DEFAULT NULL,
   `returned_by` int(11) DEFAULT NULL,
-  `returned_date` datetime DEFAULT NULL
+  `returned_date` datetime DEFAULT NULL,
+  `billed_status` enum('no','yes') DEFAULT 'no'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `request_medicine_items`
 --
 
-INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity`, `notes`, `status`, `dispensed_by`, `dispensed_date`, `picked_by`, `picked_date`, `administered_by`, `administered_date`, `returned_by`, `returned_date`) VALUES
-(1, 1, 4, 1, 'test', 'picked', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, NULL, NULL),
-(2, 1, 1, 2, 'test', 'picked', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, NULL, NULL),
-(3, 2, 5, 3, 'test', 'picked', NULL, NULL, 11, '2025-10-03 14:44:55', NULL, NULL, NULL, NULL),
-(4, 2, 11, 3, 'test', 'picked', NULL, NULL, 11, '2025-10-03 13:43:00', NULL, NULL, NULL, NULL),
-(5, 3, 3, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
-(6, 3, 6, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
-(7, 3, 11, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
-(8, 3, 5, 1, '', 'picked', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, NULL, NULL),
-(9, 4, 3, 2, 'testing', 'returned', NULL, NULL, 11, '2025-10-03 14:46:26', NULL, NULL, 11, '2025-10-03 14:57:39'),
-(10, 4, 3, 2, 'testing again', 'picked', NULL, NULL, 11, '2025-10-03 14:56:52', NULL, NULL, NULL, NULL),
-(11, 5, 12, 5, '', 'administered', NULL, NULL, 11, '2025-10-03 14:56:45', 11, '2025-10-03 14:57:08', NULL, NULL);
+INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity`, `notes`, `status`, `dispensed_by`, `dispensed_date`, `picked_by`, `picked_date`, `administered_by`, `administered_date`, `returned_by`, `returned_date`, `billed_status`) VALUES
+(1, 1, 4, 1, 'test', 'returned', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, 11, '2025-10-09 16:57:33', 'no'),
+(2, 1, 1, 2, 'test', 'returned', 5, '2025-10-03 14:17:59', 11, '2025-10-03 14:44:47', NULL, NULL, 11, '2025-10-09 16:57:33', 'no'),
+(3, 2, 5, 3, 'test', 'administered', NULL, NULL, 11, '2025-10-03 14:44:55', 11, '2025-10-09 16:57:20', NULL, NULL, 'no'),
+(4, 2, 11, 3, 'test', 'administered', NULL, NULL, 11, '2025-10-03 13:43:00', 11, '2025-10-09 16:57:20', NULL, NULL, 'no'),
+(5, 3, 3, 1, '', 'administered', NULL, NULL, 11, '2025-10-03 14:45:13', 11, '2025-10-09 21:22:07', NULL, NULL, 'no'),
+(6, 3, 6, 1, '', 'administered', NULL, NULL, 11, '2025-10-03 14:45:13', 11, '2025-10-09 21:22:07', NULL, NULL, 'no'),
+(7, 3, 11, 1, '', 'returned', NULL, NULL, 11, '2025-10-03 14:45:13', NULL, NULL, 11, '2025-10-10 22:53:15', 'no'),
+(8, 3, 5, 1, '', 'administered', NULL, NULL, 11, '2025-10-03 14:45:13', 11, '2025-10-10 22:53:22', NULL, NULL, 'no'),
+(9, 4, 3, 2, 'testing', 'returned', NULL, NULL, 11, '2025-10-03 14:46:26', NULL, NULL, 11, '2025-10-03 14:57:39', 'no'),
+(10, 4, 3, 2, 'testing again', 'administered', NULL, NULL, 11, '2025-10-03 14:56:52', 11, '2025-10-09 21:21:56', NULL, NULL, 'yes'),
+(11, 5, 12, 5, '', 'administered', NULL, NULL, 11, '2025-10-03 14:56:45', 11, '2025-10-03 14:57:08', NULL, NULL, 'no'),
+(12, 6, 3, 2, '', 'returned', 5, '2025-10-09 21:23:14', 11, '2025-10-09 21:24:05', NULL, NULL, 11, '2025-10-09 21:24:54', 'no'),
+(13, 6, 11, 6, '', 'dispensed', 5, '2025-10-09 21:23:14', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(14, 6, 10, 2, '', 'dispensed', 5, '2025-10-09 21:23:14', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(15, 6, 3, 2, NULL, 'administered', 5, '2025-10-09 21:23:14', 11, '2025-10-09 21:25:03', 11, '2025-10-09 21:25:26', NULL, NULL, 'yes'),
+(16, 6, 3, 1, NULL, 'returned', 5, '2025-10-09 21:23:14', 11, '2025-10-09 21:25:03', NULL, NULL, 11, '2025-10-09 21:26:11', 'no'),
+(17, 7, 12, 3, 'flow', 'administered', 5, '2025-10-11 12:05:19', 11, '2025-10-11 12:05:51', 11, '2025-10-11 12:06:02', NULL, NULL, 'yes'),
+(18, 7, 12, 1, NULL, 'returned', 5, '2025-10-11 12:05:19', 11, '2025-10-11 12:05:51', NULL, NULL, 11, '2025-10-11 12:06:07', 'no'),
+(19, 8, 3, 1, '', 'picked', 5, '2025-10-11 12:20:18', 11, '2025-10-11 12:20:48', NULL, NULL, NULL, NULL, 'no'),
+(20, 8, 3, 1, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no');
 
 -- --------------------------------------------------------
 
@@ -744,22 +736,6 @@ CREATE TABLE `tbl_labtest_item` (
   `quantity` int(11) NOT NULL,
   `charge` decimal(10,2) NOT NULL,
   `date_performed` date NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_medication_item`
---
-
-CREATE TABLE `tbl_medication_item` (
-  `med_item_id` int(11) NOT NULL,
-  `medication_id` int(11) NOT NULL,
-  `med_id` int(11) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `administered_by` int(11) NOT NULL,
-  `date_given` date NOT NULL,
-  `charge` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1768,16 +1744,6 @@ ALTER TABLE `patient_labtest`
   ADD KEY `fk_patient_labtest_1` (`admission_id`);
 
 --
--- Indexes for table `patient_medication`
---
-ALTER TABLE `patient_medication`
-  ADD PRIMARY KEY (`medication_id`),
-  ADD KEY `admission_id` (`admission_id`),
-  ADD KEY `request_id` (`request_id`),
-  ADD KEY `med_id` (`med_id`),
-  ADD KEY `dispensed_by` (`dispensed_by`);
-
---
 -- Indexes for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -1889,15 +1855,6 @@ ALTER TABLE `tbl_labtest_item`
   ADD KEY `fk_labtest_item_1` (`patient_labtest_id`),
   ADD KEY `fk_labtest_item_2` (`labtest_id`),
   ADD KEY `fk_labtest_item_3` (`performed_by`);
-
---
--- Indexes for table `tbl_medication_item`
---
-ALTER TABLE `tbl_medication_item`
-  ADD PRIMARY KEY (`med_item_id`),
-  ADD KEY `fk_medication_item_1` (`medication_id`),
-  ADD KEY `fk_medication_item_2` (`med_id`),
-  ADD KEY `fk_medication_item_3` (`administered_by`);
 
 --
 -- Indexes for table `tbl_medicine`
@@ -2120,13 +2077,13 @@ ALTER TABLE `user_therapist_specialty`
 -- AUTO_INCREMENT for table `bill_invoice`
 --
 ALTER TABLE `bill_invoice`
-  MODIFY `invoice_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `invoice_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `bill_invoice_items`
 --
 ALTER TABLE `bill_invoice_items`
-  MODIFY `invo_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `invo_item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `bill_payment`
@@ -2195,12 +2152,6 @@ ALTER TABLE `patient_labtest`
   MODIFY `patient_lab_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `patient_medication`
---
-ALTER TABLE `patient_medication`
-  MODIFY `medication_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
 -- AUTO_INCREMENT for table `patient_treatment`
 --
 ALTER TABLE `patient_treatment`
@@ -2216,13 +2167,13 @@ ALTER TABLE `request_labtest`
 -- AUTO_INCREMENT for table `request_medicine_batch`
 --
 ALTER TABLE `request_medicine_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_items`
 --
 ALTER TABLE `request_medicine_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
@@ -2277,12 +2228,6 @@ ALTER TABLE `tbl_labtest_category`
 --
 ALTER TABLE `tbl_labtest_item`
   MODIFY `labtest_item_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `tbl_medication_item`
---
-ALTER TABLE `tbl_medication_item`
-  MODIFY `med_item_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbl_medicine`
@@ -2529,15 +2474,6 @@ ALTER TABLE `patient_labtest`
   ADD CONSTRAINT `fk_patient_labtest_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`);
 
 --
--- Constraints for table `patient_medication`
---
-ALTER TABLE `patient_medication`
-  ADD CONSTRAINT `patient_medication_ibfk_1` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
-  ADD CONSTRAINT `patient_medication_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `doctor_requests` (`request_id`),
-  ADD CONSTRAINT `patient_medication_ibfk_3` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
-  ADD CONSTRAINT `patient_medication_ibfk_4` FOREIGN KEY (`dispensed_by`) REFERENCES `users` (`user_id`);
-
---
 -- Constraints for table `patient_surgery`
 --
 ALTER TABLE `patient_surgery`
@@ -2627,14 +2563,6 @@ ALTER TABLE `tbl_labtest_item`
   ADD CONSTRAINT `fk_labtest_item_1` FOREIGN KEY (`patient_labtest_id`) REFERENCES `patient_labtest` (`patient_lab_id`),
   ADD CONSTRAINT `fk_labtest_item_2` FOREIGN KEY (`labtest_id`) REFERENCES `tbl_labtest` (`labtest_id`),
   ADD CONSTRAINT `fk_labtest_item_3` FOREIGN KEY (`performed_by`) REFERENCES `users` (`user_id`);
-
---
--- Constraints for table `tbl_medication_item`
---
-ALTER TABLE `tbl_medication_item`
-  ADD CONSTRAINT `fk_medication_item_1` FOREIGN KEY (`medication_id`) REFERENCES `patient_medication` (`medication_id`),
-  ADD CONSTRAINT `fk_medication_item_2` FOREIGN KEY (`med_id`) REFERENCES `tbl_medicine` (`med_id`),
-  ADD CONSTRAINT `fk_medication_item_3` FOREIGN KEY (`administered_by`) REFERENCES `users` (`user_id`);
 
 --
 -- Constraints for table `tbl_medicine`
