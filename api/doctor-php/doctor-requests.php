@@ -271,48 +271,87 @@ class Doctor_Request
     {
         try {
             $requestId = $data['request_id'] ?? null;
+            $requestType = $data['request_type'] ?? null;
             $doctorId = (int)$_SESSION['user_id'];
 
             if (!$requestId) {
                 throw new Exception('Missing request ID');
             }
 
-            // Check if it's a medicine batch request
-            $checkSql = "
+            if ($requestType === 'medicine_batch') {
+                // Check if it's a medicine batch request
+                $checkSql = "
                 SELECT rmb.batch_id 
                 FROM request_medicine_batch rmb
                 WHERE rmb.batch_id = :request_id AND rmb.doctor_id = :doctor_id
             ";
-            $stmt = $this->pdo->prepare($checkSql);
-            $stmt->execute([
-                ':request_id' => $requestId,
-                ':doctor_id' => $doctorId
-            ]);
+                $stmt = $this->pdo->prepare($checkSql);
+                $stmt->execute([
+                    ':request_id' => $requestId,
+                    ':doctor_id' => $doctorId
+                ]);
 
-            if ($stmt->fetch()) {
-                // Cancel the entire medicine batch
-                $updateSql = "
+                if ($stmt->fetch()) {
+                    // Cancel the entire medicine batch
+                    $updateSql = "
                     UPDATE request_medicine_batch 
                     SET status = 'cancelled' 
                     WHERE batch_id = :request_id
                 ";
-                $stmt = $this->pdo->prepare($updateSql);
-                $stmt->execute([':request_id' => $requestId]);
+                    $stmt = $this->pdo->prepare($updateSql);
+                    $stmt->execute([':request_id' => $requestId]);
 
-                // Also cancel all items in the batch
-                $updateItemsSql = "
+                    // Also cancel all items in the batch
+                    $updateItemsSql = "
                     UPDATE request_medicine_items 
                     SET status = 'cancelled' 
                     WHERE batch_id = :request_id
                 ";
-                $stmt = $this->pdo->prepare($updateItemsSql);
-                $stmt->execute([':request_id' => $requestId]);
+                    $stmt = $this->pdo->prepare($updateItemsSql);
+                    $stmt->execute([':request_id' => $requestId]);
+                } else {
+                    throw new Exception('Medicine batch not found or not authorized');
+                }
+            } elseif ($requestType === 'labtest_batch') {
+                // Check if it's a lab test batch request
+                $checkSql = "
+                SELECT rlb.batch_id 
+                FROM request_labtest_batch rlb
+                WHERE rlb.batch_id = :request_id AND rlb.doctor_id = :doctor_id
+            ";
+                $stmt = $this->pdo->prepare($checkSql);
+                $stmt->execute([
+                    ':request_id' => $requestId,
+                    ':doctor_id' => $doctorId
+                ]);
+
+                if ($stmt->fetch()) {
+                    // Cancel the entire lab test batch
+                    $updateSql = "
+                    UPDATE request_labtest_batch 
+                    SET status = 'cancelled' 
+                    WHERE batch_id = :request_id
+                ";
+                    $stmt = $this->pdo->prepare($updateSql);
+                    $stmt->execute([':request_id' => $requestId]);
+
+                    // Also cancel all items in the batch
+                    $updateItemsSql = "
+                    UPDATE request_labtest_items 
+                    SET status = 'cancelled' 
+                    WHERE batch_id = :request_id
+                ";
+                    $stmt = $this->pdo->prepare($updateItemsSql);
+                    $stmt->execute([':request_id' => $requestId]);
+                } else {
+                    throw new Exception('Lab test batch not found or not authorized');
+                }
             } else {
                 // Handle old request system
                 $checkSql = "
-                    SELECT 1 FROM doctor_requests 
-                    WHERE request_id = :request_id AND doctor_id = :doctor_id
-                ";
+                SELECT 1 FROM doctor_requests 
+                WHERE request_id = :request_id AND doctor_id = :doctor_id
+            ";
                 $stmt = $this->pdo->prepare($checkSql);
                 $stmt->execute([
                     ':request_id' => $requestId,
@@ -325,10 +364,10 @@ class Doctor_Request
 
                 // Update request status to cancelled
                 $updateSql = "
-                    UPDATE doctor_requests 
-                    SET status = 'cancelled', cancelled_date = NOW() 
-                    WHERE request_id = :request_id
-                ";
+                UPDATE doctor_requests 
+                SET status = 'cancelled', cancelled_date = NOW() 
+                WHERE request_id = :request_id
+            ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([':request_id' => $requestId]);
             }
@@ -344,7 +383,6 @@ class Doctor_Request
             ]);
         }
     }
-
     public function getServiceTypes()
     {
         try {
@@ -372,43 +410,96 @@ class Doctor_Request
     {
         try {
             $doctorId = (int)$_SESSION['user_id'];
+            $batchType = $_GET['batch_type'] ?? null;
 
-            // Get batch details
-            $batchSql = "
-                SELECT rmb.*, 
-                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
-                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
-                FROM request_medicine_batch rmb
-                JOIN patients p ON rmb.patient_id = p.patient_id
-                JOIN users u ON rmb.doctor_id = u.user_id
-                JOIN user_doctor ud ON u.user_id = ud.user_id
-                WHERE rmb.batch_id = :batch_id AND rmb.doctor_id = :doctor_id
-            ";
-
-            $stmt = $this->pdo->prepare($batchSql);
-            $stmt->execute([
-                ':batch_id' => $batchId,
-                ':doctor_id' => $doctorId
-            ]);
-
-            $batch = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$batch) {
-                throw new Exception('Batch not found or access denied');
+            if (!$batchType) {
+                throw new Exception('Batch type is required');
             }
 
-            // Get batch items
-            $itemsSql = "
-                SELECT rmi.*, m.med_name
-                FROM request_medicine_items rmi
-                JOIN tbl_medicine m ON rmi.med_id = m.med_id
-                WHERE rmi.batch_id = :batch_id
-                ORDER BY rmi.item_id
+            $batch = [];
+            $items = [];
+
+            if ($batchType === 'medicine_batch') {
+                // Get medicine batch details
+                $batchSql = "
+            SELECT rmb.*, 
+                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
+            FROM request_medicine_batch rmb
+            JOIN patients p ON rmb.patient_id = p.patient_id
+            JOIN users u ON rmb.doctor_id = u.user_id
+            JOIN user_doctor ud ON u.user_id = ud.user_id
+            WHERE rmb.batch_id = :batch_id AND rmb.doctor_id = :doctor_id
             ";
 
-            $stmt = $this->pdo->prepare($itemsSql);
-            $stmt->execute([':batch_id' => $batchId]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $stmt = $this->pdo->prepare($batchSql);
+                $stmt->execute([
+                    ':batch_id' => $batchId,
+                    ':doctor_id' => $doctorId
+                ]);
+
+                $batch = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$batch) {
+                    throw new Exception('Medicine batch not found or access denied');
+                }
+
+                // Get medicine batch items
+                $itemsSql = "
+            SELECT rmi.*, m.med_name as item_name
+            FROM request_medicine_items rmi
+            JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            WHERE rmi.batch_id = :batch_id
+            ORDER BY rmi.item_id
+            ";
+
+                $stmt = $this->pdo->prepare($itemsSql);
+                $stmt->execute([':batch_id' => $batchId]);
+                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $batch['batch_type'] = 'medicine';
+            } elseif ($batchType === 'labtest_batch') {
+                // Get lab test batch details
+                $batchSql = "
+            SELECT rlb.*, 
+                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
+            FROM request_labtest_batch rlb
+            JOIN patients p ON rlb.patient_id = p.patient_id
+            JOIN users u ON rlb.doctor_id = u.user_id
+            JOIN user_doctor ud ON u.user_id = ud.user_id
+            WHERE rlb.batch_id = :batch_id AND rlb.doctor_id = :doctor_id
+            ";
+
+                $stmt = $this->pdo->prepare($batchSql);
+                $stmt->execute([
+                    ':batch_id' => $batchId,
+                    ':doctor_id' => $doctorId
+                ]);
+
+                $batch = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$batch) {
+                    throw new Exception('Lab test batch not found or access denied');
+                }
+
+                // Get lab test batch items
+                $itemsSql = "
+            SELECT rli.*, lt.test_name as item_name
+            FROM request_labtest_items rli
+            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+            WHERE rli.batch_id = :batch_id
+            ORDER BY rli.item_id
+            ";
+
+                $stmt = $this->pdo->prepare($itemsSql);
+                $stmt->execute([':batch_id' => $batchId]);
+                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $batch['batch_type'] = 'labtest';
+            } else {
+                throw new Exception('Invalid batch type');
+            }
 
             echo json_encode([
                 'success' => true,
@@ -420,60 +511,10 @@ class Doctor_Request
                 'success' => false,
                 'message' => 'Failed to get batch details: ' . $e->getMessage()
             ]);
-        }
-    }
-
-    public function getLabtestBatchDetails($batchId)
-    {
-        try {
-            $doctorId = (int)$_SESSION['user_id'];
-
-            // Get batch details
-            $batchSql = "
-            SELECT rlb.*, 
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
-            FROM request_labtest_batch rlb
-            JOIN patients p ON rlb.patient_id = p.patient_id
-            JOIN users u ON rlb.doctor_id = u.user_id
-            JOIN user_doctor ud ON u.user_id = ud.user_id
-            WHERE rlb.batch_id = :batch_id AND rlb.doctor_id = :doctor_id
-        ";
-
-            $stmt = $this->pdo->prepare($batchSql);
-            $stmt->execute([
-                ':batch_id' => $batchId,
-                ':doctor_id' => $doctorId
-            ]);
-
-            $batch = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$batch) {
-                throw new Exception('Batch not found or access denied');
-            }
-
-            // Get batch items
-            $itemsSql = "
-            SELECT rli.*, lt.test_name
-            FROM request_labtest_items rli
-            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
-            WHERE rli.batch_id = :batch_id
-            ORDER BY rli.item_id
-        ";
-
-            $stmt = $this->pdo->prepare($itemsSql);
-            $stmt->execute([':batch_id' => $batchId]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            echo json_encode([
-                'success' => true,
-                'batch' => $batch,
-                'items' => $items
-            ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Failed to get lab test batch details: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -512,14 +553,6 @@ switch ($operation) {
         $batchId = $_GET['batch_id'] ?? null;
         if ($batchId) {
             $request->getBatchDetails($batchId);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Missing batch ID']);
-        }
-        break;
-    case 'getLabtestBatchDetails':
-        $batchId = $_GET['batch_id'] ?? null;
-        if ($batchId) {
-            $request->getLabtestBatchDetails($batchId);
         } else {
             echo json_encode(['success' => false, 'message' => 'Missing batch ID']);
         }

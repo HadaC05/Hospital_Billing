@@ -217,130 +217,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     // View batch details
     async function viewBatchDetails(e) {
         const batchId = e.currentTarget.dataset.requestId;
-        const requestType = e.currentTarget.dataset.requestType || 'medicine_batch'; // Add data attribute to identify type
+        const requestType = e.currentTarget.dataset.requestType || 'medicine_batch';
 
         console.log("Opening batch details for ID:", batchId, "Type:", requestType);
 
-        if (requestType === 'labtest_batch') {
-            try {
-                const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/doctor-requests.php`, {
-                    params: {
-                        operation: "getLabtestBatchDetails",
-                        batch_id: batchId
-                    },
-                    withCredentials: true
-                });
+        try {
+            const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/doctor-requests.php`, {
+                params: {
+                    operation: "getBatchDetails",
+                    batch_id: batchId,
+                    batch_type: requestType // Pass the batch type to backend
+                },
+                withCredentials: true
+            });
 
-                if (response.data.success) {
-                    const batch = response.data.batch;
-                    const items = response.data.items;
+            if (response.data.success) {
+                const batch = response.data.batch;
+                const items = response.data.items;
+                const batchType = batch.batch_type;
 
-                    let itemsHtml = '';
-                    items.forEach(item => {
-                        itemsHtml += `
-                        <tr>
-                            <td>${safe(item.test_name)}</td>
-                            <td>${safe(item.notes || '-')}</td>
-                            <td>${getStatusBadge(item.status)}</td>
-                        </tr>
-                    `;
-                    });
+                let title, itemsHtml;
 
-                    Swal.fire({
-                        title: 'Lab Test Batch Details',
-                        html: `
-                        <div class="text-start">
-                            <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
-                            <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
-                            <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
-                            <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
-                            <hr>
-                            <h6>Tests:</h6>
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Test Name</th>
-                                        <th>Notes</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        width: '600px',
-                        confirmButtonText: 'Close'
-                    });
-                } else {
-                    Swal.fire('Error', 'Failed to load lab test batch details', 'error');
+                if (batchType === 'medicine') {
+                    title = 'Medicine Batch Details';
+                    itemsHtml = items.map(item => `
+                    <tr>
+                        <td>${safe(item.item_name)}</td>
+                        <td>${safe(item.quantity)}</td>
+                        <td>${safe(item.notes || '-')}</td>
+                        <td>${getStatusBadge(item.status)}</td>
+                    </tr>
+                `).join('');
+                } else if (batchType === 'labtest') {
+                    title = 'Lab Test Batch Details';
+                    itemsHtml = items.map(item => `
+                    <tr>
+                        <td>${safe(item.item_name)}</td>
+                        <td>${safe(item.notes || '-')}</td>
+                        <td>${getStatusBadge(item.status)}</td>
+                    </tr>
+                `).join('');
                 }
-            } catch (error) {
-                console.error('Error loading lab test batch details:', error);
-                Swal.fire('Error', 'Network error while loading lab test batch details', 'error');
-            }
-        } else if (requestType === 'medicine_batch') {
-            try {
-                const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/doctor-requests.php`, {
-                    params: {
-                        operation: "getBatchDetails",
-                        batch_id: batchId
-                    },
-                    withCredentials: true
+
+                Swal.fire({
+                    title: title,
+                    html: `
+                    <div class="text-start">
+                        <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
+                        <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
+                        <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
+                        <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
+                        <hr>
+                        <h6>${batchType === 'medicine' ? 'Items' : 'Tests'}:</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    ${batchType === 'medicine' ?
+                            '<th>Medicine</th><th>Quantity</th>' :
+                            '<th>Test Name</th>'
+                        }
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `,
+                    width: '600px',
+                    confirmButtonText: 'Close'
                 });
-
-                if (response.data.success) {
-                    const batch = response.data.batch;
-                    const items = response.data.items;
-
-                    let itemsHtml = '';
-                    items.forEach(item => {
-                        itemsHtml += `
-                        <tr>
-                            <td>${safe(item.med_name)}</td>
-                            <td>${safe(item.quantity)}</td>
-                            <td>${safe(item.notes || '-')}</td>
-                            <td>${getStatusBadge(item.status)}</td>
-                        </tr>
-                    `;
-                    });
-
-                    Swal.fire({
-                        title: 'Medicine Batch Details',
-                        html: `
-                        <div class="text-start">
-                            <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
-                            <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
-                            <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
-                            <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
-                            <hr>
-                            <h6>Items:</h6>
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Medicine</th>
-                                        <th>Quantity</th>
-                                        <th>Notes</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        width: '600px',
-                        confirmButtonText: 'Close'
-                    });
-                } else {
-                    Swal.fire('Error', 'Failed to load batch details', 'error');
-                }
-            } catch (error) {
-                console.error('Error loading batch details:', error);
-                Swal.fire('Error', 'Network error while loading batch details', 'error');
+            } else {
+                Swal.fire('Error', 'Failed to load batch details', 'error');
             }
+        } catch (error) {
+            console.error('Error loading batch details:', error);
+            Swal.fire('Error', 'Network error while loading batch details', 'error');
         }
     }
 
