@@ -10,38 +10,78 @@ class Invoices
         include 'connection-pdo.php';
         try {
             // Admission + patient info
-            $stmt = $conn->prepare(
-                "SELECT a.admission_id, a.admission_date, p.first_name, p.last_name, p.middle_name
-             FROM patient_admission a
-             JOIN patients p ON a.patient_id = p.patient_id
-             WHERE a.admission_id = :admission_id"
-            );
+
+            $sql = "
+                SELECT 
+                    a.admission_id, 
+                    a.admission_date, 
+                    p.first_name, 
+                    p.last_name, 
+                    p.middle_name
+                FROM patient_admission a
+                JOIN patients p ON a.patient_id = p.patient_id
+                WHERE a.admission_id = :admission_id
+            ";
+            $stmt = $conn->prepare($sql);
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
             $admission = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$admission) {
-                echo json_encode(['success' => false, 'message' => 'Admission not found']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Admission not found'
+                ]);
                 return;
             }
+
             $items = [];
 
             // Only include administered medicines from request_medicine_items
-            $stmt = $conn->prepare(
-                "SELECT rmi.item_id AS svc_reference_id, m.med_name AS item_description,
-                    m.unit_price AS unit_price, rmi.quantity, 0 AS coverage_amount,
-                    'Medication' AS service_type_name, 4 AS svc_type_id,
+            $sqlMed = "
+                SELECT 
+                    rmi.item_id AS svc_reference_id, 
+                    m.med_name AS item_description,
+                    m.unit_price AS unit_price, 
+                    rmi.quantity, 0 AS coverage_amount,
+                    'Medication' AS service_type_name, 
+                    4 AS svc_type_id,
                     'request_medicine_items' AS reference_table
-             FROM request_medicine_items rmi
-             JOIN request_medicine_batch rmb ON rmi.batch_id = rmb.batch_id
-             JOIN tbl_medicine m ON rmi.med_id = m.med_id
-             WHERE rmi.status = 'administered' 
-               AND rmi.billed_status = 'no'
-               AND rmb.admission_id = :admission_id"
-            );
+                FROM request_medicine_items rmi
+                JOIN request_medicine_batch rmb ON rmi.batch_id = rmb.batch_id
+                JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                WHERE rmi.status = 'administered' 
+                AND rmi.billed_status = 'no'
+                AND rmb.admission_id = :admission_id
+            ";
+            $stmt = $conn->prepare($sqlMed);
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
             $administeredMedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $items = array_merge($items, $administeredMedItems);
+
+            $sqlLab = "
+                SELECT 
+                    rli.item_id AS svc_reference_id, 
+                    lt.test_name AS item_description,
+                    lt.unit_price, 
+                    1 AS quantity, 
+                    0 AS coverage_amount,
+                    'Lab Test' AS service_type_name, 
+                    3 AS svc_type_id,
+                    'request_labtest_items' AS reference_table
+                FROM request_labtest_items rli
+                JOIN request_labtest_batch rlb ON rli.batch_id = rlb.batch_id
+                JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+                WHERE rli.status = 'completed' 
+                AND rli.billed_status = 'no'
+                AND rlb.admission_id = :admission_id
+            ";
+
+            $stmt = $conn->prepare($sqlLab);
+            $stmt->bindParam(':admission_id', $admission_id);
+            $stmt->execute();
+            $completedLabItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = array_merge($items, $completedLabItems);
 
             echo json_encode([
                 'success' => true,
@@ -49,6 +89,7 @@ class Invoices
                 'items' => $items,
                 'debug' => [
                     'administered_meds' => count($administeredMedItems),
+                    'completed_labs' => count($completedLabItems),
                     'total' => count($items)
                 ]
             ]);
@@ -80,6 +121,7 @@ class Invoices
         }
     }
 
+    // Create invoice and items
     // Create invoice and items
     function createInvoice($data)
     {
@@ -114,7 +156,7 @@ class Invoices
             // Create invoice
             $stmt = $conn->prepare(
                 "INSERT INTO bill_invoice (admission_id, patient_id, created_by, invoice_date, insurance_covered_amount, total_amount, amount_due, status)
-                 VALUES (:admission_id, :patient_id, :created_by, CURRENT_DATE(), :covered, :total, :due, 'draft')"
+             VALUES (:admission_id, :patient_id, :created_by, CURRENT_DATE(), :covered, :total, :due, 'draft')"
             );
             $created_by = $_SESSION['user_id'];
             $stmt->bindParam(':admission_id', $admission_id);
@@ -129,7 +171,7 @@ class Invoices
             // Insert items
             $stmt = $conn->prepare(
                 "INSERT INTO bill_invoice_items (invoice_id, svc_type_id, quantity, unit_price, total_amount, reference_table, reference_id, coverage_amount, patient_payable)
-                 VALUES (:invoice_id, :svc_type_id, :quantity, :unit_price, :total_amount, :reference_table, :reference_id, :coverage_amount, :patient_payable)"
+             VALUES (:invoice_id, :svc_type_id, :quantity, :unit_price, :total_amount, :reference_table, :reference_id, :coverage_amount, :patient_payable)"
             );
 
             foreach ($items as $it) {
@@ -143,15 +185,13 @@ class Invoices
 
                 // Determine reference table based on service type
                 $reference_table = '';
-                // And replace it with this simplified version:
                 switch ($svc_type_id) {
                     case 4:
-                        // Check if it's from the new medicine system
-                        if (isset($it['reference_table']) && $it['reference_table'] === 'request_medicine_items') {
-                            $reference_table = 'request_medicine_items';
-                        } else {
-                            $reference_table = 'patient_medication';
-                        }
+                        $reference_table = 'request_medicine_items';
+                        break;
+                    case 3:
+                        // Lab test
+                        $reference_table = 'request_labtest_items';
                         break;
                     default:
                         $reference_table = '';
@@ -174,6 +214,11 @@ class Invoices
                 // Update billed status for medicine items
                 if ($reference_table === 'request_medicine_items') {
                     $updateStmt = $conn->prepare("UPDATE request_medicine_items SET billed_status = 'yes' WHERE item_id = :reference_id");
+                    $updateStmt->execute([':reference_id' => $svc_reference_id]);
+                }
+                // Update billed status for lab test items
+                else if ($reference_table === 'request_labtest_items') {
+                    $updateStmt = $conn->prepare("UPDATE request_labtest_items SET billed_status = 'yes' WHERE item_id = :reference_id");
                     $updateStmt->execute([':reference_id' => $svc_reference_id]);
                 }
             }
