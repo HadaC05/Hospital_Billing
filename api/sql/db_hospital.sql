@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 11, 2025 at 09:31 AM
+-- Generation Time: Oct 13, 2025 at 08:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -66,7 +66,7 @@ CREATE TABLE `bill_invoice_items` (
   `quantity` decimal(10,2) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
-  `reference_table` enum('patient_medication','patient_labtest','patient_treatment','patient_surgery','request_medicine_items') NOT NULL,
+  `reference_table` enum('patient_treatment','patient_surgery','request_medicine_items','request_labtest_items') NOT NULL,
   `reference_id` int(11) NOT NULL,
   `coverage_amount` decimal(10,2) DEFAULT NULL,
   `patient_payable` decimal(10,2) DEFAULT NULL
@@ -77,14 +77,14 @@ CREATE TABLE `bill_invoice_items` (
 --
 
 INSERT INTO `bill_invoice_items` (`invo_item_id`, `invoice_id`, `svc_type_id`, `quantity`, `unit_price`, `total_amount`, `reference_table`, `reference_id`, `coverage_amount`, `patient_payable`) VALUES
-(1, 1, 4, 3.00, 8.50, 25.50, 'patient_medication', 1, NULL, NULL),
-(2, 2, 4, 2.00, 4.00, 8.00, 'patient_medication', 2, NULL, NULL),
+(1, 1, 4, 3.00, 8.50, 25.50, '', 1, NULL, NULL),
+(2, 2, 4, 2.00, 4.00, 8.00, '', 2, NULL, NULL),
 (3, 3, 1, 1.00, 1000.00, 1000.00, '', 13, 0.00, 1000.00),
-(4, 3, 4, 3.00, 8.50, 25.50, 'patient_medication', 1, 0.00, 25.50),
+(4, 3, 4, 3.00, 8.50, 25.50, '', 1, 0.00, 25.50),
 (5, 4, 1, 1.00, 2200.00, 2200.00, '', 14, 0.00, 2200.00),
-(6, 5, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, NULL, NULL),
+(6, 5, 4, 2.00, 2.50, 5.00, '', 3, NULL, NULL),
 (7, 6, 1, 1.00, 1000.00, 1000.00, '', 16, 0.00, 1000.00),
-(8, 6, 4, 2.00, 2.50, 5.00, 'patient_medication', 3, 0.00, 5.00),
+(8, 6, 4, 2.00, 2.50, 5.00, '', 3, 0.00, 5.00),
 (9, 7, 4, 2.00, 2.50, 5.00, 'request_medicine_items', 10, 0.00, 5.00),
 (10, 7, 4, 2.00, 2.50, 5.00, 'request_medicine_items', 15, 0.00, 5.00),
 (11, 8, 4, 3.00, 5.00, 15.00, 'request_medicine_items', 17, 0.00, 15.00);
@@ -419,8 +419,10 @@ CREATE TABLE `request_labtest_batch` (
 INSERT INTO `request_labtest_batch` (`batch_id`, `doctor_id`, `patient_id`, `admission_id`, `request_date`, `status`, `notes`, `cancelled_reason`, `cancelled_by`, `cancelled_date`) VALUES
 (1, 2, 26, 24, '2025-10-11 13:28:17', 'pending', NULL, NULL, NULL, NULL),
 (2, 2, 29, 27, '2025-10-11 13:29:11', 'pending', NULL, NULL, NULL, NULL),
-(3, 2, 24, 22, '2025-10-11 13:38:06', 'pending', NULL, NULL, NULL, NULL),
-(4, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL);
+(3, 2, 24, 22, '2025-10-11 13:38:06', 'completed', NULL, NULL, NULL, NULL),
+(4, 2, 22, 20, '2025-10-11 13:47:47', 'completed', NULL, NULL, NULL, NULL),
+(5, 2, 28, 26, '2025-10-13 13:52:29', 'completed', NULL, NULL, NULL, NULL),
+(6, 2, 28, 26, '2025-10-13 14:02:32', 'completed', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -451,8 +453,10 @@ INSERT INTO `request_labtest_items` (`item_id`, `batch_id`, `labtest_id`, `notes
 (1, 1, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (2, 2, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (3, 2, 5, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
-(4, 3, 6, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
-(5, 4, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, 'no');
+(4, 3, 6, '', 'completed', NULL, NULL, 4, '2025-10-13 13:24:26', 4, '2025-10-13 13:42:14', 'yes'),
+(5, 4, 1, '', 'completed', NULL, NULL, 4, '2025-10-13 13:23:50', 4, '2025-10-13 13:23:58', 'yes'),
+(6, 5, 14, 'invoice test', 'completed', NULL, NULL, 4, '2025-10-13 13:53:20', 4, '2025-10-13 13:53:26', 'yes'),
+(7, 6, 13, '', 'completed', NULL, NULL, 4, '2025-10-13 14:02:49', 4, '2025-10-13 14:02:53', 'no');
 
 -- --------------------------------------------------------
 
@@ -488,7 +492,8 @@ INSERT INTO `request_medicine_batch` (`batch_id`, `doctor_id`, `patient_id`, `ad
 (8, 2, 21, 19, '2025-10-11 12:07:32', 'partially_dispensed', NULL, NULL, NULL, NULL),
 (9, 2, 29, 27, '2025-10-11 13:29:11', 'pending', NULL, NULL, NULL, NULL),
 (10, 2, 24, 22, '2025-10-11 13:38:06', 'pending', NULL, NULL, NULL, NULL),
-(11, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL);
+(11, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL),
+(12, 2, 28, 26, '2025-10-13 13:52:29', '', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -541,7 +546,8 @@ INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity
 (20, 8, 3, 1, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (21, 9, 4, 2, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (22, 10, 7, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
-(23, 11, 10, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no');
+(23, 11, 10, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
+(24, 12, 10, 1, 'invoice test', 'administered', 5, '2025-10-13 13:52:44', 11, '2025-10-13 13:52:57', 11, '2025-10-13 13:53:02', NULL, NULL, 'no');
 
 -- --------------------------------------------------------
 
@@ -1510,7 +1516,8 @@ INSERT INTO `user_permission` (`permission_id`, `name`, `label`, `description`) 
 (28, 'doctor_my_patients', 'My Patients', 'Display all patients assigned to doctor'),
 (30, 'medicine_management', 'Medicine Management', 'Module to perform medicine pickup/administering/returning'),
 (31, 'doctor_dashboard', 'Doctor Dashboard', 'Display doctor related statistics'),
-(32, 'medicine_requests', 'Medicine Requests', 'Manage medicine requests from doctor.');
+(32, 'medicine_requests', 'Medicine Requests', 'Manage medicine requests from doctor.'),
+(33, 'labtest_management', 'Lab Test Management', 'Module to perform test confirmation and completion.');
 
 -- --------------------------------------------------------
 
@@ -1601,6 +1608,8 @@ INSERT INTO `user_role_permission` (`user_role_id`, `permission_id`, `is_allowed
 (4, 5, 1),
 (4, 30, 1),
 (5, 9, 1),
+(5, 23, 1),
+(5, 33, 1),
 (6, 8, 1),
 (6, 25, 1),
 (6, 32, 1),
@@ -2177,25 +2186,25 @@ ALTER TABLE `patient_treatment`
 -- AUTO_INCREMENT for table `request_labtest_batch`
 --
 ALTER TABLE `request_labtest_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `request_labtest_items`
 --
 ALTER TABLE `request_labtest_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_batch`
 --
 ALTER TABLE `request_medicine_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_items`
 --
 ALTER TABLE `request_medicine_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
@@ -2387,7 +2396,7 @@ ALTER TABLE `user_nurse_department`
 -- AUTO_INCREMENT for table `user_permission`
 --
 ALTER TABLE `user_permission`
-  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `user_pharmacist`
