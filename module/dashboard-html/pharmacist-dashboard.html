@@ -74,52 +74,22 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><i class="fas fa-prescription-bottle-alt me-2"></i>Medicine Requests</div>
+        <div class="card-header"><i class="fas fa-list me-2"></i>Recent Admissions</div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover mb-0">
               <thead class="table-light">
                 <tr>
-                  <th>Batch ID</th>
-                  <th>Patient Name</th>
-                  <th>Doctor Name</th>
-                  <th>Request Date</th>
+                  <th>Admission ID</th>
+                  <th>Patient</th>
+                  <th>Contact</th>
+                  <th>Admitted</th>
+                  <th>Discharged</th>
                   <th>Status</th>
-                  <th>Action</th>
                 </tr>
               </thead>
-              <tbody id="medicine-requests-list"></tbody>
+              <tbody id="pharm-recent"></tbody>
             </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Batch Details Modal -->
-      <div class="modal fade" id="batchDetailsModal" tabindex="-1" aria-labelledby="batchDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="batchDetailsModalLabel">Batch Details</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <h6 class="mb-3">Request Items for Batch #<span id="batchIdSpan"></span></h6>
-              <div id="batchItemsContainer" class="table-responsive">
-                <table class="table table-sm table-bordered">
-                  <thead>
-                    <tr>
-                      <th>Medicine Name</th>
-                      <th>Quantity</th>
-                      <th>Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody id="batchItemsTbody"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
           </div>
         </div>
       </div>

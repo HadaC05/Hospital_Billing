@@ -85,9 +85,9 @@ class Medicine_Requests
         }
     }
 
-    public function dispenseItems($itemIds, $userId)
+    public function dispenseItems($items, $userId)
     {
-        if (empty($itemIds)) {
+        if (empty($items)) {
             echo json_encode(['success' => false, 'message' => 'No items selected for dispensing.']);
             return;
         }
@@ -95,23 +95,75 @@ class Medicine_Requests
         $this->pdo->beginTransaction();
         $debug = [];
         try {
-            $debug['received_item_ids'] = $itemIds;
+            $debug['received_items'] = $items;
             $batchId = null;
             $updatedItems = 0;
 
-            foreach ($itemIds as $itemId) {
-                $updateItemSql = "UPDATE request_medicine_items SET status = 'dispensed' WHERE item_id = :item_id AND status = 'pending'";
-                $stmt = $this->pdo->prepare($updateItemSql);
+            foreach ($items as $item) {
+                $itemId = $item['item_id'];
+                $quantityToDispense = $item['quantity'];
+
+                // Get current item details
+                $getItemSql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $stmt = $this->pdo->prepare($getItemSql);
                 $stmt->execute([':item_id' => $itemId]);
-                $updatedItems += $stmt->rowCount();
+                $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$currentItem) {
+                    throw new Exception("Item #$itemId not found");
+                }
+
+                if ($currentItem['status'] !== 'pending') {
+                    throw new Exception("Item #$itemId is not in pending status");
+                }
+
+                if ($quantityToDispense > $currentItem['quantity']) {
+                    throw new Exception("Quantity to dispense ($quantityToDispense) exceeds available quantity ({$currentItem['quantity']}) for item #$itemId");
+                }
 
                 if ($batchId === null) {
-                    $getBatchIdSql = "SELECT batch_id FROM request_medicine_items WHERE item_id = :item_id";
-                    $stmt = $this->pdo->prepare($getBatchIdSql);
-                    $stmt->execute([':item_id' => $itemId]);
-                    $batchId = $stmt->fetchColumn();
+                    $batchId = $currentItem['batch_id'];
                 }
+
+                // If partial quantity, create a new item for the remaining quantity
+                if ($quantityToDispense < $currentItem['quantity']) {
+                    $remainingQuantity = $currentItem['quantity'] - $quantityToDispense;
+
+                    // Create new item for remaining quantity
+                    $insertSql = "INSERT INTO request_medicine_items (
+                    batch_id, med_id, quantity, status
+                ) VALUES (
+                    :batch_id, :med_id, :quantity, 'pending'
+                )";
+
+                    $stmt = $this->pdo->prepare($insertSql);
+                    $stmt->execute([
+                        ':batch_id' => $currentItem['batch_id'],
+                        ':med_id' => $currentItem['med_id'],
+                        ':quantity' => $remainingQuantity
+                    ]);
+                }
+
+                // Update the original item with dispensed quantity and status
+                $updateItemSql = "
+                UPDATE request_medicine_items 
+                SET status = 'dispensed', 
+                    quantity = :quantity,
+                    dispensed_by = :user_id, 
+                    dispensed_date = NOW() 
+                WHERE item_id = :item_id
+            ";
+
+                $stmt = $this->pdo->prepare($updateItemSql);
+                $stmt->execute([
+                    ':quantity' => $quantityToDispense,
+                    ':item_id' => $itemId,
+                    ':user_id' => $userId
+                ]);
+
+                $updatedItems++;
             }
+
             $debug['updated_item_count'] = $updatedItems;
             $debug['found_batch_id'] = $batchId;
 
@@ -122,7 +174,8 @@ class Medicine_Requests
                 $remainingItems = $stmt->fetchColumn();
                 $debug['remaining_pending_items'] = $remainingItems;
 
-                $newBatchStatus = $remainingItems == 0 ? 'completed' : 'partially_dispensed';
+                // Set batch status to 'dispensed' if all items are dispensed, otherwise 'partially_dispensed'
+                $newBatchStatus = $remainingItems == 0 ? 'dispensed' : 'partially_dispensed';
                 $debug['calculated_new_batch_status'] = $newBatchStatus;
 
                 $updateBatchSql = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
@@ -132,14 +185,13 @@ class Medicine_Requests
             }
 
             $this->pdo->commit();
-            echo json_encode(['success' => true, 'message' => count($itemIds) . ' item(s) dispensed successfully.', 'debug' => $debug]);
+            echo json_encode(['success' => true, 'message' => $updatedItems . ' item(s) dispensed successfully.', 'debug' => $debug]);
         } catch (Exception $e) {
             $this->pdo->rollBack();
             $debug['error'] = $e->getMessage();
             echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage(), 'debug' => $debug]);
         }
     }
-
 
     // Old Request System Functions (for compatibility)
     public function getRequests()
@@ -348,12 +400,12 @@ switch ($operation) {
         }
         break;
     case 'dispenseItems':
-        $itemIds = $payload['item_ids'] ?? [];
+        $items = $payload['item_ids'] ?? [];
         $userId = $_SESSION['user_id'] ?? null;
-        if (!empty($itemIds) && $userId) {
-            $request->dispenseItems($itemIds, $userId);
+        if (!empty($items) && $userId) {
+            $request->dispenseItems($items, $userId);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Missing item IDs or user not authenticated.']);
+            echo json_encode(['success' => false, 'message' => 'Missing items or user not authenticated.']);
         }
         break;
 

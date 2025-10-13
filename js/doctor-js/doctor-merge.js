@@ -152,22 +152,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // For medicine batches, show a view details button
             let actionButton = '';
+            // In the renderExistingRequests function, update the button generation:
             if (request.request_type === 'medicine_batch') {
                 actionButton = `
-                <button class="btn btn-sm btn-outline-info view-batch-btn" data-request-id="${request.request_id}" title="View Details">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" data-request-id="${request.request_id}" title="Cancel Request">
-                    <i class="fas fa-trash"></i>
-                </button>
-
-            `;
+                    <button class="btn btn-sm btn-outline-info view-batch-btn" 
+                            data-request-id="${request.request_id}" 
+                            data-request-type="medicine_batch"
+                            title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
+                            data-request-id="${request.request_id}" 
+                            data-request-type="medicine_batch"
+                            title="Cancel Request">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            } else if (request.request_type === 'labtest_batch') {
+                actionButton = `
+                    <button class="btn btn-sm btn-outline-info view-batch-btn" 
+                            data-request-id="${request.request_id}" 
+                            data-request-type="labtest_batch"
+                            title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
+                            data-request-id="${request.request_id}" 
+                            data-request-type="labtest_batch"
+                            title="Cancel Request">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
             } else {
                 actionButton = `
-                <button class="btn btn-sm btn-outline-danger cancel-request-btn" data-request-id="${request.request_id}">
-                    Cancel
-                </button>
-            `;
+                    <button class="btn btn-sm btn-outline-danger cancel-request-btn" 
+                            data-request-id="${request.request_id}">
+                        Cancel
+                    </button>
+                `;
             }
 
             row.innerHTML = `
@@ -195,13 +217,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // View batch details
     async function viewBatchDetails(e) {
         const batchId = e.currentTarget.dataset.requestId;
-        console.log("Opening batch details for ID:", batchId);
+        const requestType = e.currentTarget.dataset.requestType || 'medicine_batch';
+
+        console.log("Opening batch details for ID:", batchId, "Type:", requestType);
 
         try {
             const response = await axios.get(`${window.location.origin}/hospital_billing/api/doctor-php/doctor-requests.php`, {
                 params: {
                     operation: "getBatchDetails",
-                    batch_id: batchId
+                    batch_id: batchId,
+                    batch_type: requestType // Pass the batch type to backend
                 },
                 withCredentials: true
             });
@@ -209,44 +234,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.data.success) {
                 const batch = response.data.batch;
                 const items = response.data.items;
+                const batchType = batch.batch_type;
 
-                let itemsHtml = '';
-                items.forEach(item => {
-                    itemsHtml += `
-                        <tr>
-                            <td>${safe(item.med_name)}</td>
-                            <td>${safe(item.quantity)}</td>
-                            <td>${safe(item.notes || '-')}</td>
-                            <td>${getStatusBadge(item.status)}</td>
-                        </tr>
-                    `;
-                });
+                let title, itemsHtml;
+
+                if (batchType === 'medicine') {
+                    title = 'Medicine Batch Details';
+                    itemsHtml = items.map(item => `
+                    <tr>
+                        <td>${safe(item.item_name)}</td>
+                        <td>${safe(item.quantity)}</td>
+                        <td>${safe(item.notes || '-')}</td>
+                        <td>${getStatusBadge(item.status)}</td>
+                    </tr>
+                `).join('');
+                } else if (batchType === 'labtest') {
+                    title = 'Lab Test Batch Details';
+                    itemsHtml = items.map(item => `
+                    <tr>
+                        <td>${safe(item.item_name)}</td>
+                        <td>${safe(item.notes || '-')}</td>
+                        <td>${getStatusBadge(item.status)}</td>
+                    </tr>
+                `).join('');
+                }
 
                 Swal.fire({
-                    title: 'Medicine Batch Details',
+                    title: title,
                     html: `
-                        <div class="text-start">
-                            <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
-                            <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
-                            <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
-                            <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
-                            <hr>
-                            <h6>Items:</h6>
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Medicine</th>
-                                        <th>Quantity</th>
-                                        <th>Notes</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
+                    <div class="text-start">
+                        <p><strong>Batch ID:</strong> ${batch.batch_id}</p>
+                        <p><strong>Request Date:</strong> ${formatDate(batch.request_date)}</p>
+                        <p><strong>Status:</strong> ${getStatusBadge(batch.status)}</p>
+                        <p><strong>Notes:</strong> ${safe(batch.notes || 'None')}</p>
+                        <hr>
+                        <h6>${batchType === 'medicine' ? 'Items' : 'Tests'}:</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    ${batchType === 'medicine' ?
+                            '<th>Medicine</th><th>Quantity</th>' :
+                            '<th>Test Name</th>'
+                        }
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `,
                     width: '600px',
                     confirmButtonText: 'Close'
                 });
@@ -262,6 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cancel request
     async function cancelRequest(e) {
         const requestId = e.currentTarget.dataset.requestId;
+        const requestType = e.currentTarget.dataset.requestType || 'medicine_batch';
         const isBatch = e.currentTarget.textContent.includes('Batch');
 
         const result = await Swal.fire({
@@ -279,7 +319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const response = await axios.post(requestsApiUrl, {
                     operation: "cancelRequest",
                     json: JSON.stringify({
-                        request_id: requestId
+                        request_id: requestId,
+                        request_type: requestType
                     })
                 }, { withCredentials: true });
 
@@ -311,43 +352,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Reset new requests form
     function resetNewRequestsForm() {
-        newRequestsTableBody.innerHTML = `
-            <tr>
-                <td>
-                    <select class="form-select service-type-select" required>
-                        <option value="">Select Type</option>
-                        <option value="4">Medication</option>
-                        <option value="3">Lab Test</option>
-                        <option value="2">Surgery</option>
-                        <option value="5">Treatment</option>
-                        <option value="1">Room</option>
-                    </select>
-                </td>
-                <td>
-                    <select class="form-select item-select" required disabled>
-                        <option value="">Select Type First</option>
-                    </select>
-                </td>
-                <td>
-                    <input type="number" class="form-control quantity-input" min="1" value="1" required>
-                </td>
-                <td>
-                    <input type="text" class="form-control notes-input" placeholder="Optional notes">
-                </td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-danger remove-row-btn" disabled>
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        updateRemoveButtons();
-    }
+        // Store the current submit button reference
+        const submitBtn = newRequestsForm.querySelector('button[type="submit"]');
 
-    // Add row button
-    addRequestRowBtn.addEventListener('click', () => {
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
+        // Reset the form content
+        newRequestsTableBody.innerHTML = `
+        <tr>
             <td>
                 <select class="form-select service-type-select" required>
                     <option value="">Select Type</option>
@@ -370,11 +380,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <input type="text" class="form-control notes-input" placeholder="Optional notes">
             </td>
             <td>
-                <button type="button" class="btn btn-sm btn-danger remove-row-btn">
+                <button type="button" class="btn btn-sm btn-danger remove-row-btn" disabled>
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
-        `;
+        </tr>
+    `;
+
+        // Update remove buttons
+        updateRemoveButtons();
+
+        // Reset the submit button state if it exists
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Requests';
+        }
+    }
+
+    // Add row button
+    addRequestRowBtn.addEventListener('click', () => {
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+        <td>
+            <select class="form-select service-type-select" required>
+                <option value="">Select Type</option>
+                <option value="4">Medication</option>
+                <option value="3">Lab Test</option>
+                <option value="2">Surgery</option>
+                <option value="5">Treatment</option>
+                <option value="1">Room</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select item-select" required disabled>
+                <option value="">Select Type First</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control quantity-input" min="1" value="1" required>
+        </td>
+        <td>
+            <input type="text" class="form-control notes-input" placeholder="Optional notes">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger remove-row-btn">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
         newRequestsTableBody.appendChild(newRow);
         updateRemoveButtons();
     });
@@ -465,13 +518,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 if (response.data.success) {
                     itemSelect.innerHTML = '<option value="">Select Lab Test</option>';
-                    const activeTests = response.data.labtests.filter(test => test.is_active === "1" || test.is_active === 1);
+                    const activeTests = response.data.labtests.filter(test =>
+                        test.is_active === "1" || test.is_active === 1 || test.is_active === true
+                    );
                     activeTests.forEach(test => {
                         const opt = document.createElement('option');
                         opt.value = test.labtest_id;
                         opt.textContent = test.test_name;
                         itemSelect.appendChild(opt);
                     });
+                }
+            } else if (svcTypeId === "1") { // Room change
+                try {
+                    const roomsRes = await axios.get(`${window.location.origin}/hospital_billing/api/masterfiles-php/get-rooms.php`, {
+                        params: { operation: 'getRooms', page: 1, itemsPerPage: 1000 }
+                    });
+                    if (roomsRes?.data?.success) {
+                        const rooms = Array.isArray(roomsRes.data.rooms) ? roomsRes.data.rooms : [];
+                        itemSelect.innerHTML = '<option value="">Select Room</option>';
+                        const currentRoom = (currentPatient?.room_number || '').toString();
+                        // compute current occupancy
+                        const occByNumber = new Map();
+                        // derive from UI merged (not available here), so show all and let nurse validate capacity
+                        rooms.forEach(r => {
+                            const num = String(r.room_number);
+                            const maxOcc = Number(r.max_occupancy || 1);
+                            const label = `${num} (${r.room_type_name})`;
+                            const opt = document.createElement('option');
+                            opt.value = r.room_id;
+                            opt.textContent = `${label}` + (num === currentRoom ? ' (current)' : '');
+                            if (num === currentRoom) opt.disabled = true;
+                            itemSelect.appendChild(opt);
+                        });
+                        itemSelect.disabled = false;
+                    } else {
+                        itemSelect.innerHTML = '<option value="">Failed to load rooms</option>';
+                    }
+                } catch (e) {
+                    console.error('Load rooms error', e);
+                    itemSelect.innerHTML = '<option value="">Failed to load rooms</option>';
                 }
             } else {
                 // For other service types, we'll just use a placeholder
@@ -519,8 +604,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Get the submit button reference before submission
+        const submitBtn = newRequestsForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
         try {
-            const submitBtn = newRequestsForm.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
 
@@ -540,6 +628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     text: 'Requests submitted successfully!',
                     icon: 'success'
                 });
+
                 // Reset the form and switch to existing requests tab
                 resetNewRequestsForm();
                 document.getElementById('existing-requests-tab').click();
@@ -559,11 +648,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon: 'error'
             });
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Submit Requests';
+            // Re-fetch the button reference in case it was replaced
+            const currentSubmitBtn = newRequestsForm.querySelector('button[type="submit"]');
+            if (currentSubmitBtn) {
+                currentSubmitBtn.disabled = false;
+                currentSubmitBtn.innerHTML = originalBtnText;
+            }
         }
     });
-
     // Utility functions
     function formatDate(value) {
         if (!value) return '';

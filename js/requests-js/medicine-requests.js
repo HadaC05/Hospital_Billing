@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center">Loading...</td></tr>`;
         try {
             const response = await axios.get(`${apiBase}/requests-php/medicine-requests.php`, {
-                params: { 
+                params: {
                     operation: "getBatchRequests",
                     _t: new Date().getTime() // Cache buster
                 },
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <td>${statusBadge(batch.status)}</td> 
                 <td>
                     <button class="btn btn-sm btn-primary dispense-btn" data-batch-id="${batch.batch_id}">
-                        <i class="fas fa-pills"></i> View & Dispense
+                        <i class="fas fa-pills"></i> View Details
                     </button>
                 </td>
             `;
@@ -99,31 +99,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     function renderDispenseModalItems(items) {
         const itemsContainer = document.getElementById('dispense-items-container');
         const confirmBtn = document.getElementById('confirmDispenseBtn');
-        
+
         itemsContainer.innerHTML = `
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-center"><input type="checkbox" id="selectAllModalCheckbox"></th>
-                        <th>Medicine</th>
-                        <th>Quantity</th>
-                        <th>Status</th>
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-center"><input type="checkbox" id="selectAllModalCheckbox"></th>
+                    <th>Medicine</th>
+                    <th>Available Qty</th>
+                    <th>Qty to Dispense</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="dispense-items-tbody">
+                ${items.map(item => `
+                    <tr class="${item.status === 'dispensed' ? 'table-success' : ''}">
+                        <td class="text-center">
+                            <input type="checkbox" class="dispense-item-checkbox" value="${item.item_id}" ${item.status === 'dispensed' ? 'disabled' : ''}>
+                        </td>
+                        <td>${item.med_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>
+                            ${item.status === 'dispensed' ?
+                '<span class="text-muted">Already dispensed</span>' :
+                `<input type="number" class="form-control form-control-sm dispense-quantity" 
+                                    data-item-id="${item.item_id}" 
+                                    min="1" max="${item.quantity}" 
+                                    value="${item.quantity}">`
+            }
+                        </td>
+                        <td>${statusBadge(item.status)}</td>
                     </tr>
-                </thead>
-                <tbody id="dispense-items-tbody">
-                    ${items.map(item => `
-                        <tr class="${item.status === 'dispensed' ? 'table-success' : ''}">
-                            <td class="text-center">
-                                <input type="checkbox" class="dispense-item-checkbox" value="${item.item_id}" ${item.status === 'dispensed' ? 'disabled' : ''}>
-                            </td>
-                            <td>${item.med_name}</td>
-                            <td>${item.quantity}</td>
-                            <td>${statusBadge(item.status)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 
         const modalCheckboxes = itemsContainer.querySelectorAll('.dispense-item-checkbox:not(:disabled)');
         const selectAllModalCheckbox = itemsContainer.querySelector('#selectAllModalCheckbox');
@@ -142,16 +152,34 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         confirmBtn.onclick = () => {
-            const selectedIds = Array.from(itemsContainer.querySelectorAll('.dispense-item-checkbox:checked')).map(cb => cb.value);
-            confirmDispense(selectedIds);
+            const selectedItems = [];
+            itemsContainer.querySelectorAll('.dispense-item-checkbox:checked').forEach(checkbox => {
+                const itemId = checkbox.value;
+                const quantityInput = itemsContainer.querySelector(`.dispense-quantity[data-item-id="${itemId}"]`);
+                const quantity = parseInt(quantityInput.value) || 0;
+
+                if (quantity > 0) {
+                    selectedItems.push({
+                        item_id: itemId,
+                        quantity: quantity
+                    });
+                }
+            });
+
+            if (selectedItems.length === 0) {
+                Swal.fire('Warning', 'Please select at least one item with a valid quantity.', 'warning');
+                return;
+            }
+
+            confirmDispense(selectedItems);
         };
-        
+
         updateTotalState();
     }
 
-    async function confirmDispense(itemIds) {
+    async function confirmDispense(selectedItems) {
         Swal.fire({
-            title: `Dispense ${itemIds.length} selected item(s)?`,
+            title: `Dispense ${selectedItems.length} selected item(s)?`,
             text: "This will mark them as dispensed.",
             icon: 'question',
             showCancelButton: true,
@@ -165,7 +193,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 try {
                     const res = await axios.post(`${apiBase}/requests-php/medicine-requests.php`, {
                         operation: "dispenseItems",
-                        item_ids: itemIds
+                        item_ids: selectedItems
                     }, { withCredentials: true });
 
                     console.log('Dispense response:', res.data); // Log the full response

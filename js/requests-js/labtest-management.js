@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const apiUrl = `${window.location.origin}/hospital_billing/api/requests-php/medicine-management.php`;
+    const apiUrl = `${window.location.origin}/hospital_billing/api/lab-php/labtest-management.php`;
 
     // DOM Elements
-    const tableBody = document.getElementById("medicinesTableBody");
+    const tableBody = document.getElementById("labTestsTableBody");
 
     // Modal elements
     const batchDetailsModalEl = document.getElementById('batchDetailsModal');
@@ -13,22 +13,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalBatchStatus = document.getElementById('modalBatchStatus');
     const modalBatchNotes = document.getElementById('modalBatchNotes');
     const batchItemsTableBody = document.getElementById('batchItemsTableBody');
-    const modalConfirmPickupBtn = document.getElementById('modalConfirmPickupBtn');
-    const modalAdministerBtn = document.getElementById('modalAdministerBtn');
-    const modalReturnBtn = document.getElementById('modalReturnBtn');
+    const modalStartTestsBtn = document.getElementById('modalStartTestsBtn');
+    const modalCompleteTestsBtn = document.getElementById('modalCompleteTestsBtn');
+    const modalCancelTestsBtn = document.getElementById('modalCancelTestsBtn');
 
     // State variables
     let currentBatchItems = [];
     let currentAdmissionId = null;
-    let admissionsData = [];
 
     // ===== Initialize =====
     function init() {
         // Get current admission ID from localStorage or URL
         currentAdmissionId = getCurrentAdmissionId();
 
-        // Load dispensed medicines
-        loadDispensedMedicines();
+        // Load lab test requests
+        loadLabTestRequests();
     }
 
     // ===== Admission Management =====
@@ -59,13 +58,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const s = (status || '').toLowerCase().trim();
         let cls = 'secondary';
         if (s === 'pending') cls = 'warning';
-        else if (s === 'dispensed') cls = 'info';
-        else if (s === 'picked') cls = 'primary';
-        else if (s === 'administered') cls = 'success';
-        else if (s === 'returned') cls = 'danger';
+        else if (s === 'in_progress') cls = 'info';
         else if (s === 'completed') cls = 'success';
         else if (s === 'cancelled') cls = 'danger';
-        else if (s === 'partially dispensed' || s === 'partially_dispensed') cls = 'info';
+        return `<span class="badge bg-${cls}">${status}</span>`;
+    }
+
+    function billedStatusBadge(status) {
+        const s = (status || '').toLowerCase().trim();
+        let cls = 'secondary';
+        if (s === 'yes') cls = 'success';
+        else if (s === 'no') cls = 'warning';
         return `<span class="badge bg-${cls}">${status}</span>`;
     }
 
@@ -77,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center text-muted">
-                        No medicine batches found.
+                        No lab test requests found.
                     </td>
                 </tr>
             `;
@@ -95,11 +98,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${new Date(batch.request_date).toLocaleDateString()}</td>
                 <td>${statusBadge(batch.batch_status)}</td>
                 <td>
-                    <span class="badge bg-info">${batch.item_count} items</span>
+                    <span class="badge bg-info">${batch.item_count} tests</span>
                     <div class="small text-muted">
-                        ${batch.dispensed_count} dispensed, 
-                        ${batch.picked_count} picked, 
-                        ${batch.administered_count} administered
+                        ${batch.pending_count} pending, 
+                        ${batch.in_progress_count} in progress, 
+                        ${batch.completed_count} completed
                     </div>
                 </td>
                 <td>
@@ -122,9 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== API Calls =====
-    async function loadDispensedMedicines() {
+    async function loadLabTestRequests() {
         try {
-            const params = { operation: "getDispensedMedicines" };
+            const params = { operation: "getLabTestRequests" };
 
             // Add admission_id filter if available
             if (currentAdmissionId) {
@@ -139,11 +142,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (res.data.success) {
                 renderBatches(res.data.batches);
             } else {
-                Swal.fire("Error", res.data.message || "Failed to load medicines", "error");
+                Swal.fire("Error", res.data.message || "Failed to load lab test requests", "error");
             }
         } catch (err) {
             console.error("Error:", err);
-            Swal.fire("Error", "Network error while loading medicines", "error");
+            Swal.fire("Error", "Network error while loading lab test requests", "error");
         }
     }
 
@@ -170,44 +173,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // Populate items table
                 batchItemsTableBody.innerHTML = '';
-                let hasDispensedItems = false;
-                let hasPickedItems = false;
+                let hasPendingItems = false;
+                let hasInProgressItems = false;
 
                 items.forEach(item => {
                     const row = document.createElement('tr');
-                    const isDispensed = item.item_status === 'dispensed';
-                    const isPicked = item.item_status === 'picked';
+                    const isPending = item.item_status === 'pending';
+                    const isInProgress = item.item_status === 'in_progress';
 
-                    if (isDispensed) hasDispensedItems = true;
-                    if (isPicked) hasPickedItems = true;
+                    if (isPending) hasPendingItems = true;
+                    if (isInProgress) hasInProgressItems = true;
 
                     row.innerHTML = `
                         <td class="text-center">
-                            ${isDispensed || isPicked ?
+                            ${isPending || isInProgress ?
                             `<input type="checkbox" class="batch-item-checkbox" data-item-id="${item.item_id}">` :
                             ''
                         }
                         </td>
-                        <td>${item.med_name}</td>
-                        <td>${item.quantity}</td>
-                        <td>
-                            ${isDispensed || isPicked ?
-                            `<input type="number" class="form-control form-control-sm item-quantity" 
-                                data-item-id="${item.item_id}" 
-                                min="1" max="${item.quantity}" 
-                                value="${item.quantity}">` :
-                            `<span class="text-muted">-</span>`
-                        }
-                        </td>
+                        <td>${item.test_name}</td>
                         <td>${statusBadge(item.item_status)}</td>
+                        <td>${billedStatusBadge(item.billed_status)}</td>
                     `;
                     batchItemsTableBody.appendChild(row);
                 });
 
                 // Enable/disable buttons based on available items
-                modalConfirmPickupBtn.disabled = !hasDispensedItems;
-                modalAdministerBtn.disabled = !hasPickedItems;
-                modalReturnBtn.disabled = !hasPickedItems;
+                modalStartTestsBtn.disabled = !hasPendingItems;
+                modalCompleteTestsBtn.disabled = !hasInProgressItems;
+                modalCancelTestsBtn.disabled = !(hasPendingItems || hasInProgressItems);
 
                 // Show the modal
                 batchDetailsModal.show();
@@ -215,11 +209,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Add event listener to checkboxes
                 document.querySelectorAll('.batch-item-checkbox').forEach(checkbox => {
                     checkbox.addEventListener('change', updateActionButtonStates);
-                });
-
-                // Add event listener to quantity inputs
-                document.querySelectorAll('.item-quantity').forEach(input => {
-                    input.addEventListener('input', updateActionButtonStates);
                 });
 
                 // Add event listener to "Select All" checkbox
@@ -247,24 +236,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateActionButtonStates() {
         const selectedCheckboxes = document.querySelectorAll('.batch-item-checkbox:checked');
         const hasSelection = selectedCheckboxes.length > 0;
-        let hasValidQuantities = true;
-
-        // Check if all selected items have valid quantities
-        selectedCheckboxes.forEach(checkbox => {
-            const itemId = checkbox.dataset.itemId;
-            const quantityInput = document.querySelector(`.item-quantity[data-item-id="${itemId}"]`);
-            if (quantityInput) {
-                const quantity = parseInt(quantityInput.value) || 0;
-                if (quantity <= 0) {
-                    hasValidQuantities = false;
-                }
-            }
-        });
 
         // Update action buttons
-        modalConfirmPickupBtn.disabled = !(hasSelection && hasValidQuantities);
-        modalAdministerBtn.disabled = !(hasSelection && hasValidQuantities);
-        modalReturnBtn.disabled = !(hasSelection && hasValidQuantities);
+        modalStartTestsBtn.disabled = !hasSelection;
+        modalCompleteTestsBtn.disabled = !hasSelection;
+        modalCancelTestsBtn.disabled = !hasSelection;
 
         // Update "Select All" checkbox state
         const selectAllModalCheckbox = document.getElementById('selectAllModalCheckbox');
@@ -274,43 +250,63 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function performAction(operation, successMessage) {
+    async function performAction(operation, successMessage, requireReason = false) {
         const selectedItems = [];
 
         document.querySelectorAll('.batch-item-checkbox:checked').forEach(checkbox => {
             const itemId = checkbox.dataset.itemId;
-            const quantityInput = document.querySelector(`.item-quantity[data-item-id="${itemId}"]`);
-            const quantity = parseInt(quantityInput.value) || 0;
-
-            if (quantity > 0) {
-                selectedItems.push({
-                    item_id: itemId,
-                    quantity: quantity
-                });
-            }
+            selectedItems.push({
+                item_id: itemId
+            });
         });
 
         if (selectedItems.length === 0) {
-            Swal.fire("Warning", "Please select at least one medicine with a valid quantity", "warning");
+            Swal.fire("Warning", "Please select at least one test", "warning");
             return;
         }
 
+        // If reason is required, get it from user
+        let reason = '';
+        if (requireReason) {
+            const { value: reasonValue } = await Swal.fire({
+                title: 'Reason for Cancellation',
+                input: 'text',
+                inputLabel: 'Please provide a reason for cancelling these tests',
+                inputPlaceholder: 'Enter reason here',
+                showCancelButton: true,
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'You need to provide a reason!';
+                    }
+                }
+            });
+
+            if (!reasonValue) {
+                return; // User cancelled
+            }
+
+            reason = reasonValue;
+        }
+
         try {
-            console.log(`Sending ${operation} request with items:`, selectedItems);
+            const requestData = {
+                items: selectedItems,
+                admission_id: currentAdmissionId
+            };
+
+            if (requireReason) {
+                requestData.reason = reason;
+            }
+
             const res = await axios.post(apiUrl, {
                 operation: operation,
-                json: JSON.stringify({
-                    items: selectedItems,
-                    admission_id: currentAdmissionId  // Include admission_id
-                })
+                json: JSON.stringify(requestData)
             }, { withCredentials: true });
-
-            console.log(`Response from ${operation}:`, res.data);
 
             if (res.data.success) {
                 Swal.fire("Success", successMessage, "success");
                 batchDetailsModal.hide();
-                await loadDispensedMedicines();
+                await loadLabTestRequests();
             } else {
                 Swal.fire("Error", res.data.message || "Operation failed", "error");
             }
@@ -322,16 +318,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ===== Event Listeners =====
     // Modal action buttons
-    modalConfirmPickupBtn.addEventListener('click', async () => {
-        await performAction('confirmPickup', 'Medicines confirmed as picked up');
+    modalStartTestsBtn.addEventListener('click', async () => {
+        await performAction('startLabTests', 'Lab tests started successfully');
     });
 
-    modalAdministerBtn.addEventListener('click', async () => {
-        await performAction('administerMedicines', 'Medicines marked as administered');
+    modalCompleteTestsBtn.addEventListener('click', async () => {
+        await performAction('completeLabTests', 'Lab tests completed successfully');
     });
 
-    modalReturnBtn.addEventListener('click', async () => {
-        await performAction('returnMedicines', 'Medicines returned successfully');
+    modalCancelTestsBtn.addEventListener('click', async () => {
+        await performAction('cancelLabTests', 'Lab tests cancelled successfully', true);
     });
 
     // Select All checkbox in main table

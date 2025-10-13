@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="../../js/components-js/sidebar.js" defer></script>
     <script src="../../js/components-js/header-loader.js" defer></script>
-    <script src="../../js/nurse-js/medicine-management.js" defer></script>
+    <script src="../../js/requests-js/labtest-management.js" defer></script>
     <script src="../../js/utility-js/theme-loader.js" defer></script>
 </head>
 
@@ -32,7 +32,7 @@
         <!-- Main Content -->
         <main class="content p-3 flex-grow-1">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2><i class="fas fa-pills me-2"></i> Patient Medications</h2>
+                <h2><i class="fas fa-vial me-2"></i> Lab Test Management</h2>
             </div>
 
             <div class="card">
@@ -46,11 +46,11 @@
                                     <th>Doctor</th>
                                     <th>Request Date</th>
                                     <th>Status</th>
-                                    <th>Items</th>
+                                    <th>Tests</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="medicinesTableBody">
+                            <tbody id="labTestsTableBody">
                                 <!-- Rows will be injected by JS -->
                             </tbody>
                         </table>
@@ -66,7 +66,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="batchDetailsModalLabel">Medicine Batch Details</h5>
+                    <h5 class="modal-title" id="batchDetailsModalLabel">Lab Test Batch Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -84,7 +84,7 @@
                         <p><strong>Notes:</strong> <span id="modalBatchNotes"></span></p>
                     </div>
 
-                    <h6>Medicines in this Batch</h6>
+                    <h6>Tests in this Batch</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered">
                             <thead>
@@ -92,10 +92,9 @@
                                     <th class="text-center">
                                         <input type="checkbox" id="selectAllModalCheckbox">
                                     </th>
-                                    <th>Medicine</th>
-                                    <th>Available Qty</th>
-                                    <th>Qty to Process</th>
+                                    <th>Test Name</th>
                                     <th>Status</th>
+                                    <th>Billed Status</th>
                                 </tr>
                             </thead>
                             <tbody id="batchItemsTableBody">
@@ -106,14 +105,14 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="modalConfirmPickupBtn" class="btn btn-success" disabled>
-                        <i class="fas fa-check me-1"></i> Confirm Pickup
+                    <button type="button" id="modalStartTestsBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-play me-1"></i> Start Tests
                     </button>
-                    <button type="button" id="modalAdministerBtn" class="btn btn-primary" disabled>
-                        <i class="fas fa-syringe me-1"></i> Administer
+                    <button type="button" id="modalCompleteTestsBtn" class="btn btn-success" disabled>
+                        <i class="fas fa-check me-1"></i> Complete Tests
                     </button>
-                    <button type="button" id="modalReturnBtn" class="btn btn-danger" disabled>
-                        <i class="fas fa-undo me-1"></i> Return
+                    <button type="button" id="modalCancelTestsBtn" class="btn btn-danger" disabled>
+                        <i class="fas fa-times me-1"></i> Cancel Tests
                     </button>
                 </div>
             </div>

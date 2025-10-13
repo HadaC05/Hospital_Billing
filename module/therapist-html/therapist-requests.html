@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Therapist • Requests</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="../../css/hospital-theme.css">
+  <link rel="stylesheet" href="../../css/dashboard.css">
+  <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="../../js/components-js/sidebar.js" defer></script>
+  <script src="../../js/components-js/header-loader.js" defer></script>
+  <script src="../../js/utility-js/theme-loader.js" defer></script>
+  <script src="../../js/therapist-js/therapist-requests.js" defer></script>
+</head>
+
+<body class="d-flex flex-column vh-100">
+  <div id="header-placeholder"></div>
+  <div id="page-container" class="d-flex flex-grow-1">
+    <div id="sidebar-placeholder"></div>
+    <main class="content p-3 flex-grow-1">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-hands-holding me-2"></i>Therapist Requests</h2>
+        <button class="btn btn-primary btn-sm" id="th-new-btn"><i class="fas fa-plus me-1"></i> New Request</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label" for="th-search">Search</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input id="th-search" class="form-control" placeholder="Search by patient, request..." />
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="th-status">Status</label>
+              <select id="th-status" class="form-select">
+                <option value="ALL">All</option>
+                <option value="PENDING" selected>Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Request #</th>
+                  <th>Patient</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th style="width: 160px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="th-tbody">
+                <tr><td colspan="6" class="text-center text-muted"><i class="fas fa-spinner fa-pulse me-2"></i>Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal fade" id="th-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-hands-holding me-2"></i>Therapy Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="th-form">
+            <input type="hidden" id="th-id" />
+            <div class="mb-3">
+              <label class="form-label" for="th-patient">Patient Name</label>
+              <input class="form-control" id="th-patient" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="th-type">Request Type</label>
+              <select class="form-select" id="th-type" required>
+                <option value="Physical Therapy">Physical Therapy</option>
+                <option value="Occupational Therapy">Occupational Therapy</option>
+                <option value="Speech Therapy">Speech Therapy</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="th-notes">Notes</label>
+              <textarea class="form-control" id="th-notes" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" id="th-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
+

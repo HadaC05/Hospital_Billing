@@ -123,10 +123,20 @@ async function buildSidebarLinks(baseApiUrl, user) {
             link: '../dashboard-html/nurse-dashboard.html',
             icon: 'fas fa-user-nurse'
         },
+        nurse_room_management: {
+            label: 'Room Management',
+            link: '../nurse-html/room-management.html',
+            icon: 'fas fa-bed'
+        },
         pharmacist_dashboard: {
             label: 'Pharmacist Dashboard',
             link: '../dashboard-html/pharmacist-dashboard.html',
             icon: 'fas fa-pills'
+        },
+        therapist_requests: {
+            label: 'Therapist Requests',
+            link: '../therapist-html/therapist-requests.html',
+            icon: 'fas fa-hands-holding'
         },
         cashier_dashboard: {
             label: 'Cashier Dashboard',
@@ -147,7 +157,12 @@ async function buildSidebarLinks(baseApiUrl, user) {
             label: 'Medicine Requests Module',
             link: '../pharmacist-html/medicine-requests.html',
             icon: 'fas fa-pills'
-        }
+        },
+        labtest_management: {
+            label: 'Labtest Management',
+            link: '../labstaff-html/labtest-management.html',
+            icon: 'fas fa-pills'
+        },
     };
 
     const inventoryMap = {
@@ -250,6 +265,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         const isLab = roleStr.includes('lab') || roleStr.includes('laboratory');
         const isNurse = roleStr.includes('nurse');
         const isPharmacist = roleStr.includes('pharmacist') || roleStr.includes('pharmacy');
+        const isTherapist = roleStr.includes('therapist');
         const isER = roleStr.includes('er') || roleStr.includes('emergency');
         if (isAdmin) {
             const alwaysShow = [
@@ -328,7 +344,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
 
         // Add nurse-only links
         if (isNurse) {
-            const nLinks = [moduleMap.nurse_dashboard];
+            const nLinks = [moduleMap.nurse_dashboard, moduleMap.nurse_room_management, moduleMap.medicine_management];
             nLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
@@ -341,6 +357,17 @@ async function buildSidebarLinks(baseApiUrl, user) {
         if (isPharmacist) {
             const pLinks = [moduleMap.pharmacist_dashboard, moduleMap.medicine_requests];
             pLinks.forEach((cfg) => {
+                if (cfg) {
+                    const exists = standaloneLinks.some(link => link.link === cfg.link);
+                    if (!exists) standaloneLinks.push(cfg);
+                }
+            });
+        }
+
+        // Add therapist-only links
+        if (isTherapist) {
+            const tLinks = [moduleMap.therapist_requests];
+            tLinks.forEach((cfg) => {
                 if (cfg) {
                     const exists = standaloneLinks.some(link => link.link === cfg.link);
                     if (!exists) standaloneLinks.push(cfg);
