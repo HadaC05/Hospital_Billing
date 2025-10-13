@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const apiUrl = `${window.location.origin}/hospital_billing/api/lab-php/labtest-management.php`;
+    const apiUrl = `${window.location.origin}/hospital_billing/api/requests-php/labtest-management.php`;
 
     // DOM Elements
     const tableBody = document.getElementById("labTestsTableBody");
