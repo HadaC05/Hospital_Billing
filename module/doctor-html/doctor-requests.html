@@ -96,7 +96,22 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="new-requests-tab" data-bs-toggle="tab"
                                 data-bs-target="#new-requests" type="button" role="tab" aria-controls="new-requests"
-                                aria-selected="false">Create New Requests</button>
+                                aria-selected="false">Medication & Lab Tests</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="doctor-change-tab" data-bs-toggle="tab"
+                                data-bs-target="#doctor-change" type="button" role="tab" aria-controls="doctor-change"
+                                aria-selected="false">Request Doctor Change</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="room-change-tab" data-bs-toggle="tab"
+                                data-bs-target="#room-change" type="button" role="tab" aria-controls="room-change"
+                                aria-selected="false">Request Room Change</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="surgery-tab" data-bs-toggle="tab" data-bs-target="#surgery"
+                                type="button" role="tab" aria-controls="surgery" aria-selected="false">Schedule/Order
+                                Surgery</button>
                         </li>
                     </ul>
                     <div class="tab-content" id="requestTabsContent">
@@ -121,7 +136,7 @@
                             </div>
                         </div>
 
-                        <!-- New Requests Tab -->
+                        <!-- New Requests Tab (Medication & Lab Tests) -->
                         <div class="tab-pane fade" id="new-requests" role="tabpanel" aria-labelledby="new-requests-tab">
                             <div class="mt-3">
                                 <form id="newRequestsForm">
@@ -145,9 +160,7 @@
                                                             <!-- Service types will be loaded here -->
                                                             <option value="4">Medication</option>
                                                             <option value="3">Lab Test</option>
-                                                            <option value="2">Surgery</option>
                                                             <option value="5">Treatment</option>
-                                                            <option value="1">Room</option>
                                                         </select>
                                                     </td>
                                                     <td>
@@ -178,6 +191,103 @@
                                             <i class="fas fa-plus"></i> Add Row
                                         </button>
                                         <button type="submit" class="btn btn-primary">Submit Requests</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Doctor Change Tab -->
+                        <div class="tab-pane fade" id="doctor-change" role="tabpanel"
+                            aria-labelledby="doctor-change-tab">
+                            <div class="mt-3">
+                                <form id="doctorChangeForm">
+                                    <div class="mb-3">
+                                        <label for="newDoctor" class="form-label">Select New Doctor</label>
+                                        <select class="form-select" id="newDoctor" required>
+                                            <option value="">Loading doctors...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="doctorChangeReason" class="form-label">Reason for Change</label>
+                                        <textarea class="form-control" id="doctorChangeReason" rows="3"
+                                            required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="doctorChangeNotes" class="form-label">Additional Notes</label>
+                                        <textarea class="form-control" id="doctorChangeNotes" rows="2"></textarea>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Room Change Tab -->
+                        <div class="tab-pane fade" id="room-change" role="tabpanel" aria-labelledby="room-change-tab">
+                            <div class="mt-3">
+                                <form id="roomChangeForm">
+                                    <div class="mb-3">
+                                        <label for="newRoom" class="form-label">Select New Room</label>
+                                        <select class="form-select" id="newRoom" required>
+                                            <option value="">Loading rooms...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="roomChangeReason" class="form-label">Reason for Change</label>
+                                        <textarea class="form-control" id="roomChangeReason" rows="3"
+                                            required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="roomChangeNotes" class="form-label">Additional Notes</label>
+                                        <textarea class="form-control" id="roomChangeNotes" rows="2"></textarea>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary">Submit Request</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Surgery Tab -->
+                        <div class="tab-pane fade" id="surgery" role="tabpanel" aria-labelledby="surgery-tab">
+                            <div class="mt-3">
+                                <form id="surgeryForm">
+                                    <div class="mb-3">
+                                        <label for="surgeryType" class="form-label">Surgery Type</label>
+                                        <select class="form-select" id="surgeryType" required>
+                                            <option value="">Loading surgery types...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="surgeryDoctor" class="form-label">Assign Doctor</label>
+                                        <select class="form-select" id="surgeryDoctor" required>
+                                            <option value="">Loading doctors...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="surgeryDate" class="form-label">Scheduled Date</label>
+                                        <input type="datetime-local" class="form-control" id="surgeryDate" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="surgeryNotes" class="form-label">Surgery Details</label>
+                                        <textarea class="form-control" id="surgeryNotes" rows="3" required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="customFee">
+                                            <label class="form-check-label" for="customFee">
+                                                Use custom professional fee (instead of hospital fee guidelines)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3" id="customFeeSection" style="display: none;">
+                                        <label for="professionalFee" class="form-label">Professional Fee ($)</label>
+                                        <input type="number" class="form-control" id="professionalFee" min="0"
+                                            step="0.01">
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary">Schedule Surgery</button>
                                     </div>
                                 </form>
                             </div>

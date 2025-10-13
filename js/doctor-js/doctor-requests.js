@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const newRequestsTableBody = document.querySelector('#newRequestsTable tbody');
     const addRequestRowBtn = document.getElementById('addRequestRowBtn');
 
+    // New form elements
+    const doctorChangeForm = document.getElementById('doctorChangeForm');
+    const roomChangeForm = document.getElementById('roomChangeForm');
+    const surgeryForm = document.getElementById('surgeryForm');
+    const customFeeCheckbox = document.getElementById('customFee');
+    const customFeeSection = document.getElementById('customFeeSection');
+
     // Current patient data
     let currentPatient = null;
 
@@ -106,6 +113,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Load existing requests
         await loadPatientRequests();
 
+        // Load data for dropdowns
+        await loadDropdownData();
+
         // Reset new requests form
         resetNewRequestsForm();
 
@@ -135,6 +145,339 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderExistingRequests([]);
         }
     }
+
+    // NEW FUNCTIONS RECHECK
+
+    // Add loadDropdownData function
+    async function loadDropdownData() {
+        try {
+            // Load doctors
+            const doctorsResponse = await axios.get(requestsApiUrl, {
+                params: { operation: "getDoctors" },
+                withCredentials: true
+            });
+
+            if (doctorsResponse.data.success) {
+                const doctors = doctorsResponse.data.doctors;
+                const newDoctorSelect = document.getElementById('newDoctor');
+                const surgeryDoctorSelect = document.getElementById('surgeryDoctor');
+
+                // Clear and populate doctor dropdowns
+                newDoctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+                surgeryDoctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+
+                doctors.forEach(doctor => {
+                    // Skip current user
+                    if (doctor.user_id == user.user_id) return;
+
+                    const option1 = new Option(`${doctor.doctor_name} (${doctor.specialty})`, doctor.user_id);
+                    const option2 = new Option(`${doctor.doctor_name} (${doctor.specialty})`, doctor.user_id);
+                    newDoctorSelect.add(option1);
+                    surgeryDoctorSelect.add(option2);
+                });
+            }
+
+            // Load rooms
+            const roomsResponse = await axios.get(requestsApiUrl, {
+                params: { operation: "getRooms" },
+                withCredentials: true
+            });
+
+            if (roomsResponse.data.success) {
+                const rooms = roomsResponse.data.rooms;
+                const newRoomSelect = document.getElementById('newRoom');
+
+                // Clear and populate room dropdown
+                newRoomSelect.innerHTML = '<option value="">Select Room</option>';
+
+                rooms.forEach(room => {
+                    // Skip current room
+                    if (room.room_number == currentPatient.room_number) return;
+
+                    const option = new Option(`${room.room_number} (${room.room_type_name}) - ${room.status}`, room.room_id);
+                    newRoomSelect.add(option);
+                });
+            }
+
+            // Load surgery types
+            const surgeriesResponse = await axios.get(requestsApiUrl, {
+                params: { operation: "getSurgeryTypes" },
+                withCredentials: true
+            });
+
+            if (surgeriesResponse.data.success) {
+                const surgeries = surgeriesResponse.data.surgeries;
+                const surgeryTypeSelect = document.getElementById('surgeryType');
+
+                // Clear and populate surgery type dropdown
+                surgeryTypeSelect.innerHTML = '<option value="">Select Surgery Type</option>';
+
+                surgeries.forEach(surgery => {
+                    const option = new Option(`${surgery.surgery_name} (Base fee: $${surgery.base_fee})`, surgery.surgery_id);
+                    surgeryTypeSelect.add(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading dropdown data:', error);
+            Swal.fire('Error', 'Failed to load dropdown data', 'error');
+        }
+    }
+
+    // Add reset functions
+    function resetDoctorChangeForm() {
+        if (doctorChangeForm) {
+            doctorChangeForm.reset();
+            const submitBtn = doctorChangeForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Submit Request';
+            }
+        }
+    }
+
+    function resetRoomChangeForm() {
+        if (roomChangeForm) {
+            roomChangeForm.reset();
+            const submitBtn = roomChangeForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Submit Request';
+            }
+        }
+    }
+
+    function resetSurgeryForm() {
+        if (surgeryForm) {
+            surgeryForm.reset();
+            customFeeSection.style.display = 'none';
+            const submitBtn = surgeryForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Schedule Surgery';
+            }
+        }
+    }
+
+    // Add form submission handlers
+    doctorChangeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newDoctorId = document.getElementById('newDoctor').value;
+        const reason = document.getElementById('doctorChangeReason').value;
+        const notes = document.getElementById('doctorChangeNotes').value;
+
+        if (!newDoctorId || !reason) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        const submitBtn = doctorChangeForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
+
+            const response = await axios.post(requestsApiUrl, {
+                operation: "requestDoctorChange",
+                json: JSON.stringify({
+                    doctor_id: user.user_id,
+                    patient_id: currentPatient.patient_id,
+                    new_doctor_id: newDoctorId,
+                    reason: reason,
+                    notes: notes
+                })
+            }, { withCredentials: true });
+
+            if (response.data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Doctor change request submitted successfully!',
+                    icon: 'success'
+                });
+
+                resetDoctorChangeForm();
+                document.getElementById('existing-requests-tab').click();
+                await loadPatientRequests();
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to submit request: ' + (response.data.message || 'Unknown error'),
+                    icon: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Error submitting doctor change request:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while submitting request.',
+                icon: 'error'
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+
+    roomChangeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newRoomId = document.getElementById('newRoom').value;
+        const reason = document.getElementById('roomChangeReason').value;
+        const notes = document.getElementById('roomChangeNotes').value;
+
+        if (!newRoomId || !reason) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        const submitBtn = roomChangeForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Submitting...';
+
+            const response = await axios.post(requestsApiUrl, {
+                operation: "requestRoomChange",
+                json: JSON.stringify({
+                    doctor_id: user.user_id,
+                    patient_id: currentPatient.patient_id,
+                    new_room_id: newRoomId,
+                    reason: reason,
+                    notes: notes
+                })
+            }, { withCredentials: true });
+
+            if (response.data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Room change request submitted successfully!',
+                    icon: 'success'
+                });
+
+                resetRoomChangeForm();
+                document.getElementById('existing-requests-tab').click();
+                await loadPatientRequests();
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to submit request: ' + (response.data.message || 'Unknown error'),
+                    icon: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Error submitting room change request:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while submitting request.',
+                icon: 'error'
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+
+    customFeeCheckbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            customFeeSection.style.display = 'block';
+            document.getElementById('professionalFee').required = true;
+        } else {
+            customFeeSection.style.display = 'none';
+            document.getElementById('professionalFee').required = false;
+        }
+    });
+
+    surgeryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const surgeryId = document.getElementById('surgeryType').value;
+        const assignedDoctorId = document.getElementById('surgeryDoctor').value;
+        const scheduledDate = document.getElementById('surgeryDate').value;
+        const notes = document.getElementById('surgeryNotes').value;
+        const useCustomFee = document.getElementById('customFee').checked;
+        const professionalFee = document.getElementById('professionalFee').value;
+
+        if (!surgeryId || !assignedDoctorId || !scheduledDate || !notes) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please fill in all required fields.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        if (useCustomFee && !professionalFee) {
+            Swal.fire({
+                title: 'Warning',
+                text: 'Please enter a professional fee amount.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        const submitBtn = surgeryForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Scheduling...';
+
+            const response = await axios.post(requestsApiUrl, {
+                operation: "scheduleSurgery",
+                json: JSON.stringify({
+                    doctor_id: user.user_id,
+                    patient_id: currentPatient.patient_id,
+                    surgery_id: surgeryId,
+                    assigned_doctor_id: assignedDoctorId,
+                    scheduled_date: scheduledDate,
+                    notes: notes,
+                    use_custom_fee: useCustomFee,
+                    professional_fee: professionalFee
+                })
+            }, { withCredentials: true });
+
+            if (response.data.success) {
+                Swal.fire({
+                    title: 'Success',
+                    text: 'Surgery scheduled successfully!',
+                    icon: 'success'
+                });
+
+                resetSurgeryForm();
+                document.getElementById('existing-requests-tab').click();
+                await loadPatientRequests();
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to schedule surgery: ' + (response.data.message || 'Unknown error'),
+                    icon: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Error scheduling surgery:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Network error while scheduling surgery.',
+                icon: 'error'
+            });
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+
+    // UNTIL HERE
+
 
     // Render existing requests
     function renderExistingRequests(requests) {
@@ -363,9 +706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <option value="">Select Type</option>
                     <option value="4">Medication</option>
                     <option value="3">Lab Test</option>
-                    <option value="2">Surgery</option>
                     <option value="5">Treatment</option>
-                    <option value="1">Room</option>
                 </select>
             </td>
             <td>

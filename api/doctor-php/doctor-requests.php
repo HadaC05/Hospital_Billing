@@ -389,7 +389,7 @@ class Doctor_Request
             $sql = "
                 SELECT svc_type_id, svc_name 
                 FROM tbl_service_type 
-                WHERE svc_name IN ('Medication', 'Lab Test', 'Surgery', 'Treatment', 'Room')
+                WHERE svc_name IN ('Medication', 'Lab Test', 'Treatment')
                 ORDER BY svc_type_id ASC";
             $stmt = $this->pdo->query($sql);
             $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -405,6 +405,296 @@ class Doctor_Request
             ]);
         }
     }
+
+    // NEW FUNCTIONS 
+
+    public function getDoctors()
+    {
+        try {
+            $sql = "
+            SELECT u.user_id, CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) as doctor_name, s.specialty
+            FROM users u
+            JOIN user_doctor ud ON u.user_id = ud.user_id
+            JOIN tbl_specialty s ON ud.specialty_id = s.specialty_id
+            WHERE u.user_type = 'doctor' AND u.is_active = 1
+            ORDER BY ud.last_name, ud.first_name";
+            $stmt = $this->pdo->query($sql);
+            $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'doctors' => $doctors
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch doctors: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getRooms()
+    {
+        try {
+            $sql = "
+            SELECT r.room_id, r.room_number, rt.room_type_name, r.status
+            FROM tbl_room r
+            JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+            WHERE r.is_active = 1
+            ORDER BY r.room_number";
+            $stmt = $this->pdo->query($sql);
+            $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'rooms' => $rooms
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch rooms: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getSurgeryTypes()
+    {
+        try {
+            $sql = "
+            SELECT surgery_id, surgery_name, base_fee
+            FROM tbl_surgery
+            WHERE is_active = 1
+            ORDER BY surgery_name";
+            $stmt = $this->pdo->query($sql);
+            $surgeries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'surgeries' => $surgeries
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to fetch surgery types: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function requestDoctorChange($data)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $doctorId = $data['doctor_id'] ?? null;
+            $patientId = $data['patient_id'] ?? null;
+            $newDoctorId = $data['new_doctor_id'] ?? null;
+            $reason = $data['reason'] ?? null;
+            $notes = $data['notes'] ?? null;
+
+            if (!$doctorId || !$patientId || !$newDoctorId || !$reason) {
+                throw new Exception('Missing required fields');
+            }
+
+            // Get active admission for the patient
+            $admissionSql = "
+            SELECT admission_id FROM patient_admission 
+            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+            ORDER BY admission_date DESC LIMIT 1";
+            $stmt = $this->pdo->prepare($admissionSql);
+            $stmt->execute([
+                ':patient_id' => $patientId,
+                ':doctor_id' => $doctorId
+            ]);
+            $admission = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$admission) {
+                throw new Exception('No active admission found for this patient');
+            }
+
+            $admissionId = $admission['admission_id'];
+
+            // Create doctor change request
+            $sql = "
+            INSERT INTO doctor_change_requests 
+            (admission_id, patient_id, current_doctor_id, requested_doctor_id, request_date, reason, notes, status)
+            VALUES (:admission_id, :patient_id, :current_doctor_id, :requested_doctor_id, NOW(), :reason, :notes, 'pending')";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':admission_id' => $admissionId,
+                ':patient_id' => $patientId,
+                ':current_doctor_id' => $doctorId,
+                ':requested_doctor_id' => $newDoctorId,
+                ':reason' => $reason,
+                ':notes' => $notes
+            ]);
+
+            $requestId = $this->pdo->lastInsertId();
+            $this->pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Doctor change request submitted successfully',
+                'request_id' => $requestId
+            ]);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function requestRoomChange($data)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $doctorId = $data['doctor_id'] ?? null;
+            $patientId = $data['patient_id'] ?? null;
+            $newRoomId = $data['new_room_id'] ?? null;
+            $reason = $data['reason'] ?? null;
+            $notes = $data['notes'] ?? null;
+
+            if (!$doctorId || !$patientId || !$newRoomId || !$reason) {
+                throw new Exception('Missing required fields');
+            }
+
+            // Get active admission for the patient
+            $admissionSql = "
+            SELECT admission_id, room_id FROM patient_admission 
+            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+            ORDER BY admission_date DESC LIMIT 1";
+            $stmt = $this->pdo->prepare($admissionSql);
+            $stmt->execute([
+                ':patient_id' => $patientId,
+                ':doctor_id' => $doctorId
+            ]);
+            $admission = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$admission) {
+                throw new Exception('No active admission found for this patient');
+            }
+
+            $admissionId = $admission['admission_id'];
+            $currentRoomId = $admission['room_id'];
+
+            // Create room change request
+            $sql = "
+            INSERT INTO room_change_requests 
+            (admission_id, patient_id, current_room_id, requested_room_id, request_date, reason, notes, status)
+            VALUES (:admission_id, :patient_id, :current_room_id, :requested_room_id, NOW(), :reason, :notes, 'pending')";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':admission_id' => $admissionId,
+                ':patient_id' => $patientId,
+                ':current_room_id' => $currentRoomId,
+                ':requested_room_id' => $newRoomId,
+                ':reason' => $reason,
+                ':notes' => $notes
+            ]);
+
+            $requestId = $this->pdo->lastInsertId();
+            $this->pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Room change request submitted successfully',
+                'request_id' => $requestId
+            ]);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function scheduleSurgery($data)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $doctorId = $data['doctor_id'] ?? null;
+            $patientId = $data['patient_id'] ?? null;
+            $surgeryId = $data['surgery_id'] ?? null;
+            $assignedDoctorId = $data['assigned_doctor_id'] ?? null;
+            $scheduledDate = $data['scheduled_date'] ?? null;
+            $notes = $data['notes'] ?? null;
+            $useCustomFee = $data['use_custom_fee'] ?? false;
+            $professionalFee = $data['professional_fee'] ?? null;
+
+            if (!$doctorId || !$patientId || !$surgeryId || !$assignedDoctorId || !$scheduledDate || !$notes) {
+                throw new Exception('Missing required fields');
+            }
+
+            // Get active admission for the patient
+            $admissionSql = "
+            SELECT admission_id FROM patient_admission 
+            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+            ORDER BY admission_date DESC LIMIT 1";
+            $stmt = $this->pdo->prepare($admissionSql);
+            $stmt->execute([
+                ':patient_id' => $patientId,
+                ':doctor_id' => $doctorId
+            ]);
+            $admission = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$admission) {
+                throw new Exception('No active admission found for this patient');
+            }
+
+            $admissionId = $admission['admission_id'];
+
+            // Get surgery details
+            $surgerySql = "SELECT base_fee FROM tbl_surgery WHERE surgery_id = :surgery_id";
+            $stmt = $this->pdo->prepare($surgerySql);
+            $stmt->execute([':surgery_id' => $surgeryId]);
+            $surgery = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$surgery) {
+                throw new Exception('Invalid surgery type');
+            }
+
+            // Determine the fee to use
+            $feeToUse = $useCustomFee ? $professionalFee : $surgery['base_fee'];
+
+            // Create surgery request
+            $sql = "
+            INSERT INTO surgery_requests 
+            (admission_id, patient_id, surgery_id, assigned_doctor_id, scheduled_date, notes, professional_fee, use_custom_fee, request_date, status)
+            VALUES (:admission_id, :patient_id, :surgery_id, :assigned_doctor_id, :scheduled_date, :notes, :professional_fee, :use_custom_fee, NOW(), 'scheduled')";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([
+                ':admission_id' => $admissionId,
+                ':patient_id' => $patientId,
+                ':surgery_id' => $surgeryId,
+                ':assigned_doctor_id' => $assignedDoctorId,
+                ':scheduled_date' => $scheduledDate,
+                ':notes' => $notes,
+                ':professional_fee' => $feeToUse,
+                ':use_custom_fee' => $useCustomFee ? 1 : 0
+            ]);
+
+            $requestId = $this->pdo->lastInsertId();
+            $this->pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Surgery scheduled successfully',
+                'request_id' => $requestId
+            ]);
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    // UNTIL HERE
 
     public function getBatchDetails($batchId)
     {
@@ -548,6 +838,24 @@ switch ($operation) {
         break;
     case 'getServiceTypes':
         $request->getServiceTypes();
+        break;
+    case 'getDoctors':
+        $request->getDoctors();
+        break;
+    case 'getRooms':
+        $request->getRooms();
+        break;
+    case 'getSurgeryTypes':
+        $request->getSurgeryTypes();
+        break;
+    case 'requestDoctorChange':
+        $request->requestDoctorChange($data);
+        break;
+    case 'requestRoomChange':
+        $request->requestRoomChange($data);
+        break;
+    case 'scheduleSurgery':
+        $request->scheduleSurgery($data);
         break;
     case 'getBatchDetails':
         $batchId = $_GET['batch_id'] ?? null;
