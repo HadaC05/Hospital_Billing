@@ -135,7 +135,7 @@ async function buildSidebarLinks(baseApiUrl, user) {
         },
         doctor_requests: {
             label: 'Doctor Requests',
-            link: '../doctor-html/doctor-merge.html',
+            link: '../doctor-html/doctor-requests.html',
             icon: 'fas fa-prescription-bottle-alt'
         },
         medicine_management: {
