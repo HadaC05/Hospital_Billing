@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nurse • Room Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="../../css/hospital-theme.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="../../js/components-js/sidebar.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <script src="../../js/components-js/header-loader.js" defer></script>
+    <script src="../../js/utility-js/theme-loader.js" defer></script>
+    <script src="../../js/nurse-js/room-management.js" defer></script>
+</head>
+
+<body class="d-flex flex-column vh-100">
+    <div id="header-placeholder"></div>
+    <div id="page-container" class="d-flex flex-grow-1">
+        <div id="sidebar-placeholder"></div>
+        <main class="content p-3 flex-grow-1">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-bed me-2"></i>Room Management</h2>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm me-2" id="rm-recent-btn"><i
+                            class="fas fa-clock-rotate-left me-1"></i> Recent Room Stays</button>
+                    <button class="btn btn-outline-primary btn-sm" id="rm-requests-btn"><i
+                            class="fas fa-right-left me-1"></i> Room Change Requests</button>
+                    <span class="text-muted small" id="rm-date"></span>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label" for="rm-search">Search</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input id="rm-search" class="form-control"
+                                    placeholder="Search by patient, room #, doctor..." />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="rm-status">Status</label>
+                            <select id="rm-status" class="form-select">
+                                <option value="ALL">All</option>
+                                <option value="OCCUPIED" selected>Occupied</option>
+                                <option value="AVAILABLE">Available</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="rm-type">Room Type</label>
+                            <select id="rm-type" class="form-select">
+                                <option value="ALL" selected>All Types</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Admission ID</th>
+                                    <th>Patient</th>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Admitted</th>
+                                    <th style="width: 180px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rm-tbody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted"><i
+                                            class="fas fa-spinner fa-pulse me-2"></i>Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Transfer Room Modal -->
+    <div class="modal fade" id="rm-transfer-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Transfer Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rm-transfer-form">
+                        <input type="hidden" id="rm-admission-id" />
+                        <div class="mb-3">
+                            <label class="form-label" for="rm-new-room">New Room</label>
+                            <select id="rm-new-room" class="form-select" required>
+                                <option value="">Select room</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rm-transfer-date">Transfer Date</label>
+                            <input id="rm-transfer-date" type="date" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="rm-reason">Reason</label>
+                            <textarea id="rm-reason" class="form-control" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="rm-transfer-submit">Transfer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Stay History Modal -->
+    <div class="modal fade" id="rm-history-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-clock-rotate-left me-2"></i>Room Stay History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rm-history-tbody">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Room Stays Modal (shared) -->
+    <div class="modal fade" id="rm-recent-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-clock-rotate-left me-2"></i>Recent Room Stays</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Admission</th>
+                                    <th>Patient</th>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rm-recent-tbody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Change Requests Modal -->
+    <div class="modal fade" id="rm-requests-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-right-left me-2"></i>Room Change Requests</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Patient</th>
+                                    <th>Current</th>
+                                    <th>Requested</th>
+                                    <th>Reason</th>
+                                    <th>Date</th>
+                                    <th style="width:160px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rm-requests-tbody">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No pending requests</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
