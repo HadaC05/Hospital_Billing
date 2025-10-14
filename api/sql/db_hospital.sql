@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 13, 2025 at 08:44 AM
+-- Generation Time: Oct 14, 2025 at 05:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -493,7 +493,8 @@ INSERT INTO `request_medicine_batch` (`batch_id`, `doctor_id`, `patient_id`, `ad
 (9, 2, 29, 27, '2025-10-11 13:29:11', 'pending', NULL, NULL, NULL, NULL),
 (10, 2, 24, 22, '2025-10-11 13:38:06', 'pending', NULL, NULL, NULL, NULL),
 (11, 2, 22, 20, '2025-10-11 13:47:47', 'pending', NULL, NULL, NULL, NULL),
-(12, 2, 28, 26, '2025-10-13 13:52:29', '', NULL, NULL, NULL, NULL);
+(12, 2, 28, 26, '2025-10-13 13:52:29', '', NULL, NULL, NULL, NULL),
+(13, 2, 26, 24, '2025-10-14 09:33:01', 'pending', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -547,7 +548,8 @@ INSERT INTO `request_medicine_items` (`item_id`, `batch_id`, `med_id`, `quantity
 (21, 9, 4, 2, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (22, 10, 7, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
 (23, 11, 10, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no'),
-(24, 12, 10, 1, 'invoice test', 'administered', 5, '2025-10-13 13:52:44', 11, '2025-10-13 13:52:57', 11, '2025-10-13 13:53:02', NULL, NULL, 'no');
+(24, 12, 10, 1, 'invoice test', 'administered', 5, '2025-10-13 13:52:44', 11, '2025-10-13 13:52:57', 11, '2025-10-13 13:53:02', NULL, NULL, 'no'),
+(25, 13, 3, 1, '', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'no');
 
 -- --------------------------------------------------------
 
@@ -601,13 +603,32 @@ CREATE TABLE `request_service` (
 --
 
 CREATE TABLE `request_surgery` (
-  `surgery_request_id` int(11) NOT NULL,
   `request_id` int(11) NOT NULL,
-  `surgery_id` int(11) NOT NULL,
-  `quantity` int(11) DEFAULT 1,
-  `unit_price` decimal(10,2) NOT NULL,
-  `total_price` decimal(10,2) NOT NULL
+  `patient_id` int(11) NOT NULL,
+  `admission_id` int(11) NOT NULL,
+  `doctor_id` int(11) NOT NULL,
+  `surgery_type_id` int(11) NOT NULL,
+  `scheduled_date` datetime DEFAULT NULL,
+  `request_date` datetime DEFAULT current_timestamp(),
+  `reason` text DEFAULT NULL,
+  `status` enum('pending','approved','scheduled','in_progress','completed','cancelled') DEFAULT 'pending',
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_date` datetime DEFAULT NULL,
+  `scheduled_by` int(11) DEFAULT NULL,
+  `scheduled_date_updated` datetime DEFAULT NULL,
+  `completed_by` int(11) DEFAULT NULL,
+  `completed_date` datetime DEFAULT NULL,
+  `cancelled_by` int(11) DEFAULT NULL,
+  `cancelled_date` datetime DEFAULT NULL,
+  `cancelled_reason` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `request_surgery`
+--
+
+INSERT INTO `request_surgery` (`request_id`, `patient_id`, `admission_id`, `doctor_id`, `surgery_type_id`, `scheduled_date`, `request_date`, `reason`, `status`, `approved_by`, `approved_date`, `scheduled_by`, `scheduled_date_updated`, `completed_by`, `completed_date`, `cancelled_by`, `cancelled_date`, `cancelled_reason`) VALUES
+(1, 26, 24, 2, 15, '2025-10-28 08:00:00', '2025-10-14 11:36:59', 'test', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1849,8 +1870,15 @@ ALTER TABLE `request_service`
 -- Indexes for table `request_surgery`
 --
 ALTER TABLE `request_surgery`
-  ADD PRIMARY KEY (`surgery_request_id`),
-  ADD KEY `surgery_id` (`surgery_id`);
+  ADD PRIMARY KEY (`request_id`),
+  ADD KEY `fk_request_surgery_patient` (`patient_id`),
+  ADD KEY `fk_request_surgery_admission` (`admission_id`),
+  ADD KEY `fk_request_surgery_doctor` (`doctor_id`),
+  ADD KEY `fk_request_surgery_surgery_type` (`surgery_type_id`),
+  ADD KEY `fk_request_surgery_approved_by` (`approved_by`),
+  ADD KEY `fk_request_surgery_scheduled_by` (`scheduled_by`),
+  ADD KEY `fk_request_surgery_completed_by` (`completed_by`),
+  ADD KEY `fk_request_surgery_cancelled_by` (`cancelled_by`);
 
 --
 -- Indexes for table `request_therapy`
@@ -2198,13 +2226,13 @@ ALTER TABLE `request_labtest_items`
 -- AUTO_INCREMENT for table `request_medicine_batch`
 --
 ALTER TABLE `request_medicine_batch`
-  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `batch_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `request_medicine_items`
 --
 ALTER TABLE `request_medicine_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `request_notifications`
@@ -2222,7 +2250,7 @@ ALTER TABLE `request_service`
 -- AUTO_INCREMENT for table `request_surgery`
 --
 ALTER TABLE `request_surgery`
-  MODIFY `surgery_request_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `request_therapy`
@@ -2561,8 +2589,14 @@ ALTER TABLE `request_service`
 -- Constraints for table `request_surgery`
 --
 ALTER TABLE `request_surgery`
-  ADD CONSTRAINT `request_surgery_ibfk_1` FOREIGN KEY (`request_id`) REFERENCES `request_service` (`request_id`),
-  ADD CONSTRAINT `request_surgery_ibfk_2` FOREIGN KEY (`surgery_id`) REFERENCES `tbl_surgery` (`surgery_id`);
+  ADD CONSTRAINT `fk_request_surgery_admission` FOREIGN KEY (`admission_id`) REFERENCES `patient_admission` (`admission_id`),
+  ADD CONSTRAINT `fk_request_surgery_approved_by` FOREIGN KEY (`approved_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_request_surgery_cancelled_by` FOREIGN KEY (`cancelled_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_request_surgery_completed_by` FOREIGN KEY (`completed_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_request_surgery_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_request_surgery_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`),
+  ADD CONSTRAINT `fk_request_surgery_scheduled_by` FOREIGN KEY (`scheduled_by`) REFERENCES `users` (`user_id`),
+  ADD CONSTRAINT `fk_request_surgery_surgery_type` FOREIGN KEY (`surgery_type_id`) REFERENCES `tbl_surgery` (`surgery_id`);
 
 --
 -- Constraints for table `request_therapy`

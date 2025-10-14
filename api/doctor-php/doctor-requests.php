@@ -19,18 +19,18 @@ class Doctor_Request
 
             // Get medicine requests from new batch system
             $sql = "
-        SELECT 
-            rmb.batch_id as request_id,
-            'Medication' as svc_name,
-            GROUP_CONCAT(CONCAT(m.med_name, ' (', rmi.quantity, ')') SEPARATOR ', ') as item_name,
-            rmb.request_date,
-            rmb.status,
-            'medicine_batch' as request_type
-        FROM request_medicine_batch rmb
-        JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
-        JOIN tbl_medicine m ON rmi.med_id = m.med_id
-        WHERE rmb.doctor_id = :doctor_id
-        ";
+                SELECT 
+                    rmb.batch_id as request_id,
+                    'Medication' as svc_name,
+                    GROUP_CONCAT(CONCAT(m.med_name, ' (', rmi.quantity, ')') SEPARATOR ', ') as item_name,
+                    rmb.request_date,
+                    rmb.status,
+                    'medicine_batch' as request_type
+                FROM request_medicine_batch rmb
+                JOIN request_medicine_items rmi ON rmb.batch_id = rmi.batch_id
+                JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                WHERE rmb.doctor_id = :doctor_id
+                ";
 
             if ($patientId) {
                 $sql .= " AND rmb.patient_id = :patient_id";
@@ -40,26 +40,48 @@ class Doctor_Request
 
             // Union with lab test requests
             $sql .= "
-        UNION ALL
-        
-        SELECT 
-            rlb.batch_id as request_id,
-            'Lab Test' as svc_name,
-            GROUP_CONCAT(CONCAT(lt.test_name) SEPARATOR ', ') as item_name,
-            rlb.request_date,
-            rlb.status,
-            'labtest_batch' as request_type
-        FROM request_labtest_batch rlb
-        JOIN request_labtest_items rli ON rlb.batch_id = rli.batch_id
-        JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
-        WHERE rlb.doctor_id = :doctor_id
-        ";
+            UNION ALL
+            
+            SELECT 
+                rlb.batch_id as request_id,
+                'Lab Test' as svc_name,
+                GROUP_CONCAT(CONCAT(lt.test_name) SEPARATOR ', ') as item_name,
+                rlb.request_date,
+                rlb.status,
+                'labtest_batch' as request_type
+            FROM request_labtest_batch rlb
+            JOIN request_labtest_items rli ON rlb.batch_id = rli.batch_id
+            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+            WHERE rlb.doctor_id = :doctor_id
+            ";
 
             if ($patientId) {
                 $sql .= " AND rlb.patient_id = :patient_id";
             }
 
-            $sql .= " GROUP BY rlb.batch_id ORDER BY request_date DESC";
+            $sql .= " GROUP BY rlb.batch_id";
+
+            // Union with surgery requests
+            $sql .= "
+            UNION ALL
+            
+            SELECT 
+                rs.request_id,
+                'Surgery' as svc_name,
+                s.surgery_name as item_name,
+                rs.request_date,
+                rs.status,
+                'surgery' as request_type
+            FROM request_surgery rs
+            JOIN tbl_surgery s ON rs.surgery_type_id = s.surgery_id
+            WHERE rs.doctor_id = :doctor_id
+            ";
+
+            if ($patientId) {
+                $sql .= " AND rs.patient_id = :patient_id";
+            }
+
+            $sql .= " ORDER BY request_date DESC";
 
             // Execute query
             $stmt = $this->pdo->prepare($sql);
@@ -655,19 +677,18 @@ class Doctor_Request
             $surgeryId = $data['surgery_id'] ?? null;
             $assignedDoctorId = $data['assigned_doctor_id'] ?? null;
             $scheduledDate = $data['scheduled_date'] ?? null;
-            $notes = $data['notes'] ?? null;
-            $useCustomFee = $data['use_custom_fee'] ?? false;
-            $professionalFee = $data['professional_fee'] ?? null;
+            $reason = $data['reason'] ?? null;
+            // Removed: $notes = $data['notes'] ?? null;
 
-            if (!$doctorId || !$patientId || !$surgeryId || !$assignedDoctorId || !$scheduledDate || !$notes) {
+            if (!$doctorId || !$patientId || !$surgeryId || !$assignedDoctorId || !$scheduledDate || !$reason) {
                 throw new Exception('Missing required fields');
             }
 
             // Get active admission for the patient
             $admissionSql = "
-            SELECT admission_id FROM patient_admission 
-            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
-            ORDER BY admission_date DESC LIMIT 1";
+    SELECT admission_id FROM patient_admission 
+    WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+    ORDER BY admission_date DESC LIMIT 1";
             $stmt = $this->pdo->prepare($admissionSql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -681,34 +702,20 @@ class Doctor_Request
 
             $admissionId = $admission['admission_id'];
 
-            // Get surgery details
-            $surgerySql = "SELECT base_fee FROM tbl_surgery WHERE surgery_id = :surgery_id";
-            $stmt = $this->pdo->prepare($surgerySql);
-            $stmt->execute([':surgery_id' => $surgeryId]);
-            $surgery = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$surgery) {
-                throw new Exception('Invalid surgery type');
-            }
-
-            // Determine the fee to use
-            $feeToUse = $useCustomFee ? $professionalFee : $surgery['base_fee'];
-
             // Create surgery request
             $sql = "
-            INSERT INTO surgery_requests 
-            (admission_id, patient_id, surgery_id, assigned_doctor_id, scheduled_date, notes, professional_fee, use_custom_fee, request_date, status)
-            VALUES (:admission_id, :patient_id, :surgery_id, :assigned_doctor_id, :scheduled_date, :notes, :professional_fee, :use_custom_fee, NOW(), 'scheduled')";
+    INSERT INTO request_surgery 
+    (patient_id, admission_id, doctor_id, surgery_type_id, scheduled_date, reason, request_date, status)
+    VALUES (:patient_id, :admission_id, :doctor_id, :surgery_type_id, :scheduled_date, :reason, NOW(), 'pending')";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
-                ':admission_id' => $admissionId,
                 ':patient_id' => $patientId,
-                ':surgery_id' => $surgeryId,
-                ':assigned_doctor_id' => $assignedDoctorId,
+                ':admission_id' => $admissionId,
+                ':doctor_id' => $doctorId,
+                ':surgery_type_id' => $surgeryId,
                 ':scheduled_date' => $scheduledDate,
-                ':notes' => $notes,
-                ':professional_fee' => $feeToUse,
-                ':use_custom_fee' => $useCustomFee ? 1 : 0
+                ':reason' => $reason
+                // Removed: ':notes' => $notes
             ]);
 
             $requestId = $this->pdo->lastInsertId();
@@ -721,6 +728,60 @@ class Doctor_Request
             ]);
         } catch (Exception $e) {
             $this->pdo->rollBack();
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function cancelSurgeryRequest($data)
+    {
+        try {
+            $requestId = $data['request_id'] ?? null;
+            $doctorId = (int)$_SESSION['user_id'];
+
+            if (!$requestId) {
+                throw new Exception('Missing request ID');
+            }
+
+            // Check if it's a surgery request
+            $checkSql = "
+        SELECT rs.request_id 
+        FROM request_surgery rs
+        WHERE rs.request_id = :request_id AND rs.doctor_id = :doctor_id
+    ";
+            $stmt = $this->pdo->prepare($checkSql);
+            $stmt->execute([
+                ':request_id' => $requestId,
+                ':doctor_id' => $doctorId
+            ]);
+
+            if ($stmt->fetch()) {
+                // Cancel the surgery request
+                $updateSql = "
+            UPDATE request_surgery 
+            SET status = 'cancelled', 
+                cancelled_by = :doctor_id, 
+                cancelled_date = NOW(),
+                cancelled_reason = :reason
+            WHERE request_id = :request_id
+        ";
+                $stmt = $this->pdo->prepare($updateSql);
+                $stmt->execute([
+                    ':request_id' => $requestId,
+                    ':doctor_id' => $doctorId,
+                    ':reason' => $data['reason'] ?? 'Cancelled by doctor'
+                ]);
+            } else {
+                throw new Exception('Surgery request not found or not authorized');
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Surgery request cancelled successfully'
+            ]);
+        } catch (Exception $e) {
             echo json_encode([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -914,6 +975,13 @@ switch ($operation) {
     case 'scheduleSurgery':
         if ($method === 'POST') {
             $request->scheduleSurgery($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
+        break;
+    case 'cancelSurgeryRequest':
+        if ($method === 'POST') {
+            $request->cancelSurgeryRequest($data);
         } else {
             echo json_encode(['success' => false, 'message' => 'Invalid request method']);
         }

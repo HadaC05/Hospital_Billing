@@ -253,39 +253,33 @@
                         <div class="tab-pane fade" id="surgery" role="tabpanel" aria-labelledby="surgery-tab">
                             <div class="mt-3">
                                 <form id="surgeryForm">
-                                    <div class="mb-3">
-                                        <label for="surgeryType" class="form-label">Surgery Type</label>
-                                        <select class="form-select" id="surgeryType" required>
-                                            <option value="">Loading surgery types...</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="surgeryDoctor" class="form-label">Assign Doctor</label>
-                                        <select class="form-select" id="surgeryDoctor" required>
-                                            <option value="">Loading doctors...</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="surgeryDate" class="form-label">Scheduled Date</label>
-                                        <input type="datetime-local" class="form-control" id="surgeryDate" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="surgeryNotes" class="form-label">Surgery Details</label>
-                                        <textarea class="form-control" id="surgeryNotes" rows="3" required></textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="customFee">
-                                            <label class="form-check-label" for="customFee">
-                                                Use custom professional fee (instead of hospital fee guidelines)
-                                            </label>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="surgeryType" class="form-label">Surgery Type</label>
+                                            <select class="form-select" id="surgeryType" required>
+                                                <option value="">Loading surgery types...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="surgeryDoctor" class="form-label">Assign Doctor</label>
+                                            <select class="form-select" id="surgeryDoctor" required>
+                                                <option value="">Loading doctors...</option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div class="mb-3" id="customFeeSection" style="display: none;">
-                                        <label for="professionalFee" class="form-label">Professional Fee ($)</label>
-                                        <input type="number" class="form-control" id="professionalFee" min="0"
-                                            step="0.01">
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="surgeryDate" class="form-label">Scheduled Date</label>
+                                            <input type="datetime-local" class="form-control" id="surgeryDate" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="surgeryReason" class="form-label">Reason for Surgery</label>
+                                            <textarea class="form-control" id="surgeryReason" rows="3"
+                                                required></textarea>
+                                        </div>
                                     </div>
+
                                     <div class="d-flex justify-content-end">
                                         <button type="submit" class="btn btn-primary">Schedule Surgery</button>
                                     </div>

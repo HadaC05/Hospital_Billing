@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const doctorChangeForm = document.getElementById('doctorChangeForm');
     const roomChangeForm = document.getElementById('roomChangeForm');
     const surgeryForm = document.getElementById('surgeryForm');
-    const customFeeCheckbox = document.getElementById('customFee');
-    const customFeeSection = document.getElementById('customFeeSection');
 
     // Current patient data
     let currentPatient = null;
@@ -261,7 +259,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     function resetSurgeryForm() {
         if (surgeryForm) {
             surgeryForm.reset();
-            customFeeSection.style.display = 'none';
             const submitBtn = surgeryForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -399,39 +396,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    customFeeCheckbox.addEventListener('change', (e) => {
-        if (e.target.checked) {
-            customFeeSection.style.display = 'block';
-            document.getElementById('professionalFee').required = true;
-        } else {
-            customFeeSection.style.display = 'none';
-            document.getElementById('professionalFee').required = false;
-        }
-    });
-
     surgeryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const surgeryId = document.getElementById('surgeryType').value;
         const assignedDoctorId = document.getElementById('surgeryDoctor').value;
         const scheduledDate = document.getElementById('surgeryDate').value;
-        const notes = document.getElementById('surgeryNotes').value;
-        const useCustomFee = document.getElementById('customFee').checked;
-        const professionalFee = document.getElementById('professionalFee').value;
+        const reason = document.getElementById('surgeryReason').value;
+        // Removed: const notes = document.getElementById('surgeryNotes').value;
 
-        if (!surgeryId || !assignedDoctorId || !scheduledDate || !notes) {
+        if (!surgeryId || !assignedDoctorId || !scheduledDate || !reason) {
             Swal.fire({
                 title: 'Warning',
                 text: 'Please fill in all required fields.',
-                icon: 'warning'
-            });
-            return;
-        }
-
-        if (useCustomFee && !professionalFee) {
-            Swal.fire({
-                title: 'Warning',
-                text: 'Please enter a professional fee amount.',
                 icon: 'warning'
             });
             return;
@@ -452,9 +429,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     surgery_id: surgeryId,
                     assigned_doctor_id: assignedDoctorId,
                     scheduled_date: scheduledDate,
-                    notes: notes,
-                    use_custom_fee: useCustomFee,
-                    professional_fee: professionalFee
+                    reason: reason
+                    // Removed: notes: notes
                 })
             }, { withCredentials: true });
 
@@ -505,57 +481,65 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = document.createElement('tr');
             const statusBadge = getStatusBadge(request.status);
 
-            // For medicine batches, show a view details button
+            // For different request types, show appropriate buttons
             let actionButton = '';
-            // In the renderExistingRequests function, update the button generation:
             if (request.request_type === 'medicine_batch') {
                 actionButton = `
-                    <button class="btn btn-sm btn-outline-info view-batch-btn" 
-                            data-request-id="${request.request_id}" 
-                            data-request-type="medicine_batch"
-                            title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
-                            data-request-id="${request.request_id}" 
-                            data-request-type="medicine_batch"
-                            title="Cancel Request">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                <button class="btn btn-sm btn-outline-info view-batch-btn" 
+                        data-request-id="${request.request_id}" 
+                        data-request-type="medicine_batch"
+                        title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
+                        data-request-id="${request.request_id}" 
+                        data-request-type="medicine_batch"
+                        title="Cancel Request">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
             } else if (request.request_type === 'labtest_batch') {
                 actionButton = `
-                    <button class="btn btn-sm btn-outline-info view-batch-btn" 
-                            data-request-id="${request.request_id}" 
-                            data-request-type="labtest_batch"
-                            title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
-                            data-request-id="${request.request_id}" 
-                            data-request-type="labtest_batch"
-                            title="Cancel Request">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                <button class="btn btn-sm btn-outline-info view-batch-btn" 
+                        data-request-id="${request.request_id}" 
+                        data-request-type="labtest_batch"
+                        title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn ms-1" 
+                        data-request-id="${request.request_id}" 
+                        data-request-type="labtest_batch"
+                        title="Cancel Request">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            } else if (request.request_type === 'surgery') {
+                actionButton = `
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn" 
+                        data-request-id="${request.request_id}" 
+                        data-request-type="surgery"
+                        title="Cancel Request">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
             } else {
                 actionButton = `
-                    <button class="btn btn-sm btn-outline-danger cancel-request-btn" 
-                            data-request-id="${request.request_id}">
-                        Cancel
-                    </button>
-                `;
+                <button class="btn btn-sm btn-outline-danger cancel-request-btn" 
+                        data-request-id="${request.request_id}">
+                    Cancel
+                </button>
+            `;
             }
 
             row.innerHTML = `
-            <td>${formatDate(request.request_date)}</td>
-            <td>${safe(request.svc_name)}</td>
-            <td>${safe(request.item_name || '-')}</td>
-            <td>${statusBadge}</td>
-            <td>
-                ${actionButton} 
-            </td>
-        `;
+        <td>${formatDate(request.request_date)}</td>
+        <td>${safe(request.svc_name)}</td>
+        <td>${safe(request.item_name || '-')}</td>
+        <td>${statusBadge}</td>
+        <td>
+            ${actionButton} 
+        </td>
+    `;
             existingRequestsList.appendChild(row);
         });
 
@@ -671,11 +655,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (result.isConfirmed) {
             try {
+                let operation = "cancelRequest";
+                if (requestType === 'surgery') {
+                    operation = "cancelSurgeryRequest";
+                }
+
                 const response = await axios.post(requestsApiUrl, {
-                    operation: "cancelRequest",
+                    operation: operation,
                     json: JSON.stringify({
                         request_id: requestId,
-                        request_type: requestType
+                        request_type: requestType,
+                        reason: "Cancelled by doctor" // You can modify this to get a reason from the user
                     })
                 }, { withCredentials: true });
 
@@ -704,7 +694,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     }
-
     // Reset new requests form
     function resetNewRequestsForm() {
         // Store the current submit button reference
