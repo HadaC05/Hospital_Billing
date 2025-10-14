@@ -152,13 +152,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadDropdownData() {
         try {
             // Load doctors
+            console.log("Loading doctors...");
             const doctorsResponse = await axios.get(requestsApiUrl, {
                 params: { operation: "getDoctors" },
                 withCredentials: true
             });
 
+            console.log("Doctors response:", doctorsResponse.data);
+
             if (doctorsResponse.data.success) {
                 const doctors = doctorsResponse.data.doctors;
+                console.log("Doctors loaded:", doctors);
+
                 const newDoctorSelect = document.getElementById('newDoctor');
                 const surgeryDoctorSelect = document.getElementById('surgeryDoctor');
 
@@ -180,6 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     newDoctorSelect.add(option1);
                     surgeryDoctorSelect.add(option2);
                 });
+            } else {
+                console.error('Failed to load doctors:', doctorsResponse.data.message);
             }
 
             // Load rooms

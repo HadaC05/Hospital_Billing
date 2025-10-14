@@ -410,32 +410,31 @@ class Doctor_Request
 
     function getDoctors()
     {
-        include 'connection-pdo.php';
         try {
             $sql = "
-                SELECT 
-                    u.user_id,
-                    ud.doctor_id,
-                    ud.first_name,
-                    ud.middle_name,
-                    ud.last_name,
-                    ud.suffix,
-                    ud.license_number,
-                    u.email,
-                    u.mobile_number,
-                    u.status,
-                    uds.specialty_id,
-                    uds.specialty_name
-                FROM users u
-                JOIN user_doctor ud ON u.user_id = ud.user_id
-                JOIN user_doctor_specialty uds ON ud.specialty_id = uds.specialty_id
-                WHERE u.role_id = 2
-                AND u.status = 1
-                AND uds.is_active = 1
-                ORDER BY ud.last_name, ud.first_name
-            ";
+            SELECT 
+                u.user_id,
+                ud.doctor_id,
+                ud.first_name,
+                ud.middle_name,
+                ud.last_name,
+                ud.suffix,
+                ud.license_number,
+                u.email,
+                u.mobile_number,
+                u.status,
+                uds.specialty_id,
+                uds.specialty_name
+            FROM users u
+            JOIN user_doctor ud ON u.user_id = ud.user_id
+            JOIN user_doctor_specialty uds ON ud.specialty_id = uds.specialty_id
+            WHERE u.role_id = 2
+            AND u.status = 1
+            AND uds.is_active = 1
+            ORDER BY ud.last_name, ud.first_name
+        ";
 
-            $stmt = $conn->prepare($sql);
+            $stmt = $this->pdo->prepare($sql);
             $stmt->execute();
             $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -453,11 +452,23 @@ class Doctor_Request
     {
         try {
             $sql = "
-            SELECT r.room_id, r.room_number, rt.room_type_name, r.status
+            SELECT 
+                r.room_id,
+                r.room_number,
+                r.max_occupancy,
+                r.is_available,
+                rt.room_type_name,
+                IFNULL((
+                    SELECT COUNT(*) 
+                    FROM tbl_room_stay rs
+                    WHERE rs.room_id = r.room_id
+                        AND rs.end_date IS NULL
+                ), 0) AS current_occupancy
             FROM tbl_room r
             JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
-            WHERE r.is_active = 1
-            ORDER BY r.room_number";
+            WHERE rt.is_active = 1
+            ORDER BY r.room_number ASC
+        ";
             $stmt = $this->pdo->query($sql);
             $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -477,10 +488,17 @@ class Doctor_Request
     {
         try {
             $sql = "
-            SELECT surgery_id, surgery_name, base_fee
-            FROM tbl_surgery
-            WHERE is_active = 1
-            ORDER BY surgery_name";
+            SELECT 
+                s.surgery_id,
+                s.surgery_name,
+                s.surgery_price AS base_fee,
+                st.surgery_type_name
+            FROM tbl_surgery s
+            JOIN tbl_surgery_type st ON s.surgery_type_id = st.surgery_type_id
+            WHERE s.is_available = 1
+                AND st.is_active = 1
+            ORDER BY s.surgery_name
+        ";
             $stmt = $this->pdo->query($sql);
             $surgeries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -828,17 +846,24 @@ class Doctor_Request
 
 // Handle requests
 $method = $_SERVER['REQUEST_METHOD'];
+$operation = '';
+
 if ($method === 'GET') {
     $operation = $_GET['operation'] ?? '';
-    $json = $_GET['json'] ?? '';
 } else if ($method === 'POST') {
     $body = file_get_contents("php://input");
     $payload = json_decode($body, true);
     $operation = $payload['operation'] ?? '';
     $json = $payload['json'] ?? '';
+    $data = json_decode($json, true);
 }
 
-$data = json_decode($json, true);
+// For GET requests, we need to get the data differently
+if ($method === 'GET' && isset($_GET['json'])) {
+    $json = $_GET['json'] ?? '';
+    $data = json_decode($json, true);
+}
+
 $request = new Doctor_Request();
 
 switch ($operation) {
@@ -847,10 +872,18 @@ switch ($operation) {
         $request->getRequests($patientId);
         break;
     case 'createBatchRequests':
-        $request->createBatchRequests($data);
+        if ($method === 'POST') {
+            $request->createBatchRequests($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
         break;
     case 'cancelRequest':
-        $request->cancelRequest($data);
+        if ($method === 'POST') {
+            $request->cancelRequest($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
         break;
     case 'getServiceTypes':
         $request->getServiceTypes();
@@ -865,13 +898,25 @@ switch ($operation) {
         $request->getSurgeryTypes();
         break;
     case 'requestDoctorChange':
-        $request->requestDoctorChange($data);
+        if ($method === 'POST') {
+            $request->requestDoctorChange($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
         break;
     case 'requestRoomChange':
-        $request->requestRoomChange($data);
+        if ($method === 'POST') {
+            $request->requestRoomChange($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
         break;
     case 'scheduleSurgery':
-        $request->scheduleSurgery($data);
+        if ($method === 'POST') {
+            $request->scheduleSurgery($data);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+        }
         break;
     case 'getBatchDetails':
         $batchId = $_GET['batch_id'] ?? null;
@@ -882,6 +927,6 @@ switch ($operation) {
         }
         break;
     default:
-        echo json_encode(['status' => false, 'message' => 'Invalid operation']);
+        echo json_encode(['success' => false, 'message' => 'Invalid operation']);
         break;
 }
