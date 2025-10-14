@@ -290,4 +290,196 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadAdmissions();
     await loadDoctors();
+
+    // Make editAdmission globally accessible
+    window.editAdmission = async function (admissionId) {
+        console.log('Edit admission:', admissionId);
+
+        const editModalEl = document.getElementById('editAdmissionModal');
+        const editModal = new bootstrap.Modal(editModalEl);
+
+        try {
+            // Fetch complete details for this admission
+            const response = await axios.post(`${baseApiUrl}/admission-php/get-admissions.php`, {
+                operation: 'getAdmissionDetails',
+                admission_id: admissionId
+            });
+
+            const res = response.data;
+            if (!res.success) {
+                Swal.fire({ title: 'Error', text: res.message || 'Failed to load details', icon: 'error' });
+                return;
+            }
+
+            const d = res.data || {};
+
+            document.getElementById('edit_admission_id').value = d.admission_id || '';
+            document.getElementById('edit_patient_id').value = d.patient_id || '';
+
+            const editAdmissionDate = document.getElementById('edit_admission_date');
+            if (editAdmissionDate && d.admission_date) {
+                const dateObj = new Date(d.admission_date);
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                editAdmissionDate.value = `${yyyy}-${mm}-${dd}`;
+            }
+
+            const editReason = document.getElementById('edit_admission_reason');
+            if (editReason) editReason.value = d.admission_reason || '';
+
+            // Patient fields
+            document.getElementById('edit_patient_fname').value = d.patient_first_name || '';
+            document.getElementById('edit_patient_mname').value = d.patient_middle_name || '';
+            document.getElementById('edit_patient_lname').value = d.patient_last_name || '';
+            document.getElementById('edit_patient_suffix').value = d.patient_suffix || '';
+            document.getElementById('edit_birthdate').value = d.birthdate || '';
+
+            if (d.gender) {
+                const genRadio = document.querySelector(`input[name="edit_gender"][value="${d.gender}"]`);
+                if (genRadio) genRadio.checked = true;
+            }
+
+            const marital = document.getElementById('edit_marital_status');
+            if (marital && d.marital_status) marital.value = d.marital_status;
+
+            document.getElementById('edit_mobile_number').value = d.patient_mobile_number || '';
+            document.getElementById('edit_email').value = d.patient_email || '';
+            document.getElementById('edit_address').value = d.patient_address || '';
+
+            // Doctor select
+            const editDoctorSelect = document.getElementById('edit_doctor_id');
+            if (editDoctorSelect) {
+                if (!editDoctorSelect.options || editDoctorSelect.options.length <= 1) {
+                    try {
+                        const resp = await axios.get(`${baseApiUrl}/manage-users.php`, { params: { operation: 'getDoctors' } });
+                        const dt = resp.data;
+                        if (dt.success && Array.isArray(dt.doctors)) {
+                            editDoctorSelect.innerHTML = `<option value=\"\">-- Select Doctor --</option>` +
+                                dt.doctors.map(doc => {
+                                    const fullName = [doc.first_name, doc.middle_name, doc.last_name, doc.suffix]
+                                        .filter(Boolean).join(' ');
+                                    const specialty = doc.specialty_name ? ` (${doc.specialty_name})` : '';
+                                    return `<option value=\"${doc.user_id}\">${fullName}${specialty}</option>`;
+                                }).join('');
+                        }
+                    } catch (e) { console.error('Error loading doctors for edit:', e); }
+                }
+                if (d.doctor_id) editDoctorSelect.value = String(d.doctor_id);
+            }
+
+            // Emergency contact (single)
+            document.getElementById('edit_em_contact_name').value = d.emgy_first_name || '';
+            document.getElementById('edit_em_contact_relationship').value = d.emgy_relationship || '';
+            document.getElementById('edit_em_contact_number').value = d.emgy_contact_number || '';
+            document.getElementById('edit_em_contact_email').value = d.emgy_email || '';
+            document.getElementById('edit_em_contact_address').value = d.emgy_address || '';
+
+            // Under 18 guardian fields (EDIT modal)
+            const editU18ToggleEl = document.getElementById('edit_under_18_toggle');
+            const editU18SectionEl = document.getElementById('edit_under_18_section');
+            if (editU18ToggleEl && editU18SectionEl) {
+                const hasGuardian = !!(d.guardian_first_name || d.guardian_mobile_number);
+                editU18ToggleEl.checked = hasGuardian;
+                editU18SectionEl.style.display = hasGuardian ? 'block' : 'none';
+
+                const parentNameEl = document.getElementById('edit_parent_name');
+                const parentContactEl = document.getElementById('edit_parent_contact');
+                if (parentNameEl) parentNameEl.value = d.guardian_first_name || '';
+                if (parentContactEl) parentContactEl.value = d.guardian_mobile_number || '';
+            }
+
+            // Show modal after fields are populated
+            editModal.show();
+
+        } catch (err) {
+            console.error('Error fetching admission details:', err);
+            Swal.fire({ title: 'Error', text: 'Failed to load admission details', icon: 'error' });
+        }
+    };
+
+    // Handle edit form submit
+    const editForm = document.getElementById('editAdmissionForm');
+    const editUnder18Toggle = document.getElementById('edit_under_18_toggle');
+    const editUnder18Section = document.getElementById('edit_under_18_section');
+
+    // Initialize edit under-18 UI behavior
+    if (editUnder18Toggle && editUnder18Section) {
+        editUnder18Section.style.display = 'none';
+        editUnder18Toggle.addEventListener('change', function () {
+            editUnder18Section.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const payload = {
+                admission_id: document.getElementById('edit_admission_id').value,
+                patient_id: document.getElementById('edit_patient_id').value,
+                doctor_id: document.getElementById('edit_doctor_id').value,
+                admission_date: document.getElementById('edit_admission_date').value,
+                admission_reason: document.getElementById('edit_admission_reason').value,
+
+                // Patient fields
+                patient_first_name: document.getElementById('edit_patient_fname').value,
+                patient_middle_name: document.getElementById('edit_patient_mname').value,
+                patient_last_name: document.getElementById('edit_patient_lname').value,
+                patient_suffix: document.getElementById('edit_patient_suffix').value,
+                birthdate: document.getElementById('edit_birthdate').value,
+                gender: document.querySelector('input[name="edit_gender"]:checked')?.value || null,
+                marital_status: document.getElementById('edit_marital_status').value,
+                patient_mobile_number: document.getElementById('edit_mobile_number').value,
+                patient_email: document.getElementById('edit_email').value,
+                patient_address: document.getElementById('edit_address').value,
+
+                // Emergency contact
+                emgy_first_name: document.getElementById('edit_em_contact_name').value,
+                emgy_middle_name: '',
+                emgy_last_name: '',
+                emgy_suffix: '',
+                emgy_relationship: document.getElementById('edit_em_contact_relationship').value,
+                emgy_contact_number: document.getElementById('edit_em_contact_number').value,
+                emgy_email: document.getElementById('edit_em_contact_email').value,
+                emgy_address: document.getElementById('edit_em_contact_address').value
+            };
+
+            console.log('Submitting admission update payload:', {
+                patient_id: payload.patient_id,
+                patient_address: payload.patient_address,
+                admission_id: payload.admission_id
+            });
+
+            // Add guardian fields only if toggle is ON
+            if (editUnder18Toggle && editUnder18Toggle.checked) {
+                payload.guardian_first_name = document.getElementById('edit_parent_name')?.value || '';
+                payload.guardian_middle_name = '';
+                payload.guardian_last_name = '';
+                payload.guardian_suffix = '';
+                payload.guardian_mobile_number = document.getElementById('edit_parent_contact')?.value || '';
+                payload.guardian_email = '';
+            }
+
+            try {
+                const response = await axios.post(`${baseApiUrl}/admission-php/get-admissions.php`, {
+                    operation: 'updateAdmission',
+                    data: payload
+                });
+
+                const result = response.data;
+                console.log('Update admission result:', result);
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editAdmissionModal'))?.hide();
+                    Swal.fire({ title: 'Updated', text: result.message || 'Admission updated successfully', icon: 'success' });
+                    await loadAdmissions();
+                } else {
+                    Swal.fire({ title: 'Error', text: result.message || 'Failed to update admission', icon: 'error' });
+                }
+            } catch (err) {
+                console.error('Update admission error:', err);
+                Swal.fire({ title: 'Error', text: 'Network or server error during update', icon: 'error' });
+            }
+        });
+    }
 });
