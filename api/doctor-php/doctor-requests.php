@@ -408,28 +408,44 @@ class Doctor_Request
 
     // NEW FUNCTIONS 
 
-    public function getDoctors()
+    function getDoctors()
     {
+        include 'connection-pdo.php';
         try {
             $sql = "
-            SELECT u.user_id, CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) as doctor_name, s.specialty
-            FROM users u
-            JOIN user_doctor ud ON u.user_id = ud.user_id
-            JOIN tbl_specialty s ON ud.specialty_id = s.specialty_id
-            WHERE u.user_type = 'doctor' AND u.is_active = 1
-            ORDER BY ud.last_name, ud.first_name";
-            $stmt = $this->pdo->query($sql);
+                SELECT 
+                    u.user_id,
+                    ud.doctor_id,
+                    ud.first_name,
+                    ud.middle_name,
+                    ud.last_name,
+                    ud.suffix,
+                    ud.license_number,
+                    u.email,
+                    u.mobile_number,
+                    u.status,
+                    uds.specialty_id,
+                    uds.specialty_name
+                FROM users u
+                JOIN user_doctor ud ON u.user_id = ud.user_id
+                JOIN user_doctor_specialty uds ON ud.specialty_id = uds.specialty_id
+                WHERE u.role_id = 2
+                AND u.status = 1
+                AND uds.is_active = 1
+                ORDER BY ud.last_name, ud.first_name
+            ";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
             $doctors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
                 'success' => true,
                 'doctors' => $doctors
             ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Failed to fetch doctors: ' . $e->getMessage()
-            ]);
+        } catch (PDOException $e) {
+            error_log("Error in getDoctors: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 

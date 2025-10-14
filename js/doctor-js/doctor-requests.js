@@ -170,8 +170,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Skip current user
                     if (doctor.user_id == user.user_id) return;
 
-                    const option1 = new Option(`${doctor.doctor_name} (${doctor.specialty})`, doctor.user_id);
-                    const option2 = new Option(`${doctor.doctor_name} (${doctor.specialty})`, doctor.user_id);
+                    // Construct full name from individual name parts
+                    const fullName = `${doctor.last_name}, ${doctor.first_name} ${doctor.middle_name || ''} ${doctor.suffix || ''}`.trim();
+                    const specialty = doctor.specialty_name || '';
+
+                    const optionText = `${fullName} (${specialty})`;
+                    const option1 = new Option(optionText, doctor.user_id);
+                    const option2 = new Option(optionText, doctor.user_id);
                     newDoctorSelect.add(option1);
                     surgeryDoctorSelect.add(option2);
                 });
