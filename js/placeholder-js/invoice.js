@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('resetBtn');
     const printPreviewBtn = document.getElementById('printPreviewBtn');
     const admissionMeta = document.getElementById('admissionMeta');
-    const debugInfo = document.getElementById('debugInfo'); // Add this element to your HTML for debugging
+    const debugInfo = document.getElementById('debugInfo');
 
     let currentAdmissionId = null;
     let currentItems = [];
@@ -44,12 +44,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 console.error('Failed to load admissions:', data.message);
                 patientSelect.innerHTML = '<option value="">No admissions found</option>';
-                if (debugInfo) debugInfo.textContent = 'Error: ' + (data.message || 'Unknown error');
+                if (debugInfo) debugInfo.innerHTML = `<div class="alert alert-danger">Error: ${data.message || 'Unknown error'}</div>`;
             }
         } catch (error) {
             console.error('Error loading admissions:', error);
             patientSelect.innerHTML = '<option value="">Error loading admissions</option>';
-            if (debugInfo) debugInfo.textContent = 'Network error: ' + error.message;
+            if (debugInfo) debugInfo.innerHTML = `<div class="alert alert-danger">Network error: ${error.message}</div>`;
         }
     }
 
@@ -83,11 +83,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 debugInfo.innerHTML = `
                     <div class="alert alert-info">
                         <strong>Debug Info:</strong><br>
-                        Rooms: ${debug.rooms || 0}<br>
-                        Surgeries: ${debug.surgeries || 0}<br>
-                        Lab Tests: ${debug.labs || 0}<br>
-                        Medications: ${debug.meds || 0}<br>
-                        Treatments: ${debug.treatments || 0}<br>
+                        Administered Medicines: ${debug.administered_meds || 0}<br>
+                        Completed Lab Tests: ${debug.completed_labs || 0}<br>
+                        Completed Surgeries: ${debug.completed_surgeries || 0}<br>
+                        Completed Treatments: ${debug.completed_treatments || 0}<br>
+                        Completed Rooms: ${debug.completed_rooms || 0}<br>
                         Total Items: ${debug.total || 0}
                     </div>
                 `;
@@ -150,12 +150,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 console.error('Failed to load items:', response.data.message);
                 itemsBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Failed to load items: ${response.data.message || 'Unknown error'}</td></tr>`;
-                if (debugInfo) debugInfo.textContent = 'Error: ' + (response.data.message || 'Unknown error');
+                if (debugInfo) debugInfo.innerHTML = `<div class="alert alert-danger">Error: ${response.data.message || 'Unknown error'}</div>`;
             }
         } catch (e) {
             console.error('Error loading billable items:', e);
             itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Network error.</td></tr>';
-            if (debugInfo) debugInfo.textContent = 'Network error: ' + e.message;
+            if (debugInfo) debugInfo.innerHTML = `<div class="alert alert-danger">Network error: ${e.message}</div>`;
         }
     }
 
@@ -175,7 +175,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.data && response.data.success) {
                 lastCreatedInvoiceId = response.data.invoice_id;
                 document.getElementById('createdInvoiceId').textContent = lastCreatedInvoiceId;
-                new bootstrap.Modal(document.getElementById('invoiceSuccessModal')).show();
+                const modal = new bootstrap.Modal(document.getElementById('invoiceSuccessModal'));
+                modal.show();
+                
+                // Refresh items after successful invoice creation
+                await loadBillableItems(currentAdmissionId);
             } else {
                 Swal.fire({
                     title: 'Error',

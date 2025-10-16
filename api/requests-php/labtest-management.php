@@ -225,7 +225,7 @@ class Labtest_Management
 
                 // Update the item status to completed and mark for billing
                 $updateSql = "UPDATE request_labtest_items 
-                    SET status = 'completed', completed_by = :technician_id, completed_date = NOW(), billed_status = 'yes'
+                    SET status = 'completed', completed_by = :technician_id, completed_date = NOW(), billed_status = 'no'
                     WHERE item_id = :item_id";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
