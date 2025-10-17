@@ -10,18 +10,17 @@ class Invoices
         include 'connection-pdo.php';
         try {
             // Admission + patient info
-
             $sql = "
-                SELECT 
-                    a.admission_id, 
-                    a.admission_date, 
-                    p.first_name, 
-                    p.last_name, 
-                    p.middle_name
-                FROM patient_admission a
-                JOIN patients p ON a.patient_id = p.patient_id
-                WHERE a.admission_id = :admission_id
-            ";
+            SELECT 
+                a.admission_id, 
+                a.admission_date, 
+                p.first_name, 
+                p.last_name, 
+                p.middle_name
+            FROM patient_admission a
+            JOIN patients p ON a.patient_id = p.patient_id
+            WHERE a.admission_id = :admission_id
+        ";
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
@@ -36,60 +35,60 @@ class Invoices
 
             $items = [];
 
-            // Only include administered medicines from request_medicine_items
+            // Get all medicines (both paid and unpaid)
             $sqlMed = "
-                SELECT 
-                    rmi.item_id AS svc_reference_id, 
-                    m.med_name AS item_description,
-                    m.unit_price AS unit_price, 
-                    rmi.quantity, 0 AS coverage_amount,
-                    'Medication' AS service_type_name, 
-                    4 AS svc_type_id,
-                    'request_medicine_items' AS reference_table
-                FROM request_medicine_items rmi
-                JOIN request_medicine_batch rmb ON rmi.batch_id = rmb.batch_id
-                JOIN tbl_medicine m ON rmi.med_id = m.med_id
-                WHERE rmi.status = 'administered' 
-                AND rmi.billed_status = 'no'
-                AND rmb.admission_id = :admission_id
-            ";
+            SELECT 
+                rmi.item_id AS svc_reference_id, 
+                m.med_name AS item_description,
+                m.unit_price AS unit_price, 
+                rmi.quantity, 0 AS coverage_amount,
+                'Medication' AS service_type_name, 
+                4 AS svc_type_id,
+                'request_medicine_items' AS reference_table,
+                rmi.billed_status AS status
+            FROM request_medicine_items rmi
+            JOIN request_medicine_batch rmb ON rmi.batch_id = rmb.batch_id
+            JOIN tbl_medicine m ON rmi.med_id = m.med_id
+            WHERE rmi.status = 'administered' 
+            AND rmb.admission_id = :admission_id
+        ";
             $stmt = $conn->prepare($sqlMed);
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
-            $administeredMedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $items = array_merge($items, $administeredMedItems);
+            $medItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = array_merge($items, $medItems);
 
+            // Get all lab tests (both paid and unpaid)
             $sqlLab = "
-                SELECT 
-                    rli.item_id AS svc_reference_id, 
-                    lt.test_name AS item_description,
-                    lt.unit_price, 
-                    1 AS quantity, 
-                    0 AS coverage_amount,
-                    'Lab Test' AS service_type_name, 
-                    3 AS svc_type_id,
-                    'request_labtest_items' AS reference_table
-                FROM request_labtest_items rli
-                JOIN request_labtest_batch rlb ON rli.batch_id = rlb.batch_id
-                JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
-                WHERE rli.status = 'completed' 
-                AND rli.billed_status = 'no'
-                AND rlb.admission_id = :admission_id
-            ";
-
+            SELECT 
+                rli.item_id AS svc_reference_id, 
+                lt.test_name AS item_description,
+                lt.unit_price, 
+                1 AS quantity, 
+                0 AS coverage_amount,
+                'Lab Test' AS service_type_name, 
+                3 AS svc_type_id,
+                'request_labtest_items' AS reference_table,
+                rli.billed_status AS status
+            FROM request_labtest_items rli
+            JOIN request_labtest_batch rlb ON rli.batch_id = rlb.batch_id
+            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+            WHERE rli.status = 'completed' 
+            AND rlb.admission_id = :admission_id
+        ";
             $stmt = $conn->prepare($sqlLab);
             $stmt->bindParam(':admission_id', $admission_id);
             $stmt->execute();
-            $completedLabItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $items = array_merge($items, $completedLabItems);
+            $labItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = array_merge($items, $labItems);
 
             echo json_encode([
                 'success' => true,
                 'admission' => $admission,
                 'items' => $items,
                 'debug' => [
-                    'administered_meds' => count($administeredMedItems),
-                    'completed_labs' => count($completedLabItems),
+                    'medicines' => count($medItems),
+                    'lab_tests' => count($labItems),
                     'total' => count($items)
                 ]
             ]);

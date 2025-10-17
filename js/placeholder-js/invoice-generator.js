@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetBtn = document.getElementById('resetBtn');
     const printPreviewBtn = document.getElementById('printPreviewBtn');
     const admissionMeta = document.getElementById('admissionMeta');
+    const debugInfo = document.getElementById('debugInfo'); // Add this element to your HTML for debugging
 
     let currentAdmissionId = null;
     let currentItems = [];
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadAdmissions() {
         try {
             console.log('Loading admissions...');
-            const response = await axios.post(`${apiBase}/invoice.php`, {
+            const response = await axios.post(`${apiBase}/invoice-generator.php`, {
                 operation: 'getAdmissions',
                 json: JSON.stringify({})
             });
@@ -43,10 +44,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 console.error('Failed to load admissions:', data.message);
                 patientSelect.innerHTML = '<option value="">No admissions found</option>';
+                if (debugInfo) debugInfo.textContent = 'Error: ' + (data.message || 'Unknown error');
             }
         } catch (error) {
             console.error('Error loading admissions:', error);
             patientSelect.innerHTML = '<option value="">Error loading admissions</option>';
+            if (debugInfo) debugInfo.textContent = 'Network error: ' + error.message;
         }
     }
 
@@ -70,16 +73,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function renderItems(items, debug = {}) {
+    function renderItems(items) {
         itemsBody.innerHTML = '';
         if (!items || items.length === 0) {
-            itemsBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No items found for this admission.</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No items found for this admission.</td></tr>';
             return;
         }
 
         let subtotal = 0;
         let covered = 0;
-        let hasUnpaidItems = false;
 
         items.forEach((item, idx) => {
             const row = itemRowTemplate.content.firstElementChild.cloneNode(true);
@@ -89,23 +91,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             covered += coverage;
 
             row.querySelector('.type').textContent = item.service_type_name || item.type || '';
-            row.querySelector('.description').textContent = item.description || item.item_description || '';
+            row.querySelector('.description').textContent = item.item_description || '';
             row.querySelector('.qty').textContent = Number(item.quantity);
             row.querySelector('.unit').textContent = peso(item.unit_price);
-            row.querySelector('.line').textContent = peso(lineTotal);
+
+            // Update status with color coding
+            const statusBadge = row.querySelector('.badge');
+            const status = item.payment_status || 'Unpaid';
+            statusBadge.textContent = status;
+            statusBadge.className = 'badge ' + (status === 'Paid' ? 'bg-success' : 'bg-warning');
+
             row.querySelector('.coverage').textContent = peso(coverage);
             row.querySelector('.payable').textContent = peso(lineTotal - coverage);
-
-            // Set status cell
-            const statusCell = row.querySelector('.status');
-            if (item.status === 'yes') {
-                statusCell.textContent = 'Paid';
-                statusCell.classList.add('text-success');
-            } else {
-                statusCell.textContent = 'Unpaid';
-                statusCell.classList.add('text-danger');
-                hasUnpaidItems = true;
-            }
 
             itemsBody.appendChild(row);
         });
@@ -113,60 +110,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         subtotalText.textContent = peso(subtotal);
         coveredText.textContent = peso(covered);
         totalDueText.textContent = peso(subtotal - covered);
-
-        // Enable actions only if there are unpaid items
-        createInvoiceBtn.disabled = !hasUnpaidItems;
+        createInvoiceBtn.disabled = false;
         printPreviewBtn.disabled = false;
     }
 
     async function loadBillableItems(admissionId) {
         try {
-            console.log(`Loading billable items for admission ${admissionId}...`);
-            const response = await axios.post(`${apiBase}/invoice.php`, {
+            const response = await axios.post(`${apiBase}/invoice-generator.php`, {
                 operation: 'getBillableItems',
-                json: JSON.stringify({ admission_id: admissionId })
+                json: JSON.stringify({
+                    admission_id: admissionId,
+                    include_all: true  // Add this parameter to indicate we want all items
+                })
             });
-
-            console.log('Billable items response:', response.data);
 
             if (response.data && response.data.success) {
                 currentItems = response.data.items || [];
-                const a = response.data.admission || {};
-                admissionMeta.textContent = a && a.admission_id ?
-                    `Admission #${a.admission_id} • ${a.last_name}, ${a.first_name} ${a.middle_name || ''} • ${new Date(a.admission_date).toLocaleDateString()}` :
+                const admission = response.data.admission || {};
+
+                // Update the UI with patient info
+                admissionMeta.textContent = admission.admission_id ?
+                    `Admission #${admission.admission_id} • ${admission.last_name}, ${admission.first_name} ${admission.middle_name || ''} • ${new Date(admission.admission_date).toLocaleDateString()}` :
                     '';
-                renderItems(currentItems, response.data.debug || {});
+
+                // Render all items
+                renderItems(currentItems);
             } else {
                 console.error('Failed to load items:', response.data.message);
-                itemsBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load items: ${response.data.message || 'Unknown error'}</td></tr>`;
+                itemsBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load items: ${response.data.message || 'Unknown error'}</td></tr>`;
             }
         } catch (e) {
             console.error('Error loading billable items:', e);
-            itemsBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Network error.</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Network error.</td></tr>';
         }
     }
 
     async function createInvoice() {
         try {
             console.log('Creating invoice...');
-
-            // Filter items to only include unpaid ones
-            const unpaidItems = currentItems.filter(item => item.status !== 'yes');
-
-            if (unpaidItems.length === 0) {
-                Swal.fire({
-                    title: 'Info',
-                    text: 'No unpaid items to invoice',
-                    icon: 'info'
-                });
-                return;
-            }
-
             const response = await axios.post(`${apiBase}/invoice.php`, {
                 operation: 'createInvoice',
                 json: JSON.stringify({
                     admission_id: currentAdmissionId,
-                    items: unpaidItems
+                    items: currentItems
                 })
             });
 
@@ -176,9 +162,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 lastCreatedInvoiceId = response.data.invoice_id;
                 document.getElementById('createdInvoiceId').textContent = lastCreatedInvoiceId;
                 new bootstrap.Modal(document.getElementById('invoiceSuccessModal')).show();
-
-                // Refresh the items list to show updated status
-                await loadBillableItems(currentAdmissionId);
             } else {
                 Swal.fire({
                     title: 'Error',
@@ -204,17 +187,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const line = Number(item.quantity) * Number(item.unit_price);
             const cov = Number(item.coverage_amount || 0);
             const pay = line - cov;
-            const statusText = item.status === 'yes' ? 'Paid' : 'Unpaid';
-            const statusClass = item.status === 'yes' ? 'text-success' : 'text-danger';
             return `<tr>
                 <td>${item.service_type_name || item.type || ''}</td>
+                <td>${item.svc_reference_id || ''}</td>
                 <td>${item.description || ''}</td>
                 <td class="text-end">${item.quantity}</td>
                 <td class="text-end">${peso(item.unit_price)}</td>
                 <td class="text-end">${peso(line)}</td>
                 <td class="text-end">${peso(cov)}</td>
                 <td class="text-end">${peso(pay)}</td>
-                <td class="${statusClass}">${statusText}</td>
             </tr>`;
         }).join('');
 
@@ -231,13 +212,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <thead>
                         <tr>
                             <th>Type</th>
+                            <th>Reference</th>
                             <th>Description</th>
                             <th class="text-end">Qty</th>
                             <th class="text-end">Unit</th>
                             <th class="text-end">Line</th>
                             <th class="text-end">Coverage</th>
                             <th class="text-end">Payable</th>
-                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -271,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentAdmissionId = Number(selectedAdmissionId);
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
-            itemsBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center">Loading...</td></tr>';
 
             await loadBillableItems(currentAdmissionId);
         });
@@ -290,12 +271,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentItems = [];
             patientSelect.value = '';
             admissionMeta.textContent = '';
-            itemsBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No items loaded.</td></tr>';
+            itemsBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No items loaded.</td></tr>';
             subtotalText.textContent = '0.00';
             coveredText.textContent = '0.00';
             totalDueText.textContent = '0.00';
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
+            if (debugInfo) debugInfo.textContent = '';
         });
     }
 
@@ -310,5 +292,93 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.innerHTML = original;
             location.reload();
         });
+    }
+
+    // Add this near your other event listeners
+    document.getElementById('createInvoiceBtn').addEventListener('click', function () {
+        const modal = new bootstrap.Modal(document.getElementById('invoicePreviewModal'));
+        generateInvoicePreview();
+        modal.show();
+    });
+
+    // Add print functionality
+    document.getElementById('printInvoiceBtn').addEventListener('click', function () {
+        window.print();
+    });
+
+    function generateInvoicePreview() {
+        const previewContent = document.getElementById('invoicePreviewContent');
+        // Generate the invoice HTML based on your design
+        // This is a simplified version - you'll need to customize it
+        previewContent.innerHTML = `
+        <div class="invoice-preview">
+            <div class="text-center mb-4">
+                <h4>HOSPITAL NAME</h4>
+                <p class="mb-1">Hospital Address</p>
+                <p class="mb-1">City, Country</p>
+                <p class="mb-1">TIN: 000-000-000-000</p>
+                <h5 class="mt-3">STATEMENT OF ACCOUNT</h5>
+            </div>
+            
+            <!-- Add patient and admission details here -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Patient:</strong> ${currentPatientName}</p>
+                    <p class="mb-1"><strong>Admission:</strong> #${currentAdmissionId}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p class="mb-1"><strong>Invoice #:</strong> INV-${Date.now()}</p>
+                </div>
+            </div>
+            
+            <!-- Items table -->
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewItemsBody">
+                        ${generateInvoiceItems()}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                            <td class="text-end">${subtotalText.textContent}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Insurance Covered:</strong></td>
+                            <td class="text-end">${coveredText.textContent}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total Due:</strong></td>
+                            <td class="text-end"><strong>${totalDueText.textContent}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
+    }
+
+    function generateInvoiceItems() {
+        if (!currentItems || currentItems.length === 0) return '<tr><td colspan="4" class="text-center">No items</td></tr>';
+
+        return currentItems.map(item => {
+            const lineTotal = Number(item.quantity) * Number(item.unit_price);
+            return `
+            <tr>
+                <td>${item.item_description} (${item.service_type_name})</td>
+                <td class="text-end">${item.quantity}</td>
+                <td class="text-end">${peso(item.unit_price)}</td>
+                <td class="text-end">${peso(lineTotal)}</td>
+            </tr>
+        `;
+        }).join('');
     }
 });

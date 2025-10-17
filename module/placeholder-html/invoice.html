@@ -81,15 +81,14 @@
                                                 <th>Description</th>
                                                 <th class="text-end">Qty</th>
                                                 <th class="text-end">Unit Price</th>
-                                                <th class="text-end">Line Total</th>
+                                                <th class="text-end">Status</th>
                                                 <th class="text-end">Coverage</th>
                                                 <th class="text-end">Payable</th>
-                                                <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody id="billableItemsBody">
                                             <tr>
-                                                <td colspan="8" class="text-center text-muted">No items loaded.</td>
+                                                <td colspan="9" class="text-center text-muted">No items loaded.</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -148,6 +147,27 @@
         </div>
     </div>
 
+    <!-- Invoice Preview Modal -->
+    <div class="modal fade" id="invoicePreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Invoice Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="invoicePreviewContent">
+                    <!-- Invoice content will be generated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="printInvoiceBtn">
+                        <i class="fas fa-print me-1"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden template row for items (for cloning) -->
     <template id="itemRowTemplate">
         <tr>
@@ -155,10 +175,11 @@
             <td class="description"></td>
             <td class="qty text-end"></td>
             <td class="unit text-end"></td>
-            <td class="line text-end"></td>
+            <td class="status text-end">
+                <span class="badge"></span>
+            </td>
             <td class="coverage text-end"></td>
             <td class="payable text-end"></td>
-            <td class="status"></td>
         </tr>
     </template>
 
