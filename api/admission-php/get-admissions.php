@@ -31,7 +31,8 @@ class Admissions
             }
 
             // Update patient basic info
-            $stmt = $this->conn->prepare("UPDATE patients
+            $updtSql = "
+                UPDATE patients
                 SET first_name = :first_name,
                     middle_name = :middle_name,
                     last_name = :last_name,
@@ -42,7 +43,9 @@ class Admissions
                     mobile_number = :mobile_number,
                     email = :email,
                     address = :address
-                WHERE patient_id = :patient_id");
+                WHERE patient_id = :patient_id
+            ";
+            $stmt = $this->conn->prepare($updtSql);
 
             $stmt->execute([
                 ':first_name' => $data['patient_first_name'] ?? '',
@@ -60,11 +63,14 @@ class Admissions
             $patientsUpdated = $stmt->rowCount();
 
             // Update admission info
-            $stmt = $this->conn->prepare("UPDATE patient_admission
+            $updtAdm = "
+                UPDATE patient_admission
                 SET doctor_id = :doctor_id,
                     admission_date = :admission_date,
                     admission_reason = :admission_reason
-                WHERE admission_id = :admission_id");
+                WHERE admission_id = :admission_id
+            ";
+            $stmt = $this->conn->prepare($updtAdm);
 
             $stmt->execute([
                 ':doctor_id' => $data['doctor_id'] ?? null,
@@ -74,7 +80,7 @@ class Admissions
             ]);
             $admissionsUpdated = $stmt->rowCount();
 
-            // Optional: Update guardian if provided (simple upsert by delete+insert for brevity)
+            // Optional: Update guardian if provided
             if (!empty($data['guardian_first_name'])) {
                 $this->conn->prepare("DELETE FROM patient_guardian WHERE patient_id = :pid")
                     ->execute([':pid' => $patientId]);
@@ -141,15 +147,12 @@ class Admissions
                 pa.admission_reason, 
                 pa.status,
 
-                -- doctor assigned
                 ud.user_id AS doctor_id,
                 CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name, ' ', COALESCE(ud.suffix, '')) AS doctor_name,
                 s.specialty_name,
 
-                -- staff who admitted
                 ab.username AS admitted_by,
 
-                -- current room (subquery to get only active room)
                 (
                     SELECT r.room_number
                     FROM tbl_room_stay rs
@@ -206,7 +209,7 @@ class Admissions
                 return;
             }
 
-            // 1. Insert patient
+            // Insert patient
             $stmt = $this->conn->prepare("
                 INSERT INTO patients (first_name, middle_name, last_name, suffix, birthdate, gender, marital_status, mobile_number, email, address)
                 VALUES (:first_name, :middle_name, :last_name, :suffix, :birthdate, :gender, :marital_status, :mobile_number, :email, :address)
@@ -225,7 +228,7 @@ class Admissions
             ]);
             $patient_id = $this->conn->lastInsertId();
 
-            // 2. Insert admission
+            // Insert admission
             $stmt = $this->conn->prepare("
             INSERT INTO patient_admission (patient_id, doctor_id, admitted_by, admission_date, admission_reason, status)
             VALUES (:patient_id, :doctor_id, :admitted_by, :admission_date, :admission_reason, 'active')
@@ -239,7 +242,7 @@ class Admissions
             ]);
             $admission_id = $this->conn->lastInsertId();
 
-            // 3. Insert guardian (if under 18 toggle was on)
+            // Insert guardian (if under 18 toggle was on)
             if (!empty($data['guardian_first_name'])) {
                 $stmt = $this->conn->prepare("
                 INSERT INTO patient_guardian (patient_id, first_name, middle_name, last_name, suffix, mobile_number, email)
@@ -256,7 +259,7 @@ class Admissions
                 ]);
             }
 
-            // 4. Insert emergency contact
+            // Insert emergency contact
             $stmt = $this->conn->prepare("
             INSERT INTO patient_emergency_contact (patient_id, first_name, middle_name, last_name, suffix, relationship, mobile_number, email, address)
             VALUES (:patient_id, :first_name, :middle_name, :last_name, :suffix, :relationship, :mobile_number, :email, :address)
@@ -273,7 +276,7 @@ class Admissions
                 ':address' => $data['emgy_address'],
             ]);
 
-            // 5. Insert room (if assigned)
+            // Insert room (if assigned)
             if (!empty($data['room_assignment'])) {
                 // Check current occupancy
                 $stmt = $this->conn->prepare("
@@ -313,9 +316,7 @@ class Admissions
                 ]);
             }
 
-            // ✅ Commit all if no errors
             $this->conn->commit();
-
             echo json_encode(['success' => true, 'message' => 'Admission saved successfully']);
         } catch (PDOException $e) {
             $this->conn->rollBack();
@@ -562,21 +563,23 @@ class Admissions
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )");
 
-            $sql = "SELECT drr.request_id, drr.admission_id, drr.requested_room_id, drr.reason, drr.status, drr.created_at,
-                        r.room_number AS requested_room,
-                        pa.admission_date,
-                        CONCAT(p.first_name,' ',COALESCE(p.last_name,'')) AS patient_name,
-                        (
-                          SELECT r2.room_number FROM tbl_room_stay rs2 
-                          JOIN tbl_room r2 ON r2.room_id = rs2.room_id 
-                          WHERE rs2.admission_id = pa.admission_id AND rs2.end_date IS NULL LIMIT 1
-                        ) AS current_room
-                    FROM doctor_room_request drr
-                    JOIN patient_admission pa ON pa.admission_id = drr.admission_id
-                    JOIN patients p ON p.patient_id = pa.patient_id
-                    JOIN tbl_room r ON r.room_id = drr.requested_room_id
-                    WHERE drr.status = 'pending'
-                    ORDER BY drr.created_at DESC";
+            $sql = "
+                SELECT drr.request_id, drr.admission_id, drr.requested_room_id, drr.reason, drr.status, drr.created_at,
+                    r.room_number AS requested_room,
+                    pa.admission_date,
+                    CONCAT(p.first_name,' ',COALESCE(p.last_name,'')) AS patient_name,
+                    (
+                        SELECT r2.room_number FROM tbl_room_stay rs2 
+                        JOIN tbl_room r2 ON r2.room_id = rs2.room_id 
+                        WHERE rs2.admission_id = pa.admission_id AND rs2.end_date IS NULL LIMIT 1
+                    ) AS current_room
+                FROM doctor_room_request drr
+                JOIN patient_admission pa ON pa.admission_id = drr.admission_id
+                JOIN patients p ON p.patient_id = pa.patient_id
+                JOIN tbl_room r ON r.room_id = drr.requested_room_id
+                WHERE drr.status = 'pending'
+                ORDER BY drr.created_at DESC
+            ";
             $stmt = $this->conn->query($sql);
             echo json_encode(['success' => true, 'requests' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         } catch (PDOException $e) {
