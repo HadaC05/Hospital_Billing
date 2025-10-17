@@ -11,15 +11,18 @@
     crossorigin="anonymous">
   <link rel="stylesheet" href="../../css/hospital-theme.css">
   <link rel="stylesheet" href="../../css/dashboard.css">
+  <link rel="stylesheet" href="../../css/doctor-request.css">
   <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png">
-
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="../../js/components-js/sidebar.js" defer></script>
   <script src="../../js/components-js/header-loader.js" defer></script>
   <script src="../../js/utility-js/theme-loader.js" defer></script>
   <script src="../../js/dashboard-js/doctor-dashboard.js" defer></script>
+  `
 </head>
 
 <body class="d-flex flex-column vh-100">
@@ -28,15 +31,16 @@
     <div id="sidebar-placeholder"></div>
 
     <main class="content p-3 flex-grow-1">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <h2 class="mb-0"><i class="fas fa-user-md me-2 text-primary"></i>Doctor Dashboard</h2>
         <div class="text-muted" id="docdash-date"></div>
       </div>
 
       <div class="container-fluid">
+        <!-- KPI Section -->
         <div class="row g-3" id="kpi-row">
           <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 kpi-card active-patients">
               <div class="card-body">
                 <div class="d-flex align-items-center">
                   <div class="me-3 text-primary"><i class="fas fa-bed fa-2x"></i></div>
@@ -49,7 +53,7 @@
             </div>
           </div>
           <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 kpi-card total-assigned">
               <div class="card-body">
                 <div class="d-flex align-items-center">
                   <div class="me-3 text-success"><i class="fas fa-users fa-2x"></i></div>
@@ -62,7 +66,7 @@
             </div>
           </div>
           <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 kpi-card admitted">
               <div class="card-body">
                 <div class="d-flex align-items-center">
                   <div class="me-3 text-info"><i class="fas fa-calendar-check fa-2x"></i></div>
@@ -75,7 +79,7 @@
             </div>
           </div>
           <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 kpi-card discharged">
               <div class="card-body">
                 <div class="d-flex align-items-center">
                   <div class="me-3 text-warning"><i class="fas fa-person-walking-arrow-right fa-2x"></i></div>
@@ -89,15 +93,38 @@
           </div>
         </div>
 
+        <!-- Main Content Row -->
         <div class="row g-3 mt-1">
-          <div class="col-12">
+          <!-- Left Column - Pending Requests -->
+          <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <div>
+                  <i class="fas fa-tasks me-2 text-warning"></i>
+                  <span class="fw-semibold">Pending Requests</span>
+                </div>
+                <a class="btn btn-sm btn-outline-warning" href="../doctor-html/doctor-requests.html">
+                  <i class="fas fa-list me-1"></i> View All
+                </a>
+              </div>
+              <div class="card-body">
+                <div id="pending-requests-container">
+                  <div class="text-center text-muted py-3">Loading requests...</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column - Recent Patients -->
+          <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
               <div class="card-header bg-white d-flex align-items-center justify-content-between">
                 <div>
                   <i class="fas fa-clipboard-list me-2 text-primary"></i>
                   <span class="fw-semibold">Recent Assigned Patients</span>
                 </div>
-                <a class="btn btn-sm btn-outline-primary" href="./my-patients.html">
+                <a class="btn btn-sm btn-outline-primary" href="../doctor-html/doctor-requests.html">
                   <i class="fas fa-user-injured me-1"></i> View All
                 </a>
               </div>
@@ -106,27 +133,249 @@
                   <table class="table table-sm align-middle mb-0">
                     <thead>
                       <tr>
-                        <th>Admission ID</th>
                         <th>Patient</th>
-                        <th>Contact</th>
                         <th>Admitted</th>
-                        <th>Discharged</th>
                         <th>Status</th>
                       </tr>
                     </thead>
                     <tbody id="docdash-recent">
                       <tr>
-                        <td colspan="6" class="text-center text-muted">Loading...</td>
+                        <td colspan="3" class="text-center text-muted">Loading...</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Patient Requests Modal -->
+  <div class="modal fade" id="patientRequestsModal" tabindex="-1" aria-labelledby="patientRequestsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="patientRequestsModalLabel">Patient Requests</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Patient Info -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 id="modalPatientName" class="card-title"></h5>
+                  <p class="card-text">
+                    <strong>Room:</strong> <span id="modalRoomNumber"></span><br>
+                    <strong>Admission Date:</strong> <span id="modalAdmissionDate"></span><br>
+                    <strong>Admission Reason:</strong> <span id="modalAdmissionReason"></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <ul class="nav nav-tabs" id="requestTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="existing-requests-tab" data-bs-toggle="tab"
+                data-bs-target="#existing-requests" type="button" role="tab" aria-controls="existing-requests"
+                aria-selected="true">Existing Requests</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="new-requests-tab" data-bs-toggle="tab" data-bs-target="#new-requests"
+                type="button" role="tab" aria-controls="new-requests" aria-selected="false">Medication & Lab
+                Tests</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="doctor-change-tab" data-bs-toggle="tab" data-bs-target="#doctor-change"
+                type="button" role="tab" aria-controls="doctor-change" aria-selected="false">Request Doctor
+                Change</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="room-change-tab" data-bs-toggle="tab" data-bs-target="#room-change"
+                type="button" role="tab" aria-controls="room-change" aria-selected="false">Request Room Change</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="surgery-tab" data-bs-toggle="tab" data-bs-target="#surgery" type="button"
+                role="tab" aria-controls="surgery" aria-selected="false">Schedule/Order
+                Surgery</button>
+            </li>
+          </ul>
+          <div class="tab-content" id="requestTabsContent">
+            <!-- Existing Requests Tab -->
+            <div class="tab-pane fade show active" id="existing-requests" role="tabpanel"
+              aria-labelledby="existing-requests-tab">
+              <div class="table-responsive mt-3">
+                <table class="table table-hover table-striped">
+                  <thead>
+                    <tr>
+                      <th>Request Date</th>
+                      <th>Type</th>
+                      <th>Item</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="existingRequestsList">
+                    <!-- Existing requests will be loaded here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- New Requests Tab (Medication & Lab Tests) -->
+            <div class="tab-pane fade" id="new-requests" role="tabpanel" aria-labelledby="new-requests-tab">
+              <div class="mt-3">
+                <form id="newRequestsForm">
+                  <div class="table-responsive">
+                    <table class="table table-bordered" id="newRequestsTable">
+                      <thead>
+                        <tr>
+                          <th>Service Type</th>
+                          <th>Item</th>
+                          <th>Quantity</th>
+                          <th>Notes</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Initial row -->
+                        <tr>
+                          <td>
+                            <select class="form-select service-type-select" required>
+                              <option value="">Select Type</option>
+                              <!-- Service types will be loaded here -->
+                              <option value="4">Medication</option>
+                              <option value="3">Lab Test</option>
+                              <option value="5">Treatment</option>
+                            </select>
+                          </td>
+                          <td>
+                            <select class="form-select item-select" required disabled>
+                              <option value="">Select Type First</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input type="number" class="form-control quantity-input" min="1" value="1" required>
+                          </td>
+                          <td>
+                            <input type="text" class="form-control notes-input" placeholder="Optional notes">
+                          </td>
+                          <td>
+                            <button type="button" class="btn btn-sm btn-danger remove-row-btn" disabled>
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="d-flex justify-content-between mt-2">
+                    <button type="button" class="btn btn-success" id="addRequestRowBtn">
+                      <i class="fas fa-plus"></i> Add Row
+                    </button>
+                    <button type="submit" class="btn btn-primary">Submit Requests</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Doctor Change Tab -->
+            <div class="tab-pane fade" id="doctor-change" role="tabpanel" aria-labelledby="doctor-change-tab">
+              <div class="mt-3">
+                <form id="doctorChangeForm">
+                  <div class="mb-3">
+                    <label for="newDoctor" class="form-label">Select New Doctor</label>
+                    <select class="form-select" id="newDoctor" required>
+                      <option value="">Loading doctors...</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="doctorChangeReason" class="form-label">Reason for Change</label>
+                    <textarea class="form-control" id="doctorChangeReason" rows="3" required></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label for="doctorChangeNotes" class="form-label">Additional Notes</label>
+                    <textarea class="form-control" id="doctorChangeNotes" rows="2"></textarea>
+                  </div>
+                  <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Room Change Tab -->
+            <div class="tab-pane fade" id="room-change" role="tabpanel" aria-labelledby="room-change-tab">
+              <div class="mt-3">
+                <form id="roomChangeForm">
+                  <div class="mb-3">
+                    <label for="newRoom" class="form-label">Select New Room</label>
+                    <select class="form-select" id="newRoom" required>
+                      <option value="">Loading rooms...</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="roomChangeReason" class="form-label">Reason for Change</label>
+                    <textarea class="form-control" id="roomChangeReason" rows="3" required></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label for="roomChangeNotes" class="form-label">Additional Notes</label>
+                    <textarea class="form-control" id="roomChangeNotes" rows="2"></textarea>
+                  </div>
+                  <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Surgery Tab -->
+            <div class="tab-pane fade" id="surgery" role="tabpanel" aria-labelledby="surgery-tab">
+              <div class="mt-3">
+                <form id="surgeryForm">
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label for="surgeryType" class="form-label">Surgery Type</label>
+                      <select class="form-select" id="surgeryType" required>
+                        <option value="">Loading surgery types...</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="surgeryDoctor" class="form-label">Assign Doctor</label>
+                      <select class="form-select" id="surgeryDoctor" required>
+                        <option value="">Loading doctors...</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label for="surgeryDate" class="form-label">Scheduled Date</label>
+                      <input type="datetime-local" class="form-control" id="surgeryDate" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="surgeryReason" class="form-label">Reason for Surgery</label>
+                      <textarea class="form-control" id="surgeryReason" rows="3" required></textarea>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Schedule Surgery</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </body>
 

@@ -57,7 +57,46 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 localStorage.setItem('user', JSON.stringify(data));
                 console.log('User data stored, redirecting to dashboard...');
-                window.location.href = './module/dashboard-html/admin-dashboard.html';
+
+                // Redirect based on user role
+                const role = data.role;
+                let dashboardPath = './module/dashboard-html/';
+
+                switch (role) {
+                    case 'Admin':
+                        dashboardPath += 'admin-dashboard.html';
+                        break;
+                    case 'Doctor':
+                        dashboardPath += 'doctor-dashboard.html';
+                        break;
+                    case 'Nurse':
+                        dashboardPath += 'nurse-dashboard.html';
+                        break;
+                    case 'Lab Technician':
+                        dashboardPath += 'lab-dashboard.html';
+                        break;
+                    case 'Pharmacist':
+                        dashboardPath += 'pharmacist-dashboard.html';
+                        break;
+                    case 'Cashier':
+                        // Cashier doesn't have a specific dashboard, redirect to biller dashboard
+                        dashboardPath += 'biller-dashboard.html';
+                        break;
+                    case 'Billing Staff':
+                        dashboardPath += 'biller-dashboard.html';
+                        break;
+                    case 'Therapist':
+                        // Therapist doesn't have a specific dashboard, redirect to receptionist dashboard
+                        dashboardPath += 'receptionist-dashboard.html';
+                        break;
+                    default:
+                        // Default fallback to admin dashboard
+                        dashboardPath += 'admin-dashboard.html';
+                        break;
+                }
+
+                console.log(`Redirecting ${role} to: ${dashboardPath}`);
+                window.location.href = dashboardPath;
             } else {
                 // Handle unsuccessful login
                 document.getElementById('error-message').textContent = data.message || 'Login failed';

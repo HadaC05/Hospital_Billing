@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (logoutBtn) {
       logoutBtn.addEventListener('click', logout);
     }
-    
+
     // Display user info
     displayUserInfo();
   }
@@ -29,18 +29,55 @@ async function login(username, password) {
         password: password
       })
     });
-    
+
     const data = response.data;
     console.log('Login Response:', data);
-    
+
     if (data.status === 'success') {
       // Store token and user info in localStorage
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('permissions', JSON.stringify(data.permissions));
-      
-      // Redirect to dashboard
-      window.location.href = 'dashboard.html';
+
+      // Redirect based on user role
+      const role = data.user.role_name;
+      let dashboardPath = './module/dashboard-html/';
+
+      switch (role) {
+        case 'Admin':
+          dashboardPath += 'admin-dashboard.html';
+          break;
+        case 'Doctor':
+          dashboardPath += 'doctor-dashboard.html';
+          break;
+        case 'Nurse':
+          dashboardPath += 'nurse-dashboard.html';
+          break;
+        case 'Lab Technician':
+          dashboardPath += 'lab-dashboard.html';
+          break;
+        case 'Pharmacist':
+          dashboardPath += 'pharmacist-dashboard.html';
+          break;
+        case 'Cashier':
+          // Cashier doesn't have a specific dashboard, redirect to biller dashboard
+          dashboardPath += 'biller-dashboard.html';
+          break;
+        case 'Billing Staff':
+          dashboardPath += 'biller-dashboard.html';
+          break;
+        case 'Therapist':
+          // Therapist doesn't have a specific dashboard, redirect to receptionist dashboard
+          dashboardPath += 'receptionist-dashboard.html';
+          break;
+        default:
+          // Default fallback to admin dashboard
+          dashboardPath += 'admin-dashboard.html';
+          break;
+      }
+
+      console.log(`Redirecting ${role} to: ${dashboardPath}`);
+      window.location.href = dashboardPath;
       return data;
     } else {
       showNotification(data.message, 'danger');
@@ -61,16 +98,16 @@ async function logout() {
       operation: 'logout',
       token: token
     });
-    
+
     const data = response.data;
     console.log('Logout Response:', data);
-    
+
     if (data.status === 'success') {
       // Clear localStorage
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       localStorage.removeItem('permissions');
-      
+
       // Redirect to login page
       window.location.href = 'login.html';
       return data;
@@ -116,7 +153,7 @@ function displayUserInfo() {
     userInfoElements.forEach(element => {
       element.textContent = `${user.first_name} ${user.last_name}`;
     });
-    
+
     const userRoleElements = document.querySelectorAll('.user-role');
     userRoleElements.forEach(element => {
       element.textContent = user.role_name;
@@ -130,19 +167,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
-      
+
       if (!username || !password) {
         showNotification('Please enter both username and password', 'warning');
         return;
       }
-      
+
       disableButton('login-btn');
-      
+
       const result = await login(username, password);
-      
+
       enableButton('login-btn', 'Login');
     });
   }

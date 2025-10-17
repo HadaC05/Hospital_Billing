@@ -1,0 +1,58 @@
+    .kpi-card {
+      border-left: 4px solid;
+      transition: transform 0.2s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .kpi-card.active-patients {
+      border-left-color: #0d6efd;
+    }
+
+    .kpi-card.total-assigned {
+      border-left-color: #198754;
+    }
+
+    .kpi-card.admitted {
+      border-left-color: #0dcaf0;
+    }
+
+    .kpi-card.discharged {
+      border-left-color: #ffc107;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+    }
+
+    .alert-section {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .request-card {
+      border-left: 4px solid #6c757d;
+      margin-bottom: 10px;
+    }
+
+    .request-card.medicine {
+      border-left-color: #0d6efd;
+    }
+
+    .request-card.labtest {
+      border-left-color: #198754;
+    }
+
+    .request-card.surgery {
+      border-left-color: #dc3545;
+    }
+
+    .patient-row {
+      cursor: pointer;
+    }
+
+    .patient-row:hover {
+      background-color: rgba(0, 0, 0, 0.075);
+    }
