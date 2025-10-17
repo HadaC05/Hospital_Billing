@@ -14,7 +14,6 @@ class Labtest_Management
         $this->pdo = $pdo;
     }
 
-    // Helper method to get current admission for a patient
     private function getCurrentAdmission($patientId)
     {
         $sql = "SELECT admission_id FROM patient_admission 
@@ -25,11 +24,14 @@ class Labtest_Management
         return $stmt->fetchColumn();
     }
 
-    // ===== Helper: Update batch status based on items =====
+    // Update batch status based on items
     private function updateBatchStatus($batchId)
     {
         // Get all item statuses for this batch
-        $sql = "SELECT status FROM request_labtest_items WHERE batch_id = :batch_id";
+        $sql = "
+            SELECT status FROM request_labtest_items 
+            WHERE batch_id = :batch_id
+        ";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':batch_id' => $batchId]);
         $statuses = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -37,7 +39,7 @@ class Labtest_Management
         if (!$statuses) return;
 
         $allStatuses = array_unique($statuses);
-        $newStatus = 'pending'; // Default status
+        $newStatus = 'pending';
 
         // Determine new batch status based on item statuses
         if (count($allStatuses) === 1) {
@@ -58,12 +60,15 @@ class Labtest_Management
                 $newStatus = 'in_progress';
             }
         } elseif (in_array('completed', $allStatuses)) {
-            // All items are completed
             $newStatus = 'completed';
         }
 
         // Update the batch status
-        $update = "UPDATE request_labtest_batch SET status = :status WHERE batch_id = :batch_id";
+        $update = "
+            UPDATE request_labtest_batch 
+            SET status = :status 
+            WHERE batch_id = :batch_id
+        ";
         $stmt = $this->pdo->prepare($update);
         $stmt->execute([
             ':status' => $newStatus,
@@ -71,27 +76,27 @@ class Labtest_Management
         ]);
     }
 
-    // ===== 1. Load lab test requests =====
+    // Load lab test requests
     public function getLabTestRequests($admissionId = null)
     {
         try {
             $sql = "
-            SELECT 
-                rlb.batch_id,
-                rlb.request_date,
-                rlb.status as batch_status,
-                p.patient_id,
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name,
-                COUNT(rli.item_id) as item_count,
-                SUM(CASE WHEN rli.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
-                SUM(CASE WHEN rli.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count,
-                SUM(CASE WHEN rli.status = 'completed' THEN 1 ELSE 0 END) as completed_count
-            FROM request_labtest_batch rlb
-            JOIN request_labtest_items rli ON rlb.batch_id = rli.batch_id
-            JOIN patients p ON rlb.patient_id = p.patient_id
-            JOIN user_doctor ud ON rlb.doctor_id = ud.user_id
-            WHERE 1=1
+                SELECT 
+                    rlb.batch_id,
+                    rlb.request_date,
+                    rlb.status as batch_status,
+                    p.patient_id,
+                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
+                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name,
+                    COUNT(rli.item_id) as item_count,
+                    SUM(CASE WHEN rli.status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                    SUM(CASE WHEN rli.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count,
+                    SUM(CASE WHEN rli.status = 'completed' THEN 1 ELSE 0 END) as completed_count
+                FROM request_labtest_batch rlb
+                JOIN request_labtest_items rli ON rlb.batch_id = rli.batch_id
+                JOIN patients p ON rlb.patient_id = p.patient_id
+                JOIN user_doctor ud ON rlb.doctor_id = ud.user_id
+                WHERE 1=1
             ";
 
             if ($admissionId) {
@@ -116,7 +121,7 @@ class Labtest_Management
         }
     }
 
-    // ===== 2. Start lab tests =====
+    // Start lab tests
     public function startLabTests($data)
     {
         try {
@@ -135,7 +140,10 @@ class Labtest_Management
                 $itemId = $item['item_id'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_labtest_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_labtest_items 
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -154,9 +162,11 @@ class Labtest_Management
                 }
 
                 // Update the item status to in_progress
-                $updateSql = "UPDATE request_labtest_items 
+                $updateSql = "
+                    UPDATE request_labtest_items 
                     SET status = 'in_progress', processed_by = :technician_id, processed_date = NOW() 
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':item_id' => $itemId,
@@ -167,7 +177,10 @@ class Labtest_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_labtest_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateBatch = "
+                    UPDATE request_labtest_batch 
+                    SET admission_id = ? 
+                    WHERE batch_id IN ($placeholders)";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -179,15 +192,21 @@ class Labtest_Management
 
             $this->pdo->commit();
 
-            echo json_encode(['success' => true, 'message' => 'Lab tests started successfully']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Lab tests started successfully'
+            ]);
         } catch (Exception $e) {
             $this->pdo->rollBack();
             error_log("Error in startLabTests: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
-    // ===== 3. Complete lab tests =====
+    // Complete lab tests
     public function completeLabTests($data)
     {
         try {
@@ -205,7 +224,9 @@ class Labtest_Management
                 $itemId = $item['item_id'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_labtest_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_labtest_items WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -224,9 +245,11 @@ class Labtest_Management
                 }
 
                 // Update the item status to completed and mark for billing
-                $updateSql = "UPDATE request_labtest_items 
+                $updateSql = "
+                    UPDATE request_labtest_items 
                     SET status = 'completed', completed_by = :technician_id, completed_date = NOW(), billed_status = 'no'
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':item_id' => $itemId,
@@ -237,7 +260,10 @@ class Labtest_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_labtest_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateBatch = "
+                    UPDATE request_labtest_batch SET admission_id = ? 
+                    WHERE batch_id IN ($placeholders)
+                ";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -275,7 +301,10 @@ class Labtest_Management
                 $itemId = $item['item_id'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_labtest_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_labtest_items 
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -294,9 +323,11 @@ class Labtest_Management
                 }
 
                 // Update the item status to cancelled
-                $updateSql = "UPDATE request_labtest_items 
+                $updateSql = "
+                    UPDATE request_labtest_items 
                     SET status = 'cancelled', cancelled_by = :technician_id, cancelled_date = NOW() 
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':item_id' => $itemId,
@@ -307,7 +338,8 @@ class Labtest_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_labtest_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateBatch = "
+                    UPDATE request_labtest_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -319,16 +351,21 @@ class Labtest_Management
 
             // If all items in a batch are cancelled, update the batch cancellation details
             foreach ($batchIds as $batchId) {
-                $checkSql = "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled 
-                            FROM request_labtest_items WHERE batch_id = :batch_id";
+                $checkSql = "
+                    SELECT COUNT(*) as total, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled 
+                    FROM request_labtest_items 
+                    WHERE batch_id = :batch_id
+                ";
                 $stmt = $this->pdo->prepare($checkSql);
                 $stmt->execute([':batch_id' => $batchId]);
                 $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($result['total'] == $result['cancelled']) {
-                    $updateBatchSql = "UPDATE request_labtest_batch 
+                    $updateBatchSql = "
+                        UPDATE request_labtest_batch 
                         SET status = 'cancelled', cancelled_by = :technician_id, cancelled_date = NOW(), cancelled_reason = :reason
-                        WHERE batch_id = :batch_id";
+                        WHERE batch_id = :batch_id
+                    ";
                     $stmt = $this->pdo->prepare($updateBatchSql);
                     $stmt->execute([
                         ':batch_id' => $batchId,
@@ -347,26 +384,26 @@ class Labtest_Management
         }
     }
 
-    // ===== 5. Get batch details =====
+    // Get batch details
     public function getBatchDetails($batchId)
     {
         try {
             // Get batch details with patient and doctor information
             $batchSql = "
-            SELECT 
-                rlb.batch_id,
-                rlb.request_date,
-                rlb.status as batch_status,
-                rlb.notes,
-                rlb.admission_id,
-                p.patient_id,
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
-            FROM request_labtest_batch rlb
-            JOIN patients p ON rlb.patient_id = p.patient_id
-            JOIN user_doctor ud ON rlb.doctor_id = ud.user_id
-            WHERE rlb.batch_id = :batch_id
-        ";
+                SELECT 
+                    rlb.batch_id,
+                    rlb.request_date,
+                    rlb.status as batch_status,
+                    rlb.notes,
+                    rlb.admission_id,
+                    p.patient_id,
+                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
+                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
+                FROM request_labtest_batch rlb
+                JOIN patients p ON rlb.patient_id = p.patient_id
+                JOIN user_doctor ud ON rlb.doctor_id = ud.user_id
+                WHERE rlb.batch_id = :batch_id
+            ";
             $stmt = $this->pdo->prepare($batchSql);
             $stmt->execute([':batch_id' => $batchId]);
             $batch = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -377,24 +414,24 @@ class Labtest_Management
 
             // Get batch items with user information
             $itemsSql = "
-            SELECT 
-                rli.item_id,
-                rli.status as item_status,
-                rli.processed_by,
-                rli.completed_by,
-                rli.billed_status,
-                rli.processed_date,
-                rli.completed_date,
-                lt.test_name,
-                CONCAT(COALESCE(processed_t.first_name, ''), ' ', COALESCE(processed_t.last_name, '')) AS processed_by_name,
-                CONCAT(COALESCE(completed_t.first_name, ''), ' ', COALESCE(completed_t.last_name, '')) AS completed_by_name
-            FROM request_labtest_items rli
-            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
-            LEFT JOIN user_lab_technician processed_t ON rli.processed_by = processed_t.user_id
-            LEFT JOIN user_lab_technician completed_t ON rli.completed_by = completed_t.user_id
-            WHERE rli.batch_id = :batch_id
-            ORDER BY rli.item_id
-        ";
+                SELECT 
+                    rli.item_id,
+                    rli.status as item_status,
+                    rli.processed_by,
+                    rli.completed_by,
+                    rli.billed_status,
+                    rli.processed_date,
+                    rli.completed_date,
+                    lt.test_name,
+                    CONCAT(COALESCE(processed_t.first_name, ''), ' ', COALESCE(processed_t.last_name, '')) AS processed_by_name,
+                    CONCAT(COALESCE(completed_t.first_name, ''), ' ', COALESCE(completed_t.last_name, '')) AS completed_by_name
+                FROM request_labtest_items rli
+                JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+                LEFT JOIN user_lab_technician processed_t ON rli.processed_by = processed_t.user_id
+                LEFT JOIN user_lab_technician completed_t ON rli.completed_by = completed_t.user_id
+                WHERE rli.batch_id = :batch_id
+                ORDER BY rli.item_id
+            ";
             $stmt = $this->pdo->prepare($itemsSql);
             $stmt->execute([':batch_id' => $batchId]);
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -409,7 +446,7 @@ class Labtest_Management
         }
     }
 
-    // ===== Utility: Get batch_id from item_id =====
+    // Get batch_id from item_id
     private function getBatchIdFromItem($itemId)
     {
         $sql = "SELECT batch_id FROM request_labtest_items WHERE item_id = :item_id";
