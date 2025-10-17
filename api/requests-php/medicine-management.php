@@ -14,7 +14,6 @@ class Medicine_Management
         $this->pdo = $pdo;
     }
 
-    // Helper method to get current admission for a patient
     private function getCurrentAdmission($patientId)
     {
         $sql = "SELECT admission_id FROM patient_admission 
@@ -25,11 +24,14 @@ class Medicine_Management
         return $stmt->fetchColumn();
     }
 
-    // ===== Helper: Update batch status based on items =====
+    // Update batch status based on items
     private function updateBatchStatus($batchId)
     {
         // Get all item statuses for this batch
-        $sql = "SELECT status FROM request_medicine_items WHERE batch_id = :batch_id";
+        $sql = "
+            SELECT status FROM request_medicine_items 
+            WHERE batch_id = :batch_id
+        ";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':batch_id' => $batchId]);
         $statuses = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -37,7 +39,7 @@ class Medicine_Management
         if (!$statuses) return;
 
         $allStatuses = array_unique($statuses);
-        $newStatus = 'pending'; // Default status
+        $newStatus = 'pending';
 
         // Determine new batch status based on item statuses
         if (count($allStatuses) === 1) {
@@ -78,7 +80,7 @@ class Medicine_Management
         ]);
     }
 
-    // ===== 1. Load dispensed medicines =====
+    // Load dispensed medicines
     public function getDispensedMedicines($admissionId = null)
     {
         try {
@@ -123,7 +125,7 @@ class Medicine_Management
         }
     }
 
-    // ===== 2. Confirm pickup =====
+    // Confirm pickup
     public function confirmPickup($data)
     {
         try {
@@ -143,7 +145,9 @@ class Medicine_Management
                 $quantity = $item['quantity'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_medicine_items WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -170,13 +174,10 @@ class Medicine_Management
                     $remainingQuantity = $currentItem['quantity'] - $quantity;
 
                     // Create new item for remaining quantity
-                    $insertSql = "INSERT INTO request_medicine_items (
-                        batch_id, med_id, quantity, status, 
-                        dispensed_by, dispensed_date
-                    ) VALUES (
-                        :batch_id, :med_id, :quantity, 'dispensed',
-                        :dispensed_by, :dispensed_date
-                    )";
+                    $insertSql = "
+                        INSERT INTO request_medicine_items (batch_id, med_id, quantity, status, dispensed_by, dispensed_date) 
+                        VALUES (:batch_id, :med_id, :quantity, 'dispensed', :dispensed_by, :dispensed_date)
+                    ";
 
                     $stmt = $this->pdo->prepare($insertSql);
                     $stmt->execute([
@@ -189,9 +190,11 @@ class Medicine_Management
                 }
 
                 // Update the original item with picked quantity and status
-                $updateSql = "UPDATE request_medicine_items 
+                $updateSql = "
+                    UPDATE request_medicine_items 
                     SET quantity = :quantity, status = 'picked', picked_by = :nurse_id, picked_date = NOW() 
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':quantity' => $quantity,
@@ -203,7 +206,12 @@ class Medicine_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+
+                $updateBatch = "
+                    UPDATE request_medicine_batch 
+                    SET admission_id = ? 
+                    WHERE batch_id IN ($placeholders)
+                ";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -215,15 +223,21 @@ class Medicine_Management
 
             $this->pdo->commit();
 
-            echo json_encode(['success' => true, 'message' => 'Medicines confirmed as picked up']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Medicines confirmed as picked up'
+            ]);
         } catch (Exception $e) {
             $this->pdo->rollBack();
             error_log("Error in confirmPickup: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
-    // ===== 3. Administer medicines =====
+    // Administer medicines
     public function administerMedicines($data)
     {
         try {
@@ -242,7 +256,10 @@ class Medicine_Management
                 $quantity = $item['quantity'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_medicine_items 
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -269,13 +286,10 @@ class Medicine_Management
                     $remainingQuantity = $currentItem['quantity'] - $quantity;
 
                     // Create new item for remaining quantity
-                    $insertSql = "INSERT INTO request_medicine_items (
-                        batch_id, med_id, quantity, status, 
-                        dispensed_by, dispensed_date, picked_by, picked_date
-                    ) VALUES (
-                        :batch_id, :med_id, :quantity, 'picked',
-                        :dispensed_by, :dispensed_date, :picked_by, :picked_date
-                    )";
+                    $insertSql = "
+                        INSERT INTO request_medicine_items (batch_id, med_id, quantity, status, dispensed_by, dispensed_date, picked_by, picked_date) 
+                        VALUES (:batch_id, :med_id, :quantity, 'picked', :dispensed_by, :dispensed_date, :picked_by, :picked_date)
+                    ";
 
                     $stmt = $this->pdo->prepare($insertSql);
                     $stmt->execute([
@@ -290,9 +304,11 @@ class Medicine_Management
                 }
 
                 // Update the original item with administered quantity and status
-                $updateSql = "UPDATE request_medicine_items 
+                $updateSql = "
+                    UPDATE request_medicine_items 
                     SET quantity = :quantity, status = 'administered', administered_by = :nurse_id, administered_date = NOW() 
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':quantity' => $quantity,
@@ -304,7 +320,12 @@ class Medicine_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+
+                $updateBatch = "
+                    UPDATE request_medicine_batch 
+                    SET admission_id = ? 
+                    WHERE batch_id IN ($placeholders)
+                ";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -323,7 +344,7 @@ class Medicine_Management
         }
     }
 
-    // ===== 4. Return medicines =====
+    // Return medicines
     public function returnMedicines($data)
     {
         try {
@@ -342,7 +363,10 @@ class Medicine_Management
                 $quantity = $item['quantity'];
 
                 // Get current item
-                $sql = "SELECT * FROM request_medicine_items WHERE item_id = :item_id";
+                $sql = "
+                    SELECT * FROM request_medicine_items 
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($sql);
                 $stmt->execute([':item_id' => $itemId]);
                 $currentItem = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -369,13 +393,10 @@ class Medicine_Management
                     $remainingQuantity = $currentItem['quantity'] - $quantity;
 
                     // Create new item for remaining quantity
-                    $insertSql = "INSERT INTO request_medicine_items (
-                        batch_id, med_id, quantity, status, 
-                        dispensed_by, dispensed_date, picked_by, picked_date
-                    ) VALUES (
-                        :batch_id, :med_id, :quantity, 'picked',
-                        :dispensed_by, :dispensed_date, :picked_by, :picked_date
-                    )";
+                    $insertSql = "
+                        INSERT INTO request_medicine_items (batch_id, med_id, quantity, status, dispensed_by, dispensed_date, picked_by, picked_date) 
+                        VALUES (:batch_id, :med_id, :quantity, 'picked', :dispensed_by, :dispensed_date, :picked_by, :picked_date)
+                    ";
 
                     $stmt = $this->pdo->prepare($insertSql);
                     $stmt->execute([
@@ -390,9 +411,11 @@ class Medicine_Management
                 }
 
                 // Update the original item with returned quantity and status
-                $updateSql = "UPDATE request_medicine_items 
+                $updateSql = "
+                    UPDATE request_medicine_items 
                     SET quantity = :quantity, status = 'returned', returned_by = :nurse_id, returned_date = NOW() 
-                    WHERE item_id = :item_id";
+                    WHERE item_id = :item_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':quantity' => $quantity,
@@ -404,7 +427,11 @@ class Medicine_Management
             // Update batch admission_ids if needed
             if (!empty($batchIds) && $admissionId) {
                 $placeholders = implode(',', array_fill(0, count($batchIds), '?'));
-                $updateBatch = "UPDATE request_medicine_batch SET admission_id = ? WHERE batch_id IN ($placeholders)";
+                $updateBatch = "
+                    UPDATE request_medicine_batch 
+                    SET admission_id = ? 
+                    WHERE batch_id IN ($placeholders)
+                ";
                 $updateStmt = $this->pdo->prepare($updateBatch);
                 $updateStmt->execute(array_merge([$admissionId], $batchIds));
             }
@@ -423,26 +450,26 @@ class Medicine_Management
         }
     }
 
-    // ===== 5. Get batch details =====
+    // Get batch details
     public function getBatchDetails($batchId)
     {
         try {
             // Get batch details with patient and doctor information
             $batchSql = "
-            SELECT 
-                rmb.batch_id,
-                rmb.request_date,
-                rmb.status as batch_status,
-                rmb.notes,
-                rmb.admission_id,
-                p.patient_id,
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
-            FROM request_medicine_batch rmb
-            JOIN patients p ON rmb.patient_id = p.patient_id
-            JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
-            WHERE rmb.batch_id = :batch_id
-        ";
+                SELECT 
+                    rmb.batch_id,
+                    rmb.request_date,
+                    rmb.status as batch_status,
+                    rmb.notes,
+                    rmb.admission_id,
+                    p.patient_id,
+                    CONCAT(p.first_name, ' ', COALESCE(p.middle_name,''), ' ', p.last_name) AS patient_name,
+                    CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name,''), ' ', ud.last_name) AS doctor_name
+                FROM request_medicine_batch rmb
+                JOIN patients p ON rmb.patient_id = p.patient_id
+                JOIN user_doctor ud ON rmb.doctor_id = ud.user_id
+                WHERE rmb.batch_id = :batch_id
+            ";
             $stmt = $this->pdo->prepare($batchSql);
             $stmt->execute([':batch_id' => $batchId]);
             $batch = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -453,28 +480,28 @@ class Medicine_Management
 
             // Get batch items with user information
             $itemsSql = "
-            SELECT 
-                rmi.item_id,
-                rmi.quantity,
-                rmi.status as item_status,
-                rmi.dispensed_by,
-                rmi.picked_by,
-                rmi.administered_by,
-                rmi.dispensed_date,
-                rmi.picked_date,
-                rmi.administered_date,
-                m.med_name,
-                CONCAT(COALESCE(dispensed_p.first_name, ''), ' ', COALESCE(dispensed_p.last_name, '')) AS dispensed_by_name,
-                CONCAT(COALESCE(picked_n.first_name, ''), ' ', COALESCE(picked_n.last_name, '')) AS picked_by_name,
-                CONCAT(COALESCE(administered_n.first_name, ''), ' ', COALESCE(administered_n.last_name, '')) AS administered_by_name
-            FROM request_medicine_items rmi
-            JOIN tbl_medicine m ON rmi.med_id = m.med_id
-            LEFT JOIN user_pharmacist dispensed_p ON rmi.dispensed_by = dispensed_p.user_id
-            LEFT JOIN user_nurse picked_n ON rmi.picked_by = picked_n.user_id
-            LEFT JOIN user_nurse administered_n ON rmi.administered_by = administered_n.user_id
-            WHERE rmi.batch_id = :batch_id
-            ORDER BY rmi.item_id
-        ";
+                SELECT 
+                    rmi.item_id,
+                    rmi.quantity,
+                    rmi.status as item_status,
+                    rmi.dispensed_by,
+                    rmi.picked_by,
+                    rmi.administered_by,
+                    rmi.dispensed_date,
+                    rmi.picked_date,
+                    rmi.administered_date,
+                    m.med_name,
+                    CONCAT(COALESCE(dispensed_p.first_name, ''), ' ', COALESCE(dispensed_p.last_name, '')) AS dispensed_by_name,
+                    CONCAT(COALESCE(picked_n.first_name, ''), ' ', COALESCE(picked_n.last_name, '')) AS picked_by_name,
+                    CONCAT(COALESCE(administered_n.first_name, ''), ' ', COALESCE(administered_n.last_name, '')) AS administered_by_name
+                FROM request_medicine_items rmi
+                JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                LEFT JOIN user_pharmacist dispensed_p ON rmi.dispensed_by = dispensed_p.user_id
+                LEFT JOIN user_nurse picked_n ON rmi.picked_by = picked_n.user_id
+                LEFT JOIN user_nurse administered_n ON rmi.administered_by = administered_n.user_id
+                WHERE rmi.batch_id = :batch_id
+                ORDER BY rmi.item_id
+            ";
             $stmt = $this->pdo->prepare($itemsSql);
             $stmt->execute([':batch_id' => $batchId]);
             $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -489,7 +516,7 @@ class Medicine_Management
         }
     }
 
-    // ===== Utility: Get batch_id from item_id =====
+    // Utility: Get batch_id from item_id
     private function getBatchIdFromItem($itemId)
     {
         $sql = "SELECT batch_id FROM request_medicine_items WHERE item_id = :item_id";
