@@ -20,7 +20,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const createInvoiceBtn = document.getElementById('createInvoiceBtn');
     const resetBtn = document.getElementById('resetBtn');
     const printPreviewBtn = document.getElementById('printPreviewBtn');
+    const previewInvoiceBtn = document.getElementById('previewInvoiceBtn');
     const admissionMeta = document.getElementById('admissionMeta');
+    const invoicePreviewModal = new bootstrap.Modal(document.getElementById('invoicePreviewModal'));
+    const invoicePreviewContent = document.getElementById('invoicePreviewContent');
+    const printFromPreviewBtn = document.getElementById('printFromPreviewBtn');
 
     let currentAdmissionId = null;
     let currentItems = [];
@@ -117,6 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Enable actions only if there are unpaid items
         createInvoiceBtn.disabled = !hasUnpaidItems;
         printPreviewBtn.disabled = false;
+        previewInvoiceBtn.disabled = false;
     }
 
     async function loadBillableItems(admissionId) {
@@ -254,6 +259,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
+    // Build invoice preview for modal
+    function buildInvoicePreview() {
+        const now = new Date().toLocaleDateString();
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30); // Due in 30 days
+        const dueDateStr = dueDate.toLocaleDateString();
+
+        // Get patient info
+        const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+        const admissionInfo = JSON.parse(selectedOption.dataset.admissionInfo || '{}');
+
+        const rows = currentItems.map((item, i) => {
+            const line = Number(item.quantity) * Number(item.unit_price);
+            const cov = Number(item.coverage_amount || 0);
+            const pay = line - cov;
+            const statusText = item.status === 'yes' ? 'Paid' : 'Unpaid';
+            const statusClass = item.status === 'yes' ? 'text-success' : 'text-danger';
+            return `<tr>
+                <td>${item.service_type_name || item.type || ''}</td>
+                <td>${item.description || ''}</td>
+                <td class="text-end">${item.quantity}</td>
+                <td class="text-end">${peso(item.unit_price)}</td>
+                <td class="text-end">${peso(line)}</td>
+                <td class="text-end">${peso(cov)}</td>
+                <td class="text-end">${peso(pay)}</td>
+                <td class="${statusClass}">${statusText}</td>
+            </tr>`;
+        }).join('');
+
+        invoicePreviewContent.innerHTML = `
+            <div class="invoice-container">
+                <!-- Header -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h2>Springfield General Hospital</h2>
+                        <p class="mb-1">123 Medical Center Blvd</p>
+                        <p class="mb-1">Springfield, ST 12345</p>
+                        <p class="mb-1">Phone: (555) 123-4567</p>
+                        <p>Email: billing@springfieldhospital.com</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h3 class="mb-1">MEDICAL BILLING INVOICE</h3>
+                        <p class="mb-1"><strong>Invoice #:</strong> ${lastCreatedInvoiceId || 'TEMP-' + Date.now()}</p>
+                        <p class="mb-1"><strong>Date:</strong> ${now}</p>
+                        <p class="mb-0"><strong>Due Date:</strong> ${dueDateStr}</p>
+                    </div>
+                </div>
+                
+                <!-- Patient & Doctor Info -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Patient Information</h5>
+                        <p class="mb-1"><strong>Name:</strong> ${admissionInfo.first_name} ${admissionInfo.last_name} ${admissionInfo.middle_name || ''}</p>
+                        <p class="mb-1"><strong>Admission #:</strong> ${currentAdmissionId}</p>
+                        <p class="mb-1"><strong>Admission Date:</strong> ${new Date(admissionInfo.admission_date).toLocaleDateString()}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Physician Information</h5>
+                        <p class="mb-1"><strong>Name:</strong> Dr. Alananah Gomez</p>
+                        <p class="mb-1"><strong>Phone:</strong> (555) 987-6543</p>
+                        <p class="mb-0"><strong>Address:</strong> 456 Physician Plaza, Springfield, ST 12345</p>
+                    </div>
+                </div>
+                
+                <!-- Invoice Items -->
+                <div class="mb-4">
+                    <h5 class="mb-3">Invoice Details</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Line Total</th>
+                                    <th class="text-end">Coverage</th>
+                                    <th class="text-end">Payable</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Summary -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-1"><strong>Payment Terms:</strong> Payment is due within 30 days. Late payments are subject to a 5% monthly service charge.</p>
+                        <p class="mb-0"><strong>Notes:</strong> Please include invoice number with your payment. For questions about this invoice, please contact our billing department.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal</span><strong>${subtotalText.textContent}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Insurance Covered</span><strong>${coveredText.textContent}</strong>
+                                </div>
+                                <hr />
+                                <div class="d-flex justify-content-between fs-5">
+                                    <span>Total Due</span><strong>${totalDueText.textContent}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Events
     if (findAdmissionForm) {
         findAdmissionForm.addEventListener('submit', async (e) => {
@@ -271,6 +391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentAdmissionId = Number(selectedAdmissionId);
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
+            previewInvoiceBtn.disabled = true;
             itemsBody.innerHTML = '<tr><td colspan="8" class="text-center">Loading...</td></tr>';
 
             await loadBillableItems(currentAdmissionId);
@@ -296,6 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             totalDueText.textContent = '0.00';
             createInvoiceBtn.disabled = true;
             printPreviewBtn.disabled = true;
+            previewInvoiceBtn.disabled = true;
         });
     }
 
@@ -304,6 +426,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (currentItems.length === 0) return;
             buildPrint();
             const content = document.getElementById('printArea').innerHTML;
+            const original = document.body.innerHTML;
+            document.body.innerHTML = content;
+            window.print();
+            document.body.innerHTML = original;
+            location.reload();
+        });
+    }
+
+    if (previewInvoiceBtn) {
+        previewInvoiceBtn.addEventListener('click', () => {
+            if (currentItems.length === 0) return;
+            buildInvoicePreview();
+            invoicePreviewModal.show();
+        });
+    }
+
+    if (printFromPreviewBtn) {
+        printFromPreviewBtn.addEventListener('click', () => {
+            const content = invoicePreviewContent.innerHTML;
             const original = document.body.innerHTML;
             document.body.innerHTML = content;
             window.print();
