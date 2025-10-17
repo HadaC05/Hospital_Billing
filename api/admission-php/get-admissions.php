@@ -208,9 +208,9 @@ class Admissions
 
             // 1. Insert patient
             $stmt = $this->conn->prepare("
-            INSERT INTO patients (first_name, middle_name, last_name, suffix, birthdate, gender, marital_status, mobile_number, email, address)
-            VALUES (:first_name, :middle_name, :last_name, :suffix, :birthdate, :gender, :marital_status, :mobile_number, :email, :address)
-        ");
+                INSERT INTO patients (first_name, middle_name, last_name, suffix, birthdate, gender, marital_status, mobile_number, email, address)
+                VALUES (:first_name, :middle_name, :last_name, :suffix, :birthdate, :gender, :marital_status, :mobile_number, :email, :address)
+            ");
             $stmt->execute([
                 ':first_name' => $data['patient_first_name'],
                 ':middle_name' => $data['patient_middle_name'] ?? null,

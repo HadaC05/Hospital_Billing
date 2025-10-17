@@ -17,7 +17,7 @@ class Doctor_Request
         try {
             $doctorId = (int)$_SESSION['user_id'];
 
-            // Get medicine requests from new batch system
+            // Get medicine requests from medicine batch request
             $sql = "
                 SELECT 
                     rmb.batch_id as request_id,
@@ -108,12 +108,11 @@ class Doctor_Request
 
     private function createMedicineBatch($doctorId, $patientId, $admissionId, $requests, $notes = null)
     {
-        // Create batch record
+        // Create batch record for medicine
         $batchSql = "
-        INSERT INTO request_medicine_batch 
-        (doctor_id, patient_id, admission_id, request_date, status, notes)
-        VALUES (:doctor_id, :patient_id, :admission_id, NOW(), 'pending', :notes)
-    ";
+            INSERT INTO request_medicine_batch (doctor_id, patient_id, admission_id, request_date, status, notes)
+            VALUES (:doctor_id, :patient_id, :admission_id, NOW(), 'pending', :notes)
+        ";
         $stmt = $this->pdo->prepare($batchSql);
         $stmt->execute([
             ':doctor_id' => $doctorId,
@@ -131,7 +130,10 @@ class Doctor_Request
             $notes = $request['notes'] ?? null;
 
             // Validate medicine
-            $checkSql = "SELECT 1 FROM tbl_medicine WHERE med_id = :item_id AND is_active = 1";
+            $checkSql = "
+                SELECT 1 FROM tbl_medicine 
+                WHERE med_id = :item_id AND is_active = 1
+            ";
             $checkStmt = $this->pdo->prepare($checkSql);
             $checkStmt->execute([':item_id' => $itemId]);
 
@@ -141,10 +143,9 @@ class Doctor_Request
 
             // Insert item into batch
             $itemSql = "
-            INSERT INTO request_medicine_items 
-            (batch_id, med_id, quantity, notes, status)
-            VALUES (:batch_id, :med_id, :quantity, :notes, 'pending')
-        ";
+                INSERT INTO request_medicine_items (batch_id, med_id, quantity, notes, status)
+                VALUES (:batch_id, :med_id, :quantity, :notes, 'pending')
+            ";
             $stmt = $this->pdo->prepare($itemSql);
             $stmt->execute([
                 ':batch_id' => $batchId,
@@ -161,10 +162,9 @@ class Doctor_Request
     {
         // Create batch record
         $batchSql = "
-        INSERT INTO request_labtest_batch 
-        (doctor_id, patient_id, admission_id, request_date, status, notes)
-        VALUES (:doctor_id, :patient_id, :admission_id, NOW(), 'pending', :notes)
-    ";
+            INSERT INTO request_labtest_batch (doctor_id, patient_id, admission_id, request_date, status, notes)
+            VALUES (:doctor_id, :patient_id, :admission_id, NOW(), 'pending', :notes)
+        ";
         $stmt = $this->pdo->prepare($batchSql);
         $stmt->execute([
             ':doctor_id' => $doctorId,
@@ -182,7 +182,10 @@ class Doctor_Request
             $notes = $request['notes'] ?? null;
 
             // Validate lab test
-            $checkSql = "SELECT 1 FROM tbl_labtest WHERE labtest_id = :item_id AND is_active = 1";
+            $checkSql = "
+                SELECT 1 FROM tbl_labtest 
+                WHERE labtest_id = :item_id AND is_active = 1
+            ";
             $checkStmt = $this->pdo->prepare($checkSql);
             $checkStmt->execute([':item_id' => $itemId]);
 
@@ -192,10 +195,9 @@ class Doctor_Request
 
             // Insert item into batch
             $itemSql = "
-            INSERT INTO request_labtest_items 
-            (batch_id, labtest_id, notes, status)
-            VALUES (:batch_id, :labtest_id, :notes, 'pending')
-        ";
+                INSERT INTO request_labtest_items (batch_id, labtest_id, notes, status)
+                VALUES (:batch_id, :labtest_id, :notes, 'pending')
+            ";
             $stmt = $this->pdo->prepare($itemSql);
             $stmt->execute([
                 ':batch_id' => $batchId,
@@ -223,10 +225,10 @@ class Doctor_Request
 
             // Get active admission for the patient
             $admissionSql = "
-            SELECT admission_id FROM patient_admission 
-            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
-            ORDER BY admission_date DESC LIMIT 1
-        ";
+                SELECT admission_id FROM patient_admission 
+                WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+                ORDER BY admission_date DESC LIMIT 1
+            ";
             $stmt = $this->pdo->prepare($admissionSql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -247,9 +249,9 @@ class Doctor_Request
             foreach ($requests as $request) {
                 $svcTypeId = $request['svc_type_id'] ?? null;
 
-                if ($svcTypeId == 4) { // Medication
+                if ($svcTypeId == 4) {
                     $medicationRequests[] = $request;
-                } elseif ($svcTypeId == 3) { // Lab Test
+                } elseif ($svcTypeId == 3) {
                     $labtestRequests[] = $request;
                 }
             }
@@ -303,10 +305,10 @@ class Doctor_Request
             if ($requestType === 'medicine_batch') {
                 // Check if it's a medicine batch request
                 $checkSql = "
-                SELECT rmb.batch_id 
-                FROM request_medicine_batch rmb
-                WHERE rmb.batch_id = :request_id AND rmb.doctor_id = :doctor_id
-            ";
+                    SELECT rmb.batch_id 
+                    FROM request_medicine_batch rmb
+                    WHERE rmb.batch_id = :request_id AND rmb.doctor_id = :doctor_id
+                ";
                 $stmt = $this->pdo->prepare($checkSql);
                 $stmt->execute([
                     ':request_id' => $requestId,
@@ -316,19 +318,19 @@ class Doctor_Request
                 if ($stmt->fetch()) {
                     // Cancel the entire medicine batch
                     $updateSql = "
-                    UPDATE request_medicine_batch 
-                    SET status = 'cancelled' 
-                    WHERE batch_id = :request_id
-                ";
+                        UPDATE request_medicine_batch 
+                        SET status = 'cancelled' 
+                        WHERE batch_id = :request_id
+                    ";
                     $stmt = $this->pdo->prepare($updateSql);
                     $stmt->execute([':request_id' => $requestId]);
 
                     // Also cancel all items in the batch
                     $updateItemsSql = "
-                    UPDATE request_medicine_items 
-                    SET status = 'cancelled' 
-                    WHERE batch_id = :request_id
-                ";
+                        UPDATE request_medicine_items 
+                        SET status = 'cancelled' 
+                        WHERE batch_id = :request_id
+                    ";
                     $stmt = $this->pdo->prepare($updateItemsSql);
                     $stmt->execute([':request_id' => $requestId]);
                 } else {
@@ -337,10 +339,10 @@ class Doctor_Request
             } elseif ($requestType === 'labtest_batch') {
                 // Check if it's a lab test batch request
                 $checkSql = "
-                SELECT rlb.batch_id 
-                FROM request_labtest_batch rlb
-                WHERE rlb.batch_id = :request_id AND rlb.doctor_id = :doctor_id
-            ";
+                    SELECT rlb.batch_id 
+                    FROM request_labtest_batch rlb
+                    WHERE rlb.batch_id = :request_id AND rlb.doctor_id = :doctor_id
+                ";
                 $stmt = $this->pdo->prepare($checkSql);
                 $stmt->execute([
                     ':request_id' => $requestId,
@@ -350,48 +352,24 @@ class Doctor_Request
                 if ($stmt->fetch()) {
                     // Cancel the entire lab test batch
                     $updateSql = "
-                    UPDATE request_labtest_batch 
-                    SET status = 'cancelled' 
-                    WHERE batch_id = :request_id
-                ";
+                        UPDATE request_labtest_batch 
+                        SET status = 'cancelled' 
+                        WHERE batch_id = :request_id
+                    ";
                     $stmt = $this->pdo->prepare($updateSql);
                     $stmt->execute([':request_id' => $requestId]);
 
                     // Also cancel all items in the batch
                     $updateItemsSql = "
-                    UPDATE request_labtest_items 
-                    SET status = 'cancelled' 
-                    WHERE batch_id = :request_id
-                ";
+                        UPDATE request_labtest_items 
+                        SET status = 'cancelled' 
+                        WHERE batch_id = :request_id
+                    ";
                     $stmt = $this->pdo->prepare($updateItemsSql);
                     $stmt->execute([':request_id' => $requestId]);
                 } else {
                     throw new Exception('Lab test batch not found or not authorized');
                 }
-            } else {
-                // Handle old request system
-                $checkSql = "
-                SELECT 1 FROM doctor_requests 
-                WHERE request_id = :request_id AND doctor_id = :doctor_id
-            ";
-                $stmt = $this->pdo->prepare($checkSql);
-                $stmt->execute([
-                    ':request_id' => $requestId,
-                    ':doctor_id' => $doctorId
-                ]);
-
-                if (!$stmt->fetch()) {
-                    throw new Exception('Request not found or not authorized');
-                }
-
-                // Update request status to cancelled
-                $updateSql = "
-                UPDATE doctor_requests 
-                SET status = 'cancelled', cancelled_date = NOW() 
-                WHERE request_id = :request_id
-            ";
-                $stmt = $this->pdo->prepare($updateSql);
-                $stmt->execute([':request_id' => $requestId]);
             }
 
             echo json_encode([
@@ -434,27 +412,27 @@ class Doctor_Request
     {
         try {
             $sql = "
-            SELECT 
-                u.user_id,
-                ud.doctor_id,
-                ud.first_name,
-                ud.middle_name,
-                ud.last_name,
-                ud.suffix,
-                ud.license_number,
-                u.email,
-                u.mobile_number,
-                u.status,
-                uds.specialty_id,
-                uds.specialty_name
-            FROM users u
-            JOIN user_doctor ud ON u.user_id = ud.user_id
-            JOIN user_doctor_specialty uds ON ud.specialty_id = uds.specialty_id
-            WHERE u.role_id = 2
-            AND u.status = 1
-            AND uds.is_active = 1
-            ORDER BY ud.last_name, ud.first_name
-        ";
+                SELECT 
+                    u.user_id,
+                    ud.doctor_id,
+                    ud.first_name,
+                    ud.middle_name,
+                    ud.last_name,
+                    ud.suffix,
+                    ud.license_number,
+                    u.email,
+                    u.mobile_number,
+                    u.status,
+                    uds.specialty_id,
+                    uds.specialty_name
+                FROM users u
+                JOIN user_doctor ud ON u.user_id = ud.user_id
+                JOIN user_doctor_specialty uds ON ud.specialty_id = uds.specialty_id
+                WHERE u.role_id = 2
+                AND u.status = 1
+                AND uds.is_active = 1
+                ORDER BY ud.last_name, ud.first_name
+            ";
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute();
@@ -474,23 +452,23 @@ class Doctor_Request
     {
         try {
             $sql = "
-            SELECT 
-                r.room_id,
-                r.room_number,
-                r.max_occupancy,
-                r.is_available,
-                rt.room_type_name,
-                IFNULL((
-                    SELECT COUNT(*) 
-                    FROM tbl_room_stay rs
-                    WHERE rs.room_id = r.room_id
-                        AND rs.end_date IS NULL
-                ), 0) AS current_occupancy
-            FROM tbl_room r
-            JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
-            WHERE rt.is_active = 1
-            ORDER BY r.room_number ASC
-        ";
+                SELECT 
+                    r.room_id,
+                    r.room_number,
+                    r.max_occupancy,
+                    r.is_available,
+                    rt.room_type_name,
+                    IFNULL((
+                        SELECT COUNT(*) 
+                        FROM tbl_room_stay rs
+                        WHERE rs.room_id = r.room_id
+                            AND rs.end_date IS NULL
+                    ), 0) AS current_occupancy
+                FROM tbl_room r
+                JOIN tbl_room_type rt ON r.room_type_id = rt.room_type_id
+                WHERE rt.is_active = 1
+                ORDER BY r.room_number ASC
+            ";
             $stmt = $this->pdo->query($sql);
             $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -510,17 +488,17 @@ class Doctor_Request
     {
         try {
             $sql = "
-            SELECT 
-                s.surgery_id,
-                s.surgery_name,
-                s.surgery_price AS base_fee,
-                st.surgery_type_name
-            FROM tbl_surgery s
-            JOIN tbl_surgery_type st ON s.surgery_type_id = st.surgery_type_id
-            WHERE s.is_available = 1
-                AND st.is_active = 1
-            ORDER BY s.surgery_name
-        ";
+                SELECT 
+                    s.surgery_id,
+                    s.surgery_name,
+                    s.surgery_price AS base_fee,
+                    st.surgery_type_name
+                FROM tbl_surgery s
+                JOIN tbl_surgery_type st ON s.surgery_type_id = st.surgery_type_id
+                WHERE s.is_available = 1
+                    AND st.is_active = 1
+                ORDER BY s.surgery_name
+            ";
             $stmt = $this->pdo->query($sql);
             $surgeries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -553,9 +531,10 @@ class Doctor_Request
 
             // Get active admission for the patient
             $admissionSql = "
-            SELECT admission_id FROM patient_admission 
-            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
-            ORDER BY admission_date DESC LIMIT 1";
+                SELECT admission_id FROM patient_admission 
+                WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+                ORDER BY admission_date DESC LIMIT 1
+            ";
             $stmt = $this->pdo->prepare($admissionSql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -571,9 +550,9 @@ class Doctor_Request
 
             // Create doctor change request
             $sql = "
-            INSERT INTO doctor_change_requests 
-            (admission_id, patient_id, current_doctor_id, requested_doctor_id, request_date, reason, notes, status)
-            VALUES (:admission_id, :patient_id, :current_doctor_id, :requested_doctor_id, NOW(), :reason, :notes, 'pending')";
+                INSERT INTO doctor_change_requests (admission_id, patient_id, current_doctor_id, requested_doctor_id, request_date, reason, notes, status)
+                VALUES (:admission_id, :patient_id, :current_doctor_id, :requested_doctor_id, NOW(), :reason, :notes, 'pending')
+            ";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':admission_id' => $admissionId,
@@ -618,9 +597,10 @@ class Doctor_Request
 
             // Get active admission for the patient
             $admissionSql = "
-            SELECT admission_id, room_id FROM patient_admission 
-            WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
-            ORDER BY admission_date DESC LIMIT 1";
+                SELECT admission_id, room_id FROM patient_admission 
+                WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+                ORDER BY admission_date DESC LIMIT 1
+            ";
             $stmt = $this->pdo->prepare($admissionSql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -637,9 +617,9 @@ class Doctor_Request
 
             // Create room change request
             $sql = "
-            INSERT INTO room_change_requests 
-            (admission_id, patient_id, current_room_id, requested_room_id, request_date, reason, notes, status)
-            VALUES (:admission_id, :patient_id, :current_room_id, :requested_room_id, NOW(), :reason, :notes, 'pending')";
+                INSERT INTO room_change_requests (admission_id, patient_id, current_room_id, requested_room_id, request_date, reason, notes, status)
+                VALUES (:admission_id, :patient_id, :current_room_id, :requested_room_id, NOW(), :reason, :notes, 'pending')
+            ";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':admission_id' => $admissionId,
@@ -678,7 +658,6 @@ class Doctor_Request
             $assignedDoctorId = $data['assigned_doctor_id'] ?? null;
             $scheduledDate = $data['scheduled_date'] ?? null;
             $reason = $data['reason'] ?? null;
-            // Removed: $notes = $data['notes'] ?? null;
 
             if (!$doctorId || !$patientId || !$surgeryId || !$assignedDoctorId || !$scheduledDate || !$reason) {
                 throw new Exception('Missing required fields');
@@ -686,9 +665,10 @@ class Doctor_Request
 
             // Get active admission for the patient
             $admissionSql = "
-    SELECT admission_id FROM patient_admission 
-    WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
-    ORDER BY admission_date DESC LIMIT 1";
+                SELECT admission_id FROM patient_admission 
+                WHERE patient_id = :patient_id AND doctor_id = :doctor_id AND status = 'active'
+                ORDER BY admission_date DESC LIMIT 1
+            ";
             $stmt = $this->pdo->prepare($admissionSql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -704,9 +684,8 @@ class Doctor_Request
 
             // Create surgery request
             $sql = "
-    INSERT INTO request_surgery 
-    (patient_id, admission_id, doctor_id, surgery_type_id, scheduled_date, reason, request_date, status)
-    VALUES (:patient_id, :admission_id, :doctor_id, :surgery_type_id, :scheduled_date, :reason, NOW(), 'pending')";
+                INSERT INTO request_surgery (patient_id, admission_id, doctor_id, surgery_type_id, scheduled_date, reason, request_date, status)
+                VALUES (:patient_id, :admission_id, :doctor_id, :surgery_type_id, :scheduled_date, :reason, NOW(), 'pending')";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 ':patient_id' => $patientId,
@@ -715,7 +694,6 @@ class Doctor_Request
                 ':surgery_type_id' => $surgeryId,
                 ':scheduled_date' => $scheduledDate,
                 ':reason' => $reason
-                // Removed: ':notes' => $notes
             ]);
 
             $requestId = $this->pdo->lastInsertId();
@@ -747,10 +725,10 @@ class Doctor_Request
 
             // Check if it's a surgery request
             $checkSql = "
-        SELECT rs.request_id 
-        FROM request_surgery rs
-        WHERE rs.request_id = :request_id AND rs.doctor_id = :doctor_id
-    ";
+                SELECT rs.request_id 
+                FROM request_surgery rs
+                WHERE rs.request_id = :request_id AND rs.doctor_id = :doctor_id
+            ";
             $stmt = $this->pdo->prepare($checkSql);
             $stmt->execute([
                 ':request_id' => $requestId,
@@ -760,13 +738,13 @@ class Doctor_Request
             if ($stmt->fetch()) {
                 // Cancel the surgery request
                 $updateSql = "
-            UPDATE request_surgery 
-            SET status = 'cancelled', 
-                cancelled_by = :doctor_id, 
-                cancelled_date = NOW(),
-                cancelled_reason = :reason
-            WHERE request_id = :request_id
-        ";
+                    UPDATE request_surgery 
+                    SET status = 'cancelled', 
+                        cancelled_by = :doctor_id, 
+                        cancelled_date = NOW(),
+                        cancelled_reason = :reason
+                    WHERE request_id = :request_id
+                ";
                 $stmt = $this->pdo->prepare($updateSql);
                 $stmt->execute([
                     ':request_id' => $requestId,
@@ -805,17 +783,18 @@ class Doctor_Request
             $items = [];
 
             if ($batchType === 'medicine_batch') {
+
                 // Get medicine batch details
                 $batchSql = "
-            SELECT rmb.*, 
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
-            FROM request_medicine_batch rmb
-            JOIN patients p ON rmb.patient_id = p.patient_id
-            JOIN users u ON rmb.doctor_id = u.user_id
-            JOIN user_doctor ud ON u.user_id = ud.user_id
-            WHERE rmb.batch_id = :batch_id AND rmb.doctor_id = :doctor_id
-            ";
+                    SELECT rmb.*, 
+                        CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+                        CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
+                    FROM request_medicine_batch rmb
+                    JOIN patients p ON rmb.patient_id = p.patient_id
+                    JOIN users u ON rmb.doctor_id = u.user_id
+                    JOIN user_doctor ud ON u.user_id = ud.user_id
+                    WHERE rmb.batch_id = :batch_id AND rmb.doctor_id = :doctor_id
+                ";
 
                 $stmt = $this->pdo->prepare($batchSql);
                 $stmt->execute([
@@ -831,12 +810,12 @@ class Doctor_Request
 
                 // Get medicine batch items
                 $itemsSql = "
-            SELECT rmi.*, m.med_name as item_name
-            FROM request_medicine_items rmi
-            JOIN tbl_medicine m ON rmi.med_id = m.med_id
-            WHERE rmi.batch_id = :batch_id
-            ORDER BY rmi.item_id
-            ";
+                    SELECT rmi.*, m.med_name as item_name
+                    FROM request_medicine_items rmi
+                    JOIN tbl_medicine m ON rmi.med_id = m.med_id
+                    WHERE rmi.batch_id = :batch_id
+                    ORDER BY rmi.item_id
+                ";
 
                 $stmt = $this->pdo->prepare($itemsSql);
                 $stmt->execute([':batch_id' => $batchId]);
@@ -846,15 +825,15 @@ class Doctor_Request
             } elseif ($batchType === 'labtest_batch') {
                 // Get lab test batch details
                 $batchSql = "
-            SELECT rlb.*, 
-                CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
-                CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
-            FROM request_labtest_batch rlb
-            JOIN patients p ON rlb.patient_id = p.patient_id
-            JOIN users u ON rlb.doctor_id = u.user_id
-            JOIN user_doctor ud ON u.user_id = ud.user_id
-            WHERE rlb.batch_id = :batch_id AND rlb.doctor_id = :doctor_id
-            ";
+                    SELECT rlb.*, 
+                        CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+                        CONCAT(ud.first_name, ' ', COALESCE(ud.middle_name, ''), ' ', ud.last_name) AS doctor_name
+                    FROM request_labtest_batch rlb
+                    JOIN patients p ON rlb.patient_id = p.patient_id
+                    JOIN users u ON rlb.doctor_id = u.user_id
+                    JOIN user_doctor ud ON u.user_id = ud.user_id
+                    WHERE rlb.batch_id = :batch_id AND rlb.doctor_id = :doctor_id
+                ";
 
                 $stmt = $this->pdo->prepare($batchSql);
                 $stmt->execute([
@@ -870,12 +849,12 @@ class Doctor_Request
 
                 // Get lab test batch items
                 $itemsSql = "
-            SELECT rli.*, lt.test_name as item_name
-            FROM request_labtest_items rli
-            JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
-            WHERE rli.batch_id = :batch_id
-            ORDER BY rli.item_id
-            ";
+                    SELECT rli.*, lt.test_name as item_name
+                    FROM request_labtest_items rli
+                    JOIN tbl_labtest lt ON rli.labtest_id = lt.labtest_id
+                    WHERE rli.batch_id = :batch_id
+                    ORDER BY rli.item_id
+                ";
 
                 $stmt = $this->pdo->prepare($itemsSql);
                 $stmt->execute([':batch_id' => $batchId]);
@@ -919,7 +898,6 @@ if ($method === 'GET') {
     $data = json_decode($json, true);
 }
 
-// For GET requests, we need to get the data differently
 if ($method === 'GET' && isset($_GET['json'])) {
     $json = $_GET['json'] ?? '';
     $data = json_decode($json, true);

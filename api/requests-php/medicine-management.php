@@ -66,7 +66,11 @@ class Medicine_Management
         }
 
         // Update the batch status
-        $update = "UPDATE request_medicine_batch SET status = :status WHERE batch_id = :batch_id";
+        $update = "
+            UPDATE request_medicine_batch 
+            SET status = :status 
+            WHERE batch_id = :batch_id
+        ";
         $stmt = $this->pdo->prepare($update);
         $stmt->execute([
             ':status' => $newStatus,
